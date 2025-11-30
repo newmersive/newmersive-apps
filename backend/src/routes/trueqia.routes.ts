@@ -6,7 +6,7 @@ const router=Router();
 
 router.get("/offers", authRequired, (req:AuthRequest,res)=>{
   res.json({ items:[
-    {id:"1",title:"Clases IA"},
+    {id:"1",title:"Clases de IA"},
     {id:"2",title:"Diseño logo"}
   ], user:req.user });
 });
