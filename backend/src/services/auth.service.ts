@@ -6,7 +6,8 @@ import { AuthTokenResponse, User, UserRole } from "../shared/types";
 const users: User[] = [];
 let userIdCounter = 1;
 
-// Seed admin
+// Seed admin demo user for development (email: admin@newmersive.local, password: admin123).
+// The credentials are stored only in memory to avoid persisting secrets.
 (function seedAdmin() {
   const adminEmail = "admin@newmersive.local";
   const exists = users.find(u => u.email === adminEmail);
