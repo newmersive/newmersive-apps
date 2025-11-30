@@ -9,6 +9,7 @@ import {
 } from "react-native";
 import { apiPost, AuthResponse } from "../../config/api";
 import { useAuthStore } from "../../store/auth.store";
+import { colors } from "../../theme/colors";
 
 export default function LoginScreen({ navigation }: any) {
   const [email, setEmail] = useState("");
@@ -54,6 +55,7 @@ export default function LoginScreen({ navigation }: any) {
       <TextInput
         style={styles.input}
         placeholder="Email"
+        placeholderTextColor={colors.muted}
         autoCapitalize="none"
         keyboardType="email-address"
         value={email}
@@ -63,6 +65,7 @@ export default function LoginScreen({ navigation }: any) {
       <TextInput
         style={styles.input}
         placeholder="Contraseña"
+        placeholderTextColor={colors.muted}
         secureTextEntry
         value={password}
         onChangeText={setPassword}
@@ -70,30 +73,68 @@ export default function LoginScreen({ navigation }: any) {
 
       {error && <Text style={styles.error}>{error}</Text>}
 
-      {loading ? (
-        <ActivityIndicator />
-      ) : (
-        <Button title="Entrar" onPress={handleLogin} />
-      )}
+      <TouchableOpacity
+        style={[styles.primaryButton, loading && styles.buttonDisabled]}
+        onPress={handleLogin}
+        disabled={loading}
+        activeOpacity={0.9}
+      >
+        {loading ? (
+          <ActivityIndicator color={colors.white} />
+        ) : (
+          <Text style={styles.primaryButtonText}>Entrar</Text>
+        )}
+      </TouchableOpacity>
 
-      <View style={{ height: 12 }} />
-      <Button
-        title="Crear cuenta"
+      <TouchableOpacity
+        style={styles.secondaryButton}
         onPress={() => navigation.navigate("Register")}
-      />
+        activeOpacity={0.9}
+      >
+        <Text style={styles.secondaryButtonText}>Crear cuenta</Text>
+      </TouchableOpacity>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: "center", padding: 24 },
-  title: { fontSize: 24, fontWeight: "bold", marginBottom: 16 },
+  container: {
+    flex: 1,
+    justifyContent: "center",
+    padding: 24,
+    backgroundColor: colors.salmon,
+  },
+  title: { fontSize: 24, fontWeight: "800", marginBottom: 16, color: colors.dark },
   input: {
     borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 6,
-    padding: 10,
+    borderColor: colors.line,
+    borderRadius: 12,
+    padding: 12,
     marginBottom: 12,
+    backgroundColor: colors.white,
+    color: colors.dark,
   },
-  error: { color: "red", marginBottom: 12 },
+  error: { color: colors.dark, marginBottom: 12, fontWeight: "700" },
+  primaryButton: {
+    backgroundColor: colors.dark,
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: "center",
+  },
+  primaryButtonText: {
+    color: colors.white,
+    fontWeight: "800",
+    fontSize: 16,
+  },
+  buttonDisabled: { opacity: 0.7 },
+  secondaryButton: {
+    marginTop: 12,
+    backgroundColor: colors.white,
+    paddingVertical: 12,
+    borderRadius: 12,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: colors.dark,
+  },
+  secondaryButtonText: { color: colors.dark, fontWeight: "800" },
 });
