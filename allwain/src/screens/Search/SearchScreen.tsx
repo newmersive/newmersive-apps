@@ -34,7 +34,7 @@ export default function SearchScreen() {
         <TextInput
           style={styles.input}
           placeholder="Buscar productos o servicios"
-          placeholderTextColor="rgba(64,64,65,0.55)"
+          placeholderTextColor={colors.muted}
           value={query}
           onChangeText={setQuery}
         />
@@ -84,17 +84,19 @@ const styles = StyleSheet.create({
     backgroundColor: colors.white,
     borderRadius: 16,
     padding: 16,
-    shadowColor: "#000",
+    shadowColor: colors.dark,
     shadowOpacity: 0.07,
     shadowRadius: 8,
     marginBottom: 12,
+    borderWidth: 1,
+    borderColor: colors.line,
   },
   input: {
-    backgroundColor: "#F7F7F7",
+    backgroundColor: colors.white,
     borderRadius: 12,
     padding: 12,
     borderWidth: 1,
-    borderColor: "rgba(64,64,65,0.18)",
+    borderColor: colors.line,
     color: colors.dark,
   },
   button: {
@@ -115,7 +117,7 @@ const styles = StyleSheet.create({
     padding: 14,
     marginBottom: 10,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.2)",
+    borderColor: colors.line,
   },
   resultHeader: {
     flexDirection: "row",
@@ -133,7 +135,7 @@ const styles = StyleSheet.create({
     fontWeight: "800",
   },
   resultCompany: {
-    color: "rgba(64,64,65,0.7)",
+    color: colors.muted,
     fontWeight: "600",
   },
 });

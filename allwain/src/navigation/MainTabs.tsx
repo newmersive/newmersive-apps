@@ -12,10 +12,11 @@ export default function MainTabs() {
     <Tab.Navigator
       screenOptions={{
         headerStyle: { backgroundColor: colors.salmon },
-        headerTintColor: colors.white,
+        headerTitleStyle: { color: colors.dark },
+        headerTintColor: colors.dark,
         tabBarActiveTintColor: colors.dark,
-        tabBarInactiveTintColor: "rgba(64,64,65,0.6)",
-        tabBarStyle: { backgroundColor: colors.white },
+        tabBarInactiveTintColor: colors.muted,
+        tabBarStyle: { backgroundColor: colors.salmon, borderTopColor: colors.line },
       }}
     >
       <Tab.Screen name="Buscar" component={SearchScreen} />

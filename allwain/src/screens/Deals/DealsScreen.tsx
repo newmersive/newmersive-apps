@@ -60,8 +60,8 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.25)",
-    shadowColor: "#000",
+    borderColor: colors.line,
+    shadowColor: colors.dark,
     shadowOpacity: 0.05,
     shadowRadius: 8,
   },
@@ -77,7 +77,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   saving: {
-    color: "rgba(64,64,65,0.7)",
+    color: colors.muted,
     fontWeight: "700",
   },
 });

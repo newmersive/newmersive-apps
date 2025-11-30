@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, Button, ActivityIndicator, ScrollView } from "react-native";
+import { View, Text, ActivityIndicator, ScrollView, StyleSheet, TouchableOpacity } from "react-native";
 import { apiAuthGet } from "../../config/api";
+import { colors } from "../../theme/colors";
 
 export default function AdminDashboardScreen() {
   const [dashboard, setDashboard] = useState<any>(null);
@@ -30,38 +31,39 @@ export default function AdminDashboardScreen() {
   }, []);
 
   return (
-    <ScrollView style={{ flex: 1, padding: 24 }}>
-      <Text style={{ fontSize: 24 }}>Panel Admin (Allwain)</Text>
+    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      <Text style={styles.title}>Panel Admin (Allwain)</Text>
 
-      <View style={{ height: 12 }} />
-      <Button title="Recargar datos" onPress={loadAll} />
+      <TouchableOpacity style={styles.primaryButton} onPress={loadAll} activeOpacity={0.9}>
+        <Text style={styles.primaryButtonText}>Recargar datos</Text>
+      </TouchableOpacity>
 
-      {loading && <ActivityIndicator style={{ marginTop: 12 }} />}
+      {loading && <ActivityIndicator style={styles.loader} color={colors.dark} />}
 
       {dashboard && (
-        <View style={{ marginTop: 16 }}>
-          <Text style={{ fontWeight: "600" }}>Dashboard:</Text>
-          <Text>Admin: {dashboard.admin}</Text>
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Dashboard</Text>
+          <Text style={styles.sectionText}>Admin: {dashboard.admin}</Text>
         </View>
       )}
 
       {users.length > 0 && (
-        <View style={{ marginTop: 16 }}>
-          <Text style={{ fontWeight: "600" }}>Usuarios:</Text>
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Usuarios</Text>
           {users.map((u) => (
-            <Text key={u.id}>
-              - {u.email} ({u.role})
+            <Text key={u.id} style={styles.sectionText}>
+              • {u.email} ({u.role})
             </Text>
           ))}
         </View>
       )}
 
       {events.length > 0 && (
-        <View style={{ marginTop: 16 }}>
-          <Text style={{ fontWeight: "600" }}>Eventos IA:</Text>
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Eventos IA</Text>
           {events.map((ev) => (
-            <Text key={ev.id}>
-              - [{ev.severity}] {ev.userEmail}: {ev.reason}
+            <Text key={ev.id} style={styles.sectionText}>
+              • [{ev.severity}] {ev.userEmail}: {ev.reason}
             </Text>
           ))}
         </View>
@@ -69,3 +71,27 @@ export default function AdminDashboardScreen() {
     </ScrollView>
   );
 }
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.salmon },
+  content: { padding: 24, paddingBottom: 32 },
+  title: { fontSize: 24, color: colors.dark, fontWeight: "800", marginBottom: 12 },
+  primaryButton: {
+    backgroundColor: colors.dark,
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: "center",
+  },
+  primaryButtonText: { color: colors.white, fontWeight: "800" },
+  loader: { marginTop: 12 },
+  section: {
+    marginTop: 16,
+    backgroundColor: colors.white,
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: colors.line,
+  },
+  sectionTitle: { fontWeight: "800", color: colors.dark, marginBottom: 6 },
+  sectionText: { color: colors.dark, fontWeight: "600", opacity: 0.9 },
+});

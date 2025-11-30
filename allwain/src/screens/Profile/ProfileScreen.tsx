@@ -63,10 +63,10 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.25)",
+    borderColor: colors.line,
   },
   label: {
-    color: "rgba(64,64,65,0.7)",
+    color: colors.muted,
     fontWeight: "700",
     marginTop: 8,
   },

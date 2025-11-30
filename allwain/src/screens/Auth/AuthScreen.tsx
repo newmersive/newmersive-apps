@@ -55,7 +55,7 @@ export default function AuthScreen() {
           <TextInput
             style={styles.input}
             placeholder="tu@email.com"
-            placeholderTextColor="rgba(64,64,65,0.5)"
+            placeholderTextColor={colors.muted}
             autoCapitalize="none"
             keyboardType="email-address"
             value={email}
@@ -66,7 +66,7 @@ export default function AuthScreen() {
           <TextInput
             style={styles.input}
             placeholder="••••••••"
-            placeholderTextColor="rgba(64,64,65,0.5)"
+            placeholderTextColor={colors.muted}
             secureTextEntry
             value={password}
             onChangeText={setPassword}
@@ -127,12 +127,14 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   form: {
-    backgroundColor: "rgba(255,255,255,0.15)",
+    backgroundColor: colors.white,
     borderRadius: 16,
     padding: 20,
-    shadowColor: "#000",
+    shadowColor: colors.dark,
     shadowOpacity: 0.06,
     shadowRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.line,
   },
   label: {
     color: colors.dark,
@@ -147,10 +149,10 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     marginBottom: 14,
     borderWidth: 1,
-    borderColor: "rgba(64,64,65,0.2)",
+    borderColor: colors.line,
   },
   error: {
-    color: colors.white,
+    color: colors.dark,
     marginBottom: 12,
     fontWeight: "600",
   },
@@ -172,10 +174,14 @@ const styles = StyleSheet.create({
   secondaryAction: {
     marginTop: 12,
     alignItems: "center",
+    backgroundColor: colors.white,
+    paddingVertical: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.dark,
   },
   secondaryText: {
-    color: colors.white,
-    fontWeight: "700",
-    textDecorationLine: "underline",
+    color: colors.dark,
+    fontWeight: "800",
   },
 });
