@@ -65,4 +65,16 @@ function createAuthTokenResponse(user: User): AuthTokenResponse {
   return { token, user: { id: user.id, name: user.name, email: user.email, role: user.role }};
 }
 
-export function getAllUsers(): User[] { return users; }
+export function getAllUsers(): User[] {
+  return users;
+}
+
+export function getPublicUsers(): Array<Omit<User, "passwordHash">> {
+  return users.map(({ id, name, email, role, createdAt }) => ({
+    id,
+    name,
+    email,
+    role,
+    createdAt
+  }));
+}
