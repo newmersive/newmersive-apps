@@ -1,47 +1,33 @@
 import { create } from "zustand";
+import { apiPost, AuthResponse } from "../config/api";
 
 type User = {
+  id: string;
   name: string;
   email: string;
-  location: string;
+  role: string;
 };
 
 interface AuthState {
   token: string | null;
   user: User | null;
+  setAuth: (payload: AuthResponse) => void;
   login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string) => Promise<void>;
+  register: (name: string, email: string, password: string) => Promise<void>;
   logout: () => void;
 }
-
-const MOCK_LOCATION = "Valencia, España";
 
 export const useAuthStore = create<AuthState>((set) => ({
   token: null,
   user: null,
-  login: async (email) => {
-    await new Promise((resolve) => setTimeout(resolve, 600));
-
-    set({
-      token: "mock-token",
-      user: {
-        name: "Usuario TRUEQIA",
-        email,
-        location: MOCK_LOCATION,
-      },
-    });
+  setAuth: ({ token, user }) => set({ token, user }),
+  login: async (email, password) => {
+    const res = await apiPost<AuthResponse>("/auth/login", { email, password });
+    set({ token: res.token, user: res.user });
   },
-  register: async (email) => {
-    await new Promise((resolve) => setTimeout(resolve, 600));
-
-    set({
-      token: "mock-token",
-      user: {
-        name: "Nueva cuenta TRUEQIA",
-        email,
-        location: MOCK_LOCATION,
-      },
-    });
+  register: async (name, email, password) => {
+    const res = await apiPost<AuthResponse>("/auth/register", { name, email, password });
+    set({ token: res.token, user: res.user });
   },
   logout: () => set({ token: null, user: null }),
 }));

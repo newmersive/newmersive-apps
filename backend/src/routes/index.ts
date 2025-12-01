@@ -5,10 +5,12 @@ import trueqiaRoutes from "./trueqia.routes";
 import allwainRoutes from "./allwain.routes";
 import adminRoutes from "./admin.routes";
 
-const router=Router();
-router.use("/",healthRoutes);
-router.use("/auth",authRoutes);
-router.use("/trueqia",trueqiaRoutes);
-router.use("/allwain",allwainRoutes);
-router.use("/admin",adminRoutes);
+const router = Router();
+
+router.use("/", healthRoutes);
+router.use("/auth", authRoutes);
+router.use("/trueqia", trueqiaRoutes);
+router.use("/allwain", allwainRoutes);
+router.use("/admin", adminRoutes);
+
 export default router;

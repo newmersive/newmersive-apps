@@ -1,0 +1,62 @@
+{
+  "users": [
+    {
+      "id": "1",
+      "name": "Admin Demo",
+      "email": "admin@newmersive.local",
+      "passwordHash": "$2a$10$Ljb/uUGMma.UWeFZ1lok6ubGIi2wZoa8dhTAZur6gvVuLMHAuEkTW",
+      "role": "admin",
+      "createdAt": "2024-01-01T00:00:00.000Z"
+    }
+  ],
+  "offers": [
+    {
+      "id": "offer-trueqia-1",
+      "title": "Edición de video para evento",
+      "description": "Montaje completo con ajustes de color y audio.",
+      "tokens": 80,
+      "owner": "trueqia",
+      "category": "creativos"
+    },
+    {
+      "id": "offer-trueqia-2",
+      "title": "Mentoría en IA aplicada",
+      "description": "Sesión 1 a 1 para integrar IA en flujos de trabajo.",
+      "tokens": 120,
+      "owner": "trueqia",
+      "category": "formación"
+    },
+    {
+      "id": "offer-allwain-1",
+      "title": "Descuento en café de especialidad",
+      "description": "Pack degustación 3 orígenes con envío 24h",
+      "tokens": 30,
+      "owner": "allwain",
+      "category": "gourmet"
+    },
+    {
+      "id": "offer-allwain-2",
+      "title": "Revisión de etiquetas nutricionales",
+      "description": "Analizamos tu código QR y devolvemos sugerencias",
+      "tokens": 45,
+      "owner": "allwain",
+      "category": "análisis"
+    }
+  ],
+  "trades": [
+    {
+      "id": "trade-1",
+      "title": "Trueque de horas de diseño",
+      "status": "activo",
+      "participants": ["trueqia-demo@newmersive.app", "company@trueqia.app"],
+      "tokens": 150
+    },
+    {
+      "id": "trade-2",
+      "title": "Alianza para campaña social",
+      "status": "negociando",
+      "participants": ["marca@allwain.com", "creador@trueqia.app"],
+      "tokens": 90
+    }
+  ]
+}

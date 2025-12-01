@@ -3,11 +3,10 @@ import {
   View,
   Text,
   TextInput,
-  Button,
+  TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
 } from "react-native";
-import { apiPost, AuthResponse } from "../../config/api";
 import { useAuthStore } from "../../store/auth.store";
 import { colors } from "../../theme/colors";
 
@@ -22,7 +21,7 @@ export default function RegisterScreen({ navigation }: any) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const setAuth = useAuthStore((s) => s.setAuth);
+  const register = useAuthStore((s) => s.register);
 
   async function handleRegister() {
     if (!name || !email || !password || !role) {
@@ -34,14 +33,7 @@ export default function RegisterScreen({ navigation }: any) {
       setLoading(true);
       setError(null);
 
-      const result = await apiPost<AuthResponse>("/auth/register", {
-        name,
-        email,
-        password,
-        role,
-      });
-
-      setAuth(result);
+      await register(name, email, password);
       navigation.replace("MainTabs");
     } catch (err: any) {
       if (err?.message === "EMAIL_ALREADY_EXISTS") {

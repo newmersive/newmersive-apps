@@ -1,26 +1,28 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { ENV } from "../config/env";
-import { AuthTokenResponse, User, UserRole } from "../shared/types";
+import { AuthTokenResponse, AuthUser, User, UserRole } from "../shared/types";
+import { getDatabase, upsertUser } from "./data.store";
 
-const users: User[] = [];
 let userIdCounter = 1;
 
-// Seed admin demo user for development (email: admin@newmersive.local, password: admin123).
-// The credentials are stored only in memory to avoid persisting secrets.
 (function seedAdmin() {
+  const db = getDatabase();
   const adminEmail = "admin@newmersive.local";
-  const exists = users.find(u => u.email === adminEmail);
-  if (!exists) {
+  const existing = db.users.find((u) => u.email === adminEmail);
+  if (!existing) {
     const passwordHash = bcrypt.hashSync("admin123", 10);
-    users.push({
+    const adminUser: User = {
       id: String(userIdCounter++),
       name: "Admin Demo",
       email: adminEmail,
       passwordHash,
       role: "admin",
-      createdAt: new Date()
-    });
+      createdAt: new Date().toISOString(),
+    };
+    upsertUser(adminUser);
+  } else {
+    userIdCounter = Math.max(userIdCounter, Number(existing.id) + 1);
   }
 })();
 
@@ -30,20 +32,22 @@ export async function registerUser(
   password: string,
   role: UserRole = "user"
 ): Promise<AuthTokenResponse> {
-  const existing = users.find(u => u.email.toLowerCase() === email.toLowerCase());
+  const db = getDatabase();
+  const normalizedEmail = email.toLowerCase();
+  const existing = db.users.find((u) => u.email === normalizedEmail);
   if (existing) throw new Error("EMAIL_ALREADY_EXISTS");
 
   const passwordHash = await bcrypt.hash(password, 10);
   const user: User = {
-    id: String(userIdCounter++),
+    id: String(++userIdCounter),
     name,
-    email: email.toLowerCase(),
+    email: normalizedEmail,
     passwordHash,
     role,
-    createdAt: new Date()
+    createdAt: new Date().toISOString(),
   };
 
-  users.push(user);
+  upsertUser(user);
   return createAuthTokenResponse(user);
 }
 
@@ -51,7 +55,9 @@ export async function loginUser(
   email: string,
   password: string
 ): Promise<AuthTokenResponse> {
-  const user = users.find(u => u.email.toLowerCase() === email.toLowerCase());
+  const db = getDatabase();
+  const normalizedEmail = email.toLowerCase();
+  const user = db.users.find((u) => u.email === normalizedEmail);
   if (!user) throw new Error("INVALID_CREDENTIALS");
 
   const match = await bcrypt.compare(password, user.passwordHash);
@@ -63,19 +69,27 @@ export async function loginUser(
 function createAuthTokenResponse(user: User): AuthTokenResponse {
   const payload = { sub: user.id, email: user.email, role: user.role };
   const token = jwt.sign(payload, ENV.JWT_SECRET, { expiresIn: "7d" });
-  return { token, user: { id: user.id, name: user.name, email: user.email, role: user.role }};
+  return { token, user: mapUser(user) };
 }
 
 export function getAllUsers(): User[] {
-  return users;
+  return getDatabase().users;
 }
 
-export function getPublicUsers(): Array<Omit<User, "passwordHash">> {
-  return users.map(({ id, name, email, role, createdAt }) => ({
-    id,
-    name,
-    email,
-    role,
-    createdAt
-  }));
+export function getPublicUsers(): AuthUser[] {
+  return getDatabase().users.map((u) => mapUser(u));
+}
+
+export function getUserProfile(userId: string): AuthUser | null {
+  const user = getDatabase().users.find((u) => u.id === userId);
+  return user ? mapUser(user) : null;
+}
+
+function mapUser(user: User): AuthUser {
+  return {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    role: user.role,
+  };
 }
