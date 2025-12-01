@@ -17,14 +17,15 @@ export default function AuthScreen() {
   const login = useAuthStore((s) => s.login);
   const register = useAuthStore((s) => s.register);
 
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   const handleAuth = async (mode: "login" | "register") => {
-    if (!email || !password) {
-      setError("Ingresa email y contraseña");
+    if (!email || !password || (mode === "register" && !name)) {
+      setError("Completa nombre, email y contraseña");
       return;
     }
 
@@ -35,10 +36,10 @@ export default function AuthScreen() {
       if (mode === "login") {
         await login(email, password);
       } else {
-        await register(email, password);
+        await register(name, email, password);
       }
-    } catch (err) {
-      setError("Ocurrió un error. Inténtalo de nuevo.");
+    } catch (err: any) {
+      setError(err?.message || "Ocurrió un error. Inténtalo de nuevo.");
     } finally {
       setLoading(false);
     }
@@ -56,6 +57,13 @@ export default function AuthScreen() {
         </View>
 
         <View style={styles.form}>
+          <TextInput
+            style={styles.input}
+            placeholder="Nombre"
+            placeholderTextColor={colors.muted}
+            value={name}
+            onChangeText={setName}
+          />
           <TextInput
             style={styles.input}
             placeholder="Email"

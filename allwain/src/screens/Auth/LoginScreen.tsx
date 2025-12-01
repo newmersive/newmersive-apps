@@ -3,11 +3,10 @@ import {
   View,
   Text,
   TextInput,
-  Button,
+  TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
 } from "react-native";
-import { apiPost, AuthResponse } from "../../config/api";
 import { useAuthStore } from "../../store/auth.store";
 import { colors } from "../../theme/colors";
 
@@ -18,7 +17,7 @@ export default function LoginScreen({ navigation }: any) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const setAuth = useAuthStore((s) => s.setAuth);
+  const login = useAuthStore((s) => s.login);
 
   async function handleLogin() {
     if (!email || !password) {
@@ -30,12 +29,7 @@ export default function LoginScreen({ navigation }: any) {
       setLoading(true);
       setError(null);
 
-      const result = await apiPost<AuthResponse>("/auth/login", {
-        email,
-        password,
-      });
-
-      setAuth(result);
+      await login(email, password);
       navigation.replace("MainTabs");
     } catch (err: any) {
       if (err?.message === "INVALID_CREDENTIALS") {

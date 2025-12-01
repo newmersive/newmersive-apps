@@ -3,21 +3,20 @@ import {
   View,
   Text,
   TextInput,
-  Button,
+  TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
 } from "react-native";
-import { apiPost, AuthResponse } from "../../config/api";
+import { colors } from "../../config/theme";
 import { useAuthStore } from "../../store/auth.store";
 
 export default function LoginScreen({ navigation }: any) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const setAuth = useAuthStore((s) => s.setAuth);
+  const login = useAuthStore((s) => s.login);
 
   async function handleLogin() {
     if (!email || !password) {
@@ -28,13 +27,7 @@ export default function LoginScreen({ navigation }: any) {
     try {
       setLoading(true);
       setError(null);
-
-      const result = await apiPost<AuthResponse>("/auth/login", {
-        email,
-        password,
-      });
-
-      setAuth(result);
+      await login(email, password);
       navigation.replace("MainTabs");
     } catch (err: any) {
       if (err?.message === "INVALID_CREDENTIALS") {
@@ -54,6 +47,7 @@ export default function LoginScreen({ navigation }: any) {
       <TextInput
         style={styles.input}
         placeholder="Email"
+        placeholderTextColor={colors.muted}
         autoCapitalize="none"
         keyboardType="email-address"
         value={email}
@@ -63,6 +57,7 @@ export default function LoginScreen({ navigation }: any) {
       <TextInput
         style={styles.input}
         placeholder="Contraseña"
+        placeholderTextColor={colors.muted}
         secureTextEntry
         value={password}
         onChangeText={setPassword}
@@ -70,30 +65,53 @@ export default function LoginScreen({ navigation }: any) {
 
       {error && <Text style={styles.error}>{error}</Text>}
 
-      {loading ? (
-        <ActivityIndicator />
-      ) : (
-        <Button title="Entrar" onPress={handleLogin} />
-      )}
+      <TouchableOpacity
+        style={[styles.primaryButton, loading && styles.buttonDisabled]}
+        onPress={handleLogin}
+        disabled={loading}
+      >
+        {loading ? (
+          <ActivityIndicator color="#FFFFFF" />
+        ) : (
+          <Text style={styles.primaryButtonText}>Entrar</Text>
+        )}
+      </TouchableOpacity>
 
-      <View style={{ height: 12 }} />
-      <Button
-        title="Crear cuenta"
+      <TouchableOpacity
+        style={styles.secondaryButton}
         onPress={() => navigation.navigate("Register")}
-      />
+      >
+        <Text style={styles.secondaryText}>Crear cuenta</Text>
+      </TouchableOpacity>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: "center", padding: 24 },
-  title: { fontSize: 24, fontWeight: "bold", marginBottom: 16 },
+  container: { flex: 1, justifyContent: "center", padding: 24, backgroundColor: colors.background },
+  title: { fontSize: 24, fontWeight: "bold", marginBottom: 16, color: colors.text },
   input: {
     borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 6,
-    padding: 10,
+    borderColor: colors.border,
+    borderRadius: 10,
+    padding: 12,
     marginBottom: 12,
+    color: colors.text,
+    backgroundColor: "#FFFFFF",
   },
-  error: { color: "red", marginBottom: 12 },
+  error: { color: "#B3261E", marginBottom: 12 },
+  primaryButton: {
+    backgroundColor: colors.primary,
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: "center",
+  },
+  primaryButtonText: { color: "#FFFFFF", fontWeight: "700" },
+  buttonDisabled: { opacity: 0.7 },
+  secondaryButton: {
+    marginTop: 12,
+    paddingVertical: 12,
+    alignItems: "center",
+  },
+  secondaryText: { color: colors.primary, fontWeight: "700" },
 });

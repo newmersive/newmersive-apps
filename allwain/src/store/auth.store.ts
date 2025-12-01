@@ -1,45 +1,37 @@
 import { create } from "zustand";
+import { apiPost, AuthResponse } from "../config/api";
 
 export type User = {
-  id: number;
+  id: string;
   name: string;
   email: string;
   role: string;
 };
 
 interface AuthState {
+  token: string | null;
   user: User | null;
-  login: (email: string, password: string) => Promise<User>;
-  register: (email: string, password: string) => Promise<User>;
+  setAuth: (payload: AuthResponse) => void;
+  clearAuth: () => void;
+  login: (email: string, password: string) => Promise<AuthResponse>;
+  register: (name: string, email: string, password: string) => Promise<AuthResponse>;
   logout: () => void;
 }
 
-const MOCK_DELAY = 700;
-
-const buildUser = (email: string): User => ({
-  id: 1,
-  name: "Allwain User",
-  email,
-  role: "Comprador",
-});
-
 export const useAuthStore = create<AuthState>((set) => ({
+  token: null,
   user: null,
-  login: (email, _password) =>
-    new Promise((resolve) => {
-      setTimeout(() => {
-        const mockUser = buildUser(email);
-        set({ user: mockUser });
-        resolve(mockUser);
-      }, MOCK_DELAY);
-    }),
-  register: (email, _password) =>
-    new Promise((resolve) => {
-      setTimeout(() => {
-        const mockUser = buildUser(email);
-        set({ user: mockUser });
-        resolve(mockUser);
-      }, MOCK_DELAY);
-    }),
-  logout: () => set({ user: null }),
+  setAuth: ({ token, user }) => set({ token, user }),
+  clearAuth: () => set({ token: null, user: null }),
+  login: async (email, password) => {
+    const result = await apiPost<AuthResponse>("/auth/login", { email, password });
+    set({ token: result.token, user: result.user });
+    return result;
+  },
+  register: async (name, email, password) => {
+    const result = await apiPost<AuthResponse>("/auth/register", { name, email, password });
+    set({ token: result.token, user: result.user });
+    return result;
+  },
+  logout: () => set({ token: null, user: null }),
 }));
