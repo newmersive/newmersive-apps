@@ -7,12 +7,11 @@ export default function ProfileScreen() {
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
 
-  const profile =
-    user ?? {
-      name: "Usuario TRUEQIA",
-      email: "usuario@trueqia.com",
-      location: "Valencia, España",
-    };
+  const profile = {
+    name: user?.name ?? "Usuario TRUEQIA",
+    email: user?.email ?? "usuario@trueqia.com",
+    location: "Valencia, España",
+  };
 
   return (
     <View style={styles.container}>

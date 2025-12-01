@@ -12,6 +12,7 @@ import { useAuthStore } from "../../store/auth.store";
 import { colors } from "../../theme/colors";
 
 export default function AuthScreen() {
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -21,8 +22,8 @@ export default function AuthScreen() {
   const register = useAuthStore((s) => s.register);
 
   async function handleAuth(action: "login" | "register") {
-    if (!email || !password) {
-      setError("Ingresa email y contraseña");
+    if (!email || !password || (action === "register" && !name)) {
+      setError("Completa nombre, email y contraseña");
       return;
     }
 
@@ -33,10 +34,10 @@ export default function AuthScreen() {
       if (action === "login") {
         await login(email, password);
       } else {
-        await register(email, password);
+        await register(name, email, password);
       }
-    } catch (err) {
-      setError("No se pudo procesar la solicitud (mock)");
+    } catch (err: any) {
+      setError(err?.message || "No se pudo procesar la solicitud");
     } finally {
       setLoading(false);
     }
@@ -51,6 +52,15 @@ export default function AuthScreen() {
         </View>
 
         <View style={styles.form}>
+          <Text style={styles.label}>Nombre</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Tu nombre"
+            placeholderTextColor={colors.muted}
+            value={name}
+            onChangeText={setName}
+          />
+
           <Text style={styles.label}>Email</Text>
           <TextInput
             style={styles.input}
