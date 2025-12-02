@@ -1,23 +1,33 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { View, Text, TextInput, Button, ScrollView } from "react-native";
 import { apiAuthPost } from "../../config/api";
+import { TrueqiaOffer } from "../../store/offers.store";
 
 export default function ContractPreviewScreen({ route }: any) {
+  const offer: TrueqiaOffer | undefined = route.params?.offer;
+
   const [requesterName, setRequesterName] = useState("Solicitante demo");
   const [providerName, setProviderName] = useState("Proveedor demo");
-  const [tokens, setTokens] = useState("10");
+  const [tokens, setTokens] = useState(
+    offer?.tokens !== undefined ? String(offer.tokens) : "10"
+  );
   const [notes, setNotes] = useState("");
   const [contractText, setContractText] = useState<string | null>(null);
 
-  const offerTitle = route.params?.offerTitle || "Oferta demo";
+  const offerTitle = useMemo(
+    () => offer?.title || "Oferta demo",
+    [offer?.title]
+  );
 
   async function generate() {
     const body = {
+      offerId: offer?.id,
       offerTitle,
       requesterName,
       providerName,
       tokens: Number(tokens) || 0,
-      notes,
+      notes: notes.trim(),
+      description: offer?.description,
     };
     try {
       const res = await apiAuthPost<{ contractText: string }>(
@@ -35,6 +45,13 @@ export default function ContractPreviewScreen({ route }: any) {
       <Text style={{ fontSize: 20, marginBottom: 8 }}>
         Contrato IA – {offerTitle}
       </Text>
+
+      <View style={{ marginBottom: 12 }}>
+        <Text style={{ fontWeight: "600" }}>Oferta seleccionada</Text>
+        {offer?.id && <Text>ID: {offer.id}</Text>}
+        {offer?.tokens !== undefined && <Text>Tokens: {offer.tokens}</Text>}
+        {offer?.description && <Text>{offer.description}</Text>}
+      </View>
 
       <Text>Nombre solicitante:</Text>
       <TextInput
