@@ -13,6 +13,21 @@ export interface AuthResponse {
 
 import { useAuthStore } from "../store/auth.store";
 
+async function parseResponse(res: Response) {
+  try {
+    return await res.json();
+  } catch (err) {
+    return null;
+  }
+}
+
+function handleAuthError(status: number) {
+  if (status === 401) {
+    useAuthStore.getState().logout();
+    throw new Error("AUTH_EXPIRED");
+  }
+}
+
 export async function apiPost<T>(path: string, body: unknown): Promise<T> {
   const url = `${API_BASE_URL}${path}`;
 
@@ -22,10 +37,7 @@ export async function apiPost<T>(path: string, body: unknown): Promise<T> {
     body: JSON.stringify(body),
   });
 
-  let data: any = null;
-  try {
-    data = await res.json();
-  } catch {}
+  const data = await parseResponse(res);
 
   if (!res.ok) {
     throw new Error(data?.error || `API_ERROR_${res.status}`);
@@ -46,12 +58,10 @@ export async function apiAuthGet<T>(path: string): Promise<T> {
     },
   });
 
-  let data: any = null;
-  try {
-    data = await res.json();
-  } catch {}
+  const data = await parseResponse(res);
 
   if (!res.ok) {
+    handleAuthError(res.status);
     throw new Error(data?.error || `API_ERROR_${res.status}`);
   }
 

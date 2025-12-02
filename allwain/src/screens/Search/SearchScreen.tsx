@@ -7,6 +7,7 @@ import {
   StyleSheet,
   ScrollView,
 } from "react-native";
+import { useNavigation } from "@react-navigation/native";
 import { colors } from "../../theme/colors";
 
 type SearchItem = {
@@ -25,6 +26,7 @@ const mockResults: SearchItem[] = [
 
 export default function SearchScreen() {
   const [query, setQuery] = useState("");
+  const navigation = useNavigation<any>();
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
@@ -40,6 +42,26 @@ export default function SearchScreen() {
         />
         <TouchableOpacity style={styles.button} activeOpacity={0.9}>
           <Text style={styles.buttonText}>Buscar mejor precio</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.actionsRow}>
+        <TouchableOpacity
+          style={styles.actionCard}
+          onPress={() => navigation.navigate("Scan")}
+          activeOpacity={0.9}
+        >
+          <Text style={styles.actionTitle}>Escanear</Text>
+          <Text style={styles.actionBody}>Lanza el flujo demo conectado al backend</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.actionCard}
+          onPress={() => navigation.navigate("DemoLanding")}
+          activeOpacity={0.9}
+        >
+          <Text style={styles.actionTitle}>Demo AI pricing</Text>
+          <Text style={styles.actionBody}>Prueba el flujo guiado sin salir de Allwain</Text>
         </TouchableOpacity>
       </View>
 
@@ -111,6 +133,21 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     fontSize: 15,
   },
+  actionsRow: {
+    flexDirection: "row",
+    columnGap: 12,
+    marginBottom: 12,
+  },
+  actionCard: {
+    flex: 1,
+    backgroundColor: colors.white,
+    borderRadius: 12,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: colors.line,
+  },
+  actionTitle: { color: colors.dark, fontWeight: "800", marginBottom: 4 },
+  actionBody: { color: colors.muted, fontWeight: "700" },
   resultCard: {
     backgroundColor: colors.white,
     borderRadius: 14,

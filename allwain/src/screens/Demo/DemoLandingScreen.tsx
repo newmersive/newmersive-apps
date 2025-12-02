@@ -20,18 +20,18 @@ export default function DemoLandingScreen({ navigation }: any) {
 
       <TouchableOpacity
         style={styles.secondaryButton}
-        onPress={() => navigation.navigate("Login")}
+        onPress={() => navigation.navigate("Scan")}
         activeOpacity={0.9}
       >
-        <Text style={styles.secondaryButtonText}>Iniciar sesión</Text>
+        <Text style={styles.secondaryButtonText}>Ir al escaneo conectado</Text>
       </TouchableOpacity>
 
       <TouchableOpacity
         style={styles.secondaryButton}
-        onPress={() => navigation.navigate("Register")}
+        onPress={() => navigation.navigate("MainTabs", { screen: "Ofertas" })}
         activeOpacity={0.9}
       >
-        <Text style={styles.secondaryButtonText}>Crear cuenta</Text>
+        <Text style={styles.secondaryButtonText}>Volver a ofertas</Text>
       </TouchableOpacity>
     </View>
   );

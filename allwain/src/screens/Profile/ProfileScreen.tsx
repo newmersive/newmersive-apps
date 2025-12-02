@@ -1,11 +1,13 @@
 import React from "react";
 import { View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView } from "react-native";
+import { useNavigation } from "@react-navigation/native";
 import { useAuthStore } from "../../store/auth.store";
 import { colors } from "../../theme/colors";
 
 export default function ProfileScreen() {
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
+  const navigation = useNavigation<any>();
 
   const displayUser =
     user || ({ name: "Allwain User", email: "demo@allwain.com", role: "Comprador" } as const);
@@ -33,6 +35,14 @@ export default function ProfileScreen() {
 
       <TouchableOpacity style={styles.button} onPress={handleEdit} activeOpacity={0.9}>
         <Text style={styles.buttonText}>Editar perfil (mock)</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={styles.secondaryButton}
+        onPress={() => navigation.navigate("Guests")}
+        activeOpacity={0.9}
+      >
+        <Text style={styles.secondaryButtonText}>Invitados y comisiones</Text>
       </TouchableOpacity>
 
       <TouchableOpacity style={styles.logoutButton} onPress={logout} activeOpacity={0.9}>
@@ -90,6 +100,19 @@ const styles = StyleSheet.create({
     borderColor: colors.dark,
   },
   buttonText: {
+    color: colors.dark,
+    fontWeight: "800",
+  },
+  secondaryButton: {
+    backgroundColor: colors.white,
+    borderRadius: 12,
+    paddingVertical: 12,
+    alignItems: "center",
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: colors.line,
+  },
+  secondaryButtonText: {
     color: colors.dark,
     fontWeight: "800",
   },

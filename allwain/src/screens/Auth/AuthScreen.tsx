@@ -37,7 +37,17 @@ export default function AuthScreen() {
         await register(name, email, password);
       }
     } catch (err: any) {
-      setError(err?.message || "No se pudo procesar la solicitud");
+      if (err?.message === "INVALID_CREDENTIALS") {
+        setError("Credenciales incorrectas");
+      } else if (err?.message === "EMAIL_ALREADY_EXISTS") {
+        setError("El email ya está registrado");
+      } else if (err?.message === "MISSING_FIELDS") {
+        setError("Faltan datos para continuar");
+      } else if (err?.message === "AUTH_EXPIRED") {
+        setError("Sesión expirada, vuelve a entrar");
+      } else {
+        setError("No se pudo procesar la solicitud");
+      }
     } finally {
       setLoading(false);
     }
