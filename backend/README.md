@@ -2,6 +2,8 @@
 
 Backend en Node.js/TypeScript para las experiencias de **TRUEQIA** y **ALLWAIN**. Expone las rutas en `/api` y utiliza un almacenamiento JSON sencillo para usuarios, ofertas y transacciones demo.
 
+> 📄 Consulta el resumen de arquitectura en [docs/backend-architecture.md](../docs/backend-architecture.md).
+
 ## Requisitos
 - Node.js **20.x** (probado con la serie LTS actual)
 - npm **10.x**
