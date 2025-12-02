@@ -24,8 +24,19 @@ export default function OffersListScreen({ navigation }: any) {
       <Text style={{ fontSize: 24, marginBottom: 12 }}>Ofertas</Text>
       <Button title="Recargar" onPress={loadOffers} />
 
-      {loading && <ActivityIndicator style={{ marginTop: 12 }} />}
-      {error && <Text style={{ color: "red" }}>{error}</Text>}
+      {loading && (
+        <View style={styles.statusBox}>
+          <ActivityIndicator />
+          <Text style={styles.statusText}>Cargando ofertas…</Text>
+        </View>
+      )}
+      {error && (
+        <View style={styles.statusBox}>
+          <Text style={[styles.statusText, { color: "#C1121F" }]}>
+            No pudimos cargar las ofertas: {error}
+          </Text>
+        </View>
+      )}
 
       <FlatList
         style={{ marginTop: 12 }}
@@ -37,16 +48,24 @@ export default function OffersListScreen({ navigation }: any) {
             {item.description && (
               <Text style={styles.description}>{item.description}</Text>
             )}
+            {typeof item.tokens === "number" && (
+              <Text style={styles.tokens}>{item.tokens} tokens</Text>
+            )}
             <Button
               title="Previsualizar contrato IA"
               onPress={() =>
                 navigation.navigate("ContractPreview", {
-                  offerTitle: item.title,
+                  offer: item,
                 })
               }
             />
           </View>
         )}
+        ListEmptyComponent={
+          !loading ? (
+            <Text style={styles.statusText}>No hay ofertas disponibles.</Text>
+          ) : null
+        }
       />
     </View>
   );
@@ -62,4 +81,7 @@ const styles = StyleSheet.create({
   },
   title: { fontWeight: "600", marginBottom: 4 },
   description: { color: "#555" },
+  tokens: { color: "#0F6CBD", marginTop: 4, fontWeight: "700" },
+  statusBox: { marginTop: 12 },
+  statusText: { color: "#444", marginTop: 6 },
 });

@@ -5,6 +5,8 @@ export interface TrueqiaOffer {
   id: string;
   title: string;
   description?: string;
+  tokens?: number;
+  owner?: string;
 }
 
 interface OffersState {

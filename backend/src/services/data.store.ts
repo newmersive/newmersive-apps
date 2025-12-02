@@ -14,36 +14,49 @@ const DATA_FILE =
 let cache: Database | null = null;
 
 const defaultData: Database = {
-  users: [],
+  users: [
+    {
+      id: "1",
+      name: "Admin Demo",
+      email: "admin@newmersive.local",
+      passwordHash: "$2a$10$Ljb/uUGMma.UWeFZ1lok6ubGIi2wZoa8dhTAZur6gvVuLMHAuEkTW",
+      role: "admin",
+      createdAt: "2024-01-01T00:00:00.000Z",
+    },
+  ],
   offers: [
     {
       id: "offer-trueqia-1",
-      title: "Edición de video para evento",
-      description: "Montaje completo con ajustes de color y audio.",
+      title: "Trueque: edición de video por fotografías",
+      description:
+        "Producción y montaje completo de video a cambio de una sesión de fotos del evento.",
       tokens: 80,
       owner: "trueqia",
       category: "creativos",
     },
     {
       id: "offer-trueqia-2",
-      title: "Mentoría en IA aplicada",
-      description: "Sesión 1 a 1 para integrar IA en flujos de trabajo.",
+      title: "Mentoría IA ↔ diseño de marca",
+      description:
+        "Sesión 1 a 1 para integrar IA en flujos de trabajo a cambio de un kit de branding sencillo.",
       tokens: 120,
       owner: "trueqia",
       category: "formación",
     },
     {
       id: "offer-allwain-1",
-      title: "Descuento en café de especialidad",
-      description: "Pack degustación 3 orígenes con envío 24h",
+      title: "Compra de lote café de especialidad",
+      description:
+        "Pack degustación 3 orígenes con envío 24h y puntos Allwain acumulados.",
       tokens: 30,
       owner: "allwain",
       category: "gourmet",
     },
     {
       id: "offer-allwain-2",
-      title: "Revisión de etiquetas nutricionales",
-      description: "Analizamos tu código QR y devolvemos sugerencias",
+      title: "Comisión: análisis de etiquetas",
+      description:
+        "Revisión bajo demanda del QR nutricional y sugerencias de mejora para tu línea de producto.",
       tokens: 45,
       owner: "allwain",
       category: "análisis",
