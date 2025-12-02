@@ -1,23 +1,51 @@
-import React from "react";
-import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
+import React, { useState } from "react";
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from "react-native";
+import { getAllwainScanDemo } from "../../api/allwain.api";
 import { colors } from "../../theme/colors";
 
 export default function ScanScreen({ navigation }: any) {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleScan() {
+    try {
+      setLoading(true);
+      setError(null);
+      const result = await getAllwainScanDemo();
+      navigation.navigate("ScanResult", { result });
+    } catch (err: any) {
+      if (err?.message === "AUTH_EXPIRED") {
+        setError("Tu sesión ha expirado. Vuelve a iniciar sesión.");
+      } else {
+        setError("No se ha podido completar el escaneo.");
+      }
+    } finally {
+      setLoading(false);
+    }
+  }
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Escanear producto</Text>
       <Text style={styles.body}>
         Aquí irá la cámara real y el lector de etiquetas / imagen con IA.
-        De momento, simulamos el escaneo con un botón.
+        De momento, conectamos el botón al backend de demo.
       </Text>
 
       <TouchableOpacity
-        style={styles.primaryButton}
-        onPress={() => navigation.navigate("Resultado")}
+        style={[styles.primaryButton, loading && styles.buttonDisabled]}
+        onPress={handleScan}
         activeOpacity={0.9}
+        disabled={loading}
       >
-        <Text style={styles.primaryButtonText}>Simular escaneo y ver resultado</Text>
+        {loading ? (
+          <ActivityIndicator color={colors.white} />
+        ) : (
+          <Text style={styles.primaryButtonText}>Escanear ahora</Text>
+        )}
       </TouchableOpacity>
+
+      {error && <Text style={styles.error}>{error}</Text>}
     </View>
   );
 }
@@ -44,4 +72,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   primaryButtonText: { color: colors.white, fontWeight: "800", textAlign: "center" },
+  buttonDisabled: { opacity: 0.7 },
+  error: { color: colors.dark, fontWeight: "700", marginTop: 12 },
 });
