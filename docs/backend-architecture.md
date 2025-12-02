@@ -17,11 +17,10 @@
   - **AuthUser/AuthTokenResponse**: versión pública sin `passwordHash` + token.
   - **Offer**: `id`, `title`, `description`, `tokens`, `owner` (`trueqia|allwain`), `category`.
   - **Trade**: `id`, `title`, `status`, `participants`, `tokens`.
-- **Relaciones**: usuarios asociados a autenticación/roles; ofertas se filtran por `owner`; trades contienen correos participantes. No hay relaciones en base de datos relacional, solo arrays en memoria/JSON.
+- **Relaciones**: usuarios asociados a roles; ofertas se filtran por `owner`; trades contienen correos participantes. Persistencia en arrays (sin BD relacional).
 - **Almacenamiento** (`data.store.ts`):
-  - Lee/escribe JSON, inicializa ofertas y trades demo.
+  - Lee/escribe JSON, inicializa ofertas y trades demo y crea el usuario admin.
   - Operaciones: `getDatabase`, `persistDatabase`, `resetDatabase`, `upsertUser`, `setUsers`, `getOffersForOwner`, `getTrades`.
-  - Seed automático de admin (`admin@newmersive.local` / `admin123`).
 
 ## Tabla de endpoints (prefijo `/api`)
 | Método | Ruta | Descripción | Modelos | Auth |
@@ -40,8 +39,8 @@
 | GET | /admin/ai/activity | Lista de eventos demo de moderación. | – | Bearer (admin) |
 
 ### Consumo por apps
-- **TrueQIA**: `/auth/register`, `/auth/login`, `/trueqia/offers`, `/trueqia/contracts/preview` (trades aún no conectados en app), `/auth/me` disponible.
-- **Allwain**: `/auth/register`, `/auth/login`; las rutas `/allwain/scan-demo` y `/allwain/offers` están listas pero no se consumen en el código actual.
+- **TrueQIA**: usa `/auth/register`, `/auth/login`, `/trueqia/offers`, `/trueqia/contracts/preview` (trades aún no conectados en UI), `/auth/me` disponible.
+- **Allwain**: usa `/auth/register`, `/auth/login`, `/allwain/scan-demo` (flujo de escaneo) y `/allwain/offers` (pestaña Ofertas).
 
 ## Autenticación y roles
 - Middleware `authRequired`: valida header `Authorization: Bearer <token>`, usa `jwt.verify` con `ENV.JWT_SECRET`; si es válido adjunta `{id,email,role}` en `req.user`.
@@ -49,8 +48,13 @@
 - Tokens se firman a 7 días (`registerUser`/`loginUser`) y contienen `sub`, `email`, `role`.
 - Roles permitidos en registro: `user`, `company`, `admin`, `buyer` (fallback a `user`).
 
+## Seeds y coherencia de datos
+- Archivo `data/database.json` y `data.store.ts` comparten las mismas semillas por defecto (admin + 4 ofertas divididas entre owners y 2 trades demo).
+- Los endpoints `listOffers` filtran por owner, garantizando que Allwain y TrueQIA no comparten ofertas.
+- No hay refresco automático de datos; si se modifica el JSON manualmente es necesario reiniciar para recargar cache.
+
 ## Tests
 - Suite en `tests/auth.spec.ts` con helper `TestClient`:
   - Cubre registro y login (estado/estructura del token).
   - Verifica middleware: rechazo sin token, token inválido, bloqueo de usuario no admin y acceso permitido a admin.
-- **Huecos**: no hay pruebas para rutas `trueqia/*`, `allwain/*`, persistencia, ni generación de contratos/moderación.
+- Huecos: sin pruebas para rutas `trueqia/*`, `allwain/*`, persistencia ni generación de contratos/moderación.
