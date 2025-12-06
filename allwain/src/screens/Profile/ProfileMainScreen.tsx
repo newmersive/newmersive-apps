@@ -5,10 +5,10 @@ import { colors } from "../../theme/colors";
 
 export default function ProfileMainScreen({ navigation }: any) {
   const user = useAuthStore((s) => s.user);
-  const clearAuth = useAuthStore((s) => s.clearAuth);
+  const logout = useAuthStore((s) => s.logout);
 
-  function logout() {
-    clearAuth();
+  async function handleLogout() {
+    await logout();
     navigation.replace("Login");
   }
 
@@ -30,7 +30,7 @@ export default function ProfileMainScreen({ navigation }: any) {
         </>
       )}
 
-      <TouchableOpacity style={[styles.secondaryButton, { marginTop: 12 }]} onPress={logout} activeOpacity={0.9}>
+      <TouchableOpacity style={[styles.secondaryButton, { marginTop: 12 }]} onPress={handleLogout} activeOpacity={0.9}>
         <Text style={styles.secondaryButtonText}>Cerrar sesión</Text>
       </TouchableOpacity>
     </View>

@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { View, Text, TextInput, Button, ScrollView } from "react-native";
+import { View, Text, TextInput, Button, ScrollView, ActivityIndicator } from "react-native";
 import { apiAuthPost } from "../../config/api";
 import { TrueqiaOffer } from "../../store/offers.store";
 
@@ -13,6 +13,8 @@ export default function ContractPreviewScreen({ route }: any) {
   );
   const [notes, setNotes] = useState("");
   const [contractText, setContractText] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const offerTitle = useMemo(
     () => offer?.title || "Oferta demo",
@@ -20,6 +22,8 @@ export default function ContractPreviewScreen({ route }: any) {
   );
 
   async function generate() {
+    setError(null);
+    setLoading(true);
     const body = {
       offerId: offer?.id,
       offerTitle,
@@ -35,8 +39,15 @@ export default function ContractPreviewScreen({ route }: any) {
         body
       );
       setContractText(res.contractText);
-    } catch (err) {
-      setContractText("Error generando contrato demo.");
+    } catch (err: any) {
+      if (err?.message === "SESSION_EXPIRED") {
+        setError("Sesión expirada, vuelve a iniciar sesión.");
+      } else {
+        setError("No se pudo generar el contrato demo.");
+      }
+      setContractText(null);
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -83,7 +94,18 @@ export default function ContractPreviewScreen({ route }: any) {
         multiline
       />
 
-      <Button title="Generar contrato demo" onPress={generate} />
+      <Button title="Generar contrato demo" onPress={generate} disabled={loading} />
+
+      {loading && (
+        <View style={{ marginTop: 12 }}>
+          <ActivityIndicator />
+          <Text style={{ marginTop: 6 }}>Solicitando contrato…</Text>
+        </View>
+      )}
+
+      {error && (
+        <Text style={{ color: "#B3261E", marginTop: 8 }}>{error}</Text>
+      )}
 
       {contractText && (
         <View style={{ marginTop: 16 }}>
@@ -91,6 +113,9 @@ export default function ContractPreviewScreen({ route }: any) {
             Resultado:
           </Text>
           <Text>{contractText}</Text>
+          <Text style={{ marginTop: 8, color: "#444" }}>
+            Próximamente podrás copiar/compartir este contrato.
+          </Text>
         </View>
       )}
     </ScrollView>

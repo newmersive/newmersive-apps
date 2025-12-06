@@ -4,10 +4,10 @@ import { useAuthStore } from "../../store/auth.store";
 
 export default function ProfileMainScreen({ navigation }: any) {
   const user = useAuthStore((s) => s.user);
-  const clearAuth = useAuthStore((s) => s.clearAuth);
+  const logout = useAuthStore((s) => s.logout);
 
-  function logout() {
-    clearAuth();
+  async function handleLogout() {
+    await logout();
     navigation.replace("Login");
   }
 
@@ -28,7 +28,7 @@ export default function ProfileMainScreen({ navigation }: any) {
       )}
 
       <View style={{ height: 12 }} />
-      <Button title="Cerrar sesión" onPress={logout} />
+      <Button title="Cerrar sesión" onPress={handleLogout} />
     </View>
   );
 }

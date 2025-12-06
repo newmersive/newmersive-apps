@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useCallback } from "react";
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   FlatList,
   StyleSheet,
 } from "react-native";
+import { useFocusEffect } from "@react-navigation/native";
 import { useOffersStore } from "../../store/offers.store";
 
 export default function OffersListScreen({ navigation }: any) {
@@ -15,9 +16,11 @@ export default function OffersListScreen({ navigation }: any) {
   const error = useOffersStore((s) => s.error);
   const loadOffers = useOffersStore((s) => s.loadOffers);
 
-  useEffect(() => {
-    loadOffers();
-  }, [loadOffers]);
+  useFocusEffect(
+    useCallback(() => {
+      loadOffers();
+    }, [loadOffers])
+  );
 
   return (
     <View style={{ flex: 1, padding: 24 }}>
@@ -33,8 +36,11 @@ export default function OffersListScreen({ navigation }: any) {
       {error && (
         <View style={styles.statusBox}>
           <Text style={[styles.statusText, { color: "#C1121F" }]}>
-            No pudimos cargar las ofertas: {error}
+            {error === "SESSION_EXPIRED"
+              ? "Sesión expirada, vuelve a iniciar sesión."
+              : `No pudimos cargar las ofertas: ${error}`}
           </Text>
+          <Button title="Reintentar" onPress={loadOffers} />
         </View>
       )}
 

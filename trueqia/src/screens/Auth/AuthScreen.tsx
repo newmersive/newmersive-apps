@@ -16,12 +16,21 @@ import { useAuthStore } from "../../store/auth.store";
 export default function AuthScreen() {
   const login = useAuthStore((s) => s.login);
   const register = useAuthStore((s) => s.register);
+  const sessionMessage = useAuthStore((s) => s.sessionMessage);
+  const clearSessionMessage = useAuthStore((s) => s.clearSessionMessage);
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  React.useEffect(() => {
+    if (sessionMessage) {
+      setError(sessionMessage);
+      clearSessionMessage();
+    }
+  }, [sessionMessage, clearSessionMessage]);
 
   const handleAuth = async (mode: "login" | "register") => {
     if (!email || !password || (mode === "register" && !name)) {

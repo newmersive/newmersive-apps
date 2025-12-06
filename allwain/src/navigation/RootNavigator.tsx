@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { useAuthStore } from "../store/auth.store";
 import AuthScreen from "../screens/Auth/AuthScreen";
@@ -9,6 +9,7 @@ import GuestsScreen from "../screens/Guests/GuestsScreen";
 import DemoLandingScreen from "../screens/Demo/DemoLandingScreen";
 import DemoScanResultScreen from "../screens/Demo/DemoScanResultScreen";
 import { colors } from "../theme/colors";
+import { ActivityIndicator, View } from "react-native";
 
 const Stack = createNativeStackNavigator();
 
@@ -34,7 +35,23 @@ function AppNavigator() {
 
 export default function RootNavigator() {
   const user = useAuthStore((s) => s.user);
+  const hydrated = useAuthStore((s) => s.hydrated);
+  const restoreSession = useAuthStore((s) => s.restoreSession);
   const isLogged = Boolean(user);
+
+  useEffect(() => {
+    if (!hydrated) {
+      restoreSession();
+    }
+  }, [hydrated, restoreSession]);
+
+  if (!hydrated) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: colors.salmon }}>
+        <ActivityIndicator color={colors.dark} />
+      </View>
+    );
+  }
 
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>

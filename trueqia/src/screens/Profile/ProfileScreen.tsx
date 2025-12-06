@@ -1,17 +1,24 @@
-import React from "react";
-import { View, Text, StyleSheet, TouchableOpacity, Alert } from "react-native";
+import React, { useState } from "react";
+import { View, Text, StyleSheet, TouchableOpacity, Alert, ActivityIndicator } from "react-native";
 import { colors } from "../../config/theme";
 import { useAuthStore } from "../../store/auth.store";
 
 export default function ProfileScreen() {
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
+  const [loading, setLoading] = useState(false);
 
   const profile = {
     name: user?.name ?? "Usuario TRUEQIA",
     email: user?.email ?? "usuario@trueqia.com",
-    location: "Valencia, España",
+    role: user?.role ?? "colaborador",
   };
+
+  async function handleLogout() {
+    setLoading(true);
+    await logout();
+    setLoading(false);
+  }
 
   return (
     <View style={styles.container}>
@@ -24,8 +31,8 @@ export default function ProfileScreen() {
         <Text style={styles.label}>Email</Text>
         <Text style={styles.value}>{profile.email}</Text>
 
-        <Text style={styles.label}>Ubicación</Text>
-        <Text style={styles.value}>{profile.location}</Text>
+        <Text style={styles.label}>Rol</Text>
+        <Text style={styles.value}>{profile.role}</Text>
       </View>
 
       <TouchableOpacity
@@ -35,8 +42,12 @@ export default function ProfileScreen() {
         <Text style={styles.secondaryText}>Editar (mock)</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.button} onPress={logout}>
-        <Text style={styles.buttonText}>Cerrar sesión</Text>
+      <TouchableOpacity style={styles.button} onPress={handleLogout} disabled={loading}>
+        {loading ? (
+          <ActivityIndicator color="#FFF" />
+        ) : (
+          <Text style={styles.buttonText}>Cerrar sesión</Text>
+        )}
       </TouchableOpacity>
     </View>
   );
