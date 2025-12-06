@@ -13,6 +13,15 @@ export interface AuthResponse {
 
 import { useAuthStore } from "../store/auth.store";
 
+function handleUnauthorized(status: number, message?: string) {
+  if (status === 401) {
+    useAuthStore
+      .getState()
+      .logout(message || "Sesión expirada, vuelve a iniciar sesión.");
+    throw new Error("SESSION_EXPIRED");
+  }
+}
+
 export async function apiPost<T>(path: string, body: unknown): Promise<T> {
   const url = `${API_BASE_URL}${path}`;
 
@@ -28,7 +37,8 @@ export async function apiPost<T>(path: string, body: unknown): Promise<T> {
   } catch {}
 
   if (!res.ok) {
-    throw new Error(data?.error || `API_ERROR_${res.status}`);
+    handleUnauthorized(res.status, data?.message || data?.error);
+    throw new Error(data?.message || data?.error || `API_ERROR_${res.status}`);
   }
 
   return data as T;
@@ -52,7 +62,8 @@ export async function apiAuthGet<T>(path: string): Promise<T> {
   } catch {}
 
   if (!res.ok) {
-    throw new Error(data?.error || `API_ERROR_${res.status}`);
+    handleUnauthorized(res.status, data?.message || data?.error);
+    throw new Error(data?.message || data?.error || `API_ERROR_${res.status}`);
   }
 
   return data as T;
@@ -77,7 +88,8 @@ export async function apiAuthPost<T>(path: string, body: unknown): Promise<T> {
   } catch {}
 
   if (!res.ok) {
-    throw new Error(data?.error || `API_ERROR_${res.status}`);
+    handleUnauthorized(res.status, data?.message || data?.error);
+    throw new Error(data?.message || data?.error || `API_ERROR_${res.status}`);
   }
 
   return data as T;

@@ -87,6 +87,18 @@ function ensureDataDir() {
   }
 }
 
+function ensureDefaultAdmin(users: User[]): User[] {
+  const hasAdmin = users.some((u) => u.email === defaultData.users[0].email);
+  return hasAdmin ? users : [...users, { ...defaultData.users[0] }];
+}
+
+function mergeDefaultOffers(offers: Offer[]): Offer[] {
+  const missingDefaults = defaultData.offers.filter(
+    (defaultOffer) => !offers.some((offer) => offer.id === defaultOffer.id)
+  );
+  return [...offers, ...missingDefaults];
+}
+
 function loadFromDisk(): Database {
   ensureDataDir();
   if (!fs.existsSync(DATA_FILE)) {
@@ -99,8 +111,8 @@ function loadFromDisk(): Database {
 
   const parsed = JSON.parse(raw) as Database;
   return {
-    users: parsed.users || [],
-    offers: parsed.offers || defaultData.offers,
+    users: ensureDefaultAdmin(parsed.users || []),
+    offers: mergeDefaultOffers(parsed.offers || defaultData.offers),
     trades: parsed.trades || defaultData.trades,
   };
 }
@@ -124,8 +136,8 @@ export function persistDatabase() {
 
 export function resetDatabase(data: Partial<Database>) {
   cache = {
-    users: data.users ?? [],
-    offers: data.offers ?? defaultData.offers,
+    users: ensureDefaultAdmin(data.users ?? []),
+    offers: mergeDefaultOffers(data.offers ?? defaultData.offers),
     trades: data.trades ?? defaultData.trades,
   };
   persistDatabase();

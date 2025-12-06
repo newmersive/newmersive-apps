@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { ScrollView, Text, StyleSheet, TouchableOpacity, ActivityIndicator, View } from "react-native";
 import { getAllwainOffers, Offer } from "../../api/allwain.api";
 import { colors } from "../../theme/colors";
+import { useFocusEffect } from "@react-navigation/native";
 
 export default function DealsScreen({ navigation }: any) {
   const [offers, setOffers] = useState<Offer[]>([]);
@@ -15,7 +16,7 @@ export default function DealsScreen({ navigation }: any) {
       const data = await getAllwainOffers();
       setOffers(data);
     } catch (err: any) {
-      if (err?.message === "AUTH_EXPIRED") {
+      if (err?.message === "SESSION_EXPIRED") {
         setError("Sesión expirada. Vuelve a iniciar sesión.");
       } else {
         setError("No se pudieron cargar las ofertas.");
@@ -28,6 +29,12 @@ export default function DealsScreen({ navigation }: any) {
   useEffect(() => {
     loadOffers();
   }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadOffers();
+    }, [])
+  );
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>

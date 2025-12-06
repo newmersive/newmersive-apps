@@ -23,8 +23,10 @@ async function parseResponse(res: Response) {
 
 function handleAuthError(status: number) {
   if (status === 401) {
-    useAuthStore.getState().logout();
-    throw new Error("AUTH_EXPIRED");
+    useAuthStore
+      .getState()
+      .logout("Sesión expirada, vuelve a iniciar sesión.");
+    throw new Error("SESSION_EXPIRED");
   }
 }
 
@@ -40,7 +42,7 @@ export async function apiPost<T>(path: string, body: unknown): Promise<T> {
   const data = await parseResponse(res);
 
   if (!res.ok) {
-    throw new Error(data?.error || `API_ERROR_${res.status}`);
+    throw new Error(data?.message || data?.error || `API_ERROR_${res.status}`);
   }
 
   return data as T;
@@ -62,7 +64,7 @@ export async function apiAuthGet<T>(path: string): Promise<T> {
 
   if (!res.ok) {
     handleAuthError(res.status);
-    throw new Error(data?.error || `API_ERROR_${res.status}`);
+    throw new Error(data?.message || data?.error || `API_ERROR_${res.status}`);
   }
 
   return data as T;

@@ -19,7 +19,7 @@
   - **Trade**: `id`, `title`, `status`, `participants`, `tokens`.
 - **Relaciones**: usuarios asociados a roles; ofertas se filtran por `owner`; trades contienen correos participantes. Persistencia en arrays (sin BD relacional).
 - **Almacenamiento** (`data.store.ts`):
-  - Lee/escribe JSON, inicializa ofertas y trades demo y crea el usuario admin.
+  - Lee/escribe JSON, inicializa ofertas y trades demo y asegura que siempre exista el usuario admin + 4 ofertas base (si faltan en el JSON se reinyectan).
   - Operaciones: `getDatabase`, `persistDatabase`, `resetDatabase`, `upsertUser`, `setUsers`, `getOffersForOwner`, `getTrades`.
 
 ## Tabla de endpoints (prefijo `/api`)
@@ -39,12 +39,12 @@
 | GET | /admin/ai/activity | Lista de eventos demo de moderación. | – | Bearer (admin) |
 
 ### Consumo por apps
-- **TrueQIA**: usa `/auth/register`, `/auth/login`, `/trueqia/offers`, `/trueqia/contracts/preview` (trades aún no conectados en UI), `/auth/me` disponible.
+- **TrueQIA**: usa `/auth/register`, `/auth/login`, `/trueqia/offers`, `/trueqia/contracts/preview`, `/trueqia/trades` y `/auth/me`.
 - **Allwain**: usa `/auth/register`, `/auth/login`, `/allwain/scan-demo` (flujo de escaneo) y `/allwain/offers` (pestaña Ofertas).
 
 ## Autenticación y roles
-- Middleware `authRequired`: valida header `Authorization: Bearer <token>`, usa `jwt.verify` con `ENV.JWT_SECRET`; si es válido adjunta `{id,email,role}` en `req.user`.
-- Middleware `adminOnly`: requiere `req.user.role === "admin"`; responde 403 en caso contrario.
+- Middleware `authRequired`: valida header `Authorization: Bearer <token>`, usa `jwt.verify` con `ENV.JWT_SECRET`; si es válido adjunta `{id,email,role}` en `req.user`. Respuestas de error consistentes: `{ code, message }` para 401 y 403.
+- Middleware `adminOnly`: requiere `req.user.role === "admin"`; responde 403 en caso contrario con `{ code, message }`.
 - Tokens se firman a 7 días (`registerUser`/`loginUser`) y contienen `sub`, `email`, `role`.
 - Roles permitidos en registro: `user`, `company`, `admin`, `buyer` (fallback a `user`).
 

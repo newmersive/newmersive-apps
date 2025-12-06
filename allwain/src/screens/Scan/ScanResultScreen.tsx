@@ -21,7 +21,7 @@ export default function ScanResultScreen({ navigation, route }: ScanResultProps)
       const res = await getAllwainScanDemo();
       setData(res);
     } catch (err: any) {
-      if (err?.message === "AUTH_EXPIRED") {
+      if (err?.message === "SESSION_EXPIRED") {
         setError("Sesión expirada. Inicia sesión de nuevo.");
       } else {
         setError("No se ha podido completar el escaneo.");

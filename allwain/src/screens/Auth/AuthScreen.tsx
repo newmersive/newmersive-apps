@@ -20,6 +20,15 @@ export default function AuthScreen() {
 
   const login = useAuthStore((s) => s.login);
   const register = useAuthStore((s) => s.register);
+  const sessionMessage = useAuthStore((s) => s.sessionMessage);
+  const clearSessionMessage = useAuthStore((s) => s.clearSessionMessage);
+
+  React.useEffect(() => {
+    if (sessionMessage) {
+      setError(sessionMessage);
+      clearSessionMessage();
+    }
+  }, [sessionMessage, clearSessionMessage]);
 
   async function handleAuth(action: "login" | "register") {
     if (!email || !password || (action === "register" && !name)) {
@@ -43,7 +52,7 @@ export default function AuthScreen() {
         setError("El email ya está registrado");
       } else if (err?.message === "MISSING_FIELDS") {
         setError("Faltan datos para continuar");
-      } else if (err?.message === "AUTH_EXPIRED") {
+      } else if (err?.message === "SESSION_EXPIRED") {
         setError("Sesión expirada, vuelve a entrar");
       } else {
         setError("No se pudo procesar la solicitud");
