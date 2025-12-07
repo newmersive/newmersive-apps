@@ -1,51 +1,21 @@
-import React, { useEffect, useMemo, useState } from "react";
-import {
-  ActivityIndicator,
-  FlatList,
-  StyleSheet,
-  Text,
-  View,
-  TouchableOpacity,
-} from "react-native";
-import { apiAuthGet } from "../../config/api";
+import React, { useEffect, useState } from "react";
+import { View, Text, ActivityIndicator, FlatList, StyleSheet } from "react-native";
+import { apiAuthGet, AllwainOffer } from "../../config/api";
 import { colors } from "../../theme/colors";
 
-interface Offer {
-  id: string;
-  title: string;
-  description: string;
-  tokens: number;
-  owner: string;
-  category: string;
-}
-
-interface OffersResponse {
-  items: Offer[];
-}
-
 export default function OffersScreen() {
-  const [offers, setOffers] = useState<Offer[]>([]);
+  const [offers, setOffers] = useState<AllwainOffer[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  const hasOffers = useMemo(() => offers.length > 0, [offers]);
 
   async function loadOffers() {
     try {
       setLoading(true);
       setError(null);
-      const data = await apiAuthGet<OffersResponse>("/allwain/offers");
-      setOffers(data?.items || []);
-    } catch (err: any) {
-      console.error("Error al cargar ofertas", err);
-      if (err?.status === 401 || err?.message === "UNAUTHORIZED") {
-        setError("Sesión expirada o inválida, vuelve a iniciar sesión.");
-      } else {
-        setError(
-          err?.message ||
-            "No se pudieron cargar las ofertas, revisa tu conexión o la URL base."
-        );
-      }
+      const res = await apiAuthGet<{ items: AllwainOffer[] }>("/allwain/offers");
+      setOffers(res.items || []);
+    } catch (err) {
+      setError("No se pudieron cargar las ofertas");
     } finally {
       setLoading(false);
     }
@@ -57,41 +27,33 @@ export default function OffersScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Ofertas de tiendas</Text>
-        <TouchableOpacity
-          style={[styles.button, loading && styles.buttonDisabled]}
-          onPress={loadOffers}
-          disabled={loading}
-          activeOpacity={0.9}
-        >
-          <Text style={styles.buttonText}>Recargar</Text>
-        </TouchableOpacity>
-      </View>
-      <Text style={styles.subtitle}>
-        Datos obtenidos de /allwain/offers (requiere usuario autenticado).
-      </Text>
+      <Text style={styles.title}>Ofertas de tiendas</Text>
 
-      {loading && (
-        <ActivityIndicator style={{ marginTop: 16 }} color={colors.button} />
-      )}
-
+      {loading && <ActivityIndicator />}
       {error && <Text style={styles.error}>{error}</Text>}
 
-      {!loading && !error && !hasOffers && (
-        <Text style={styles.empty}>No hay ofertas disponibles.</Text>
+      {!loading && offers.length === 0 && (
+        <Text style={styles.muted}>
+          No hay ofertas disponibles por ahora. Pulsa recargar para intentar de
+          nuevo.
+        </Text>
       )}
 
       <FlatList
         data={offers}
+        onRefresh={loadOffers}
+        refreshing={loading}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={{ paddingBottom: 24 }}
         renderItem={({ item }) => (
-          <View style={styles.offerCard}>
+          <View style={styles.card}>
             <Text style={styles.offerTitle}>{item.title}</Text>
-            <Text style={styles.offerDescription}>{item.description}</Text>
-            <Text style={styles.offerMeta}>Categoría: {item.category}</Text>
-            <Text style={styles.offerMeta}>Tokens: {item.tokens}</Text>
+            <Text style={styles.muted}>{item.description}</Text>
+            {item.price && <Text style={styles.price}>€{item.price}</Text>}
+            {item.meta?.distanceKm && (
+              <Text style={styles.muted}>
+                Distancia: {item.meta["distanceKm"]} km
+              </Text>
+            )}
           </View>
         )}
       />
@@ -100,33 +62,18 @@ export default function OffersScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 24, backgroundColor: colors.background },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  title: { fontSize: 24, fontWeight: "bold", color: colors.text },
-  subtitle: { marginTop: 4, color: colors.text },
-  error: { color: colors.danger, marginTop: 12 },
-  empty: { marginTop: 16, color: colors.text },
-  offerCard: {
-    marginTop: 16,
+  container: { flex: 1, padding: 24, gap: 12 },
+  title: { fontSize: 24, fontWeight: "700", color: colors.text },
+  error: { color: colors.danger },
+  muted: { color: colors.mutedText },
+  card: {
     padding: 12,
     borderWidth: 1,
     borderColor: colors.cardBorder,
-    borderRadius: 10,
+    borderRadius: 8,
     backgroundColor: colors.card,
+    marginBottom: 10,
   },
-  offerTitle: { fontSize: 18, fontWeight: "600", marginBottom: 4, color: colors.text },
-  offerDescription: { color: colors.text, marginBottom: 6 },
-  offerMeta: { color: colors.text },
-  button: {
-    backgroundColor: colors.button,
-    paddingVertical: 8,
-    paddingHorizontal: 14,
-    borderRadius: 10,
-  },
-  buttonDisabled: { opacity: 0.8 },
-  buttonText: { color: colors.buttonText, fontWeight: "700" },
+  offerTitle: { fontSize: 16, fontWeight: "600", color: colors.text },
+  price: { color: colors.primary, marginTop: 4, fontWeight: "700" },
 });

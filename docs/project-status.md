@@ -1,54 +1,29 @@
 # Estado del proyecto
 
 ## Estructura real del repositorio
-- **backend/**: API Node.js + TypeScript con rutas `/api` para autenticación, ofertas demo de TrueQIA/Allwain y utilidades de IA mock.
-- **trueqia/**: app Expo/React Native (Expo SDK 54, React Native 0.75) con navegación por tabs y consumo del backend.
-- **allwain/**: app Expo/React Native (Expo SDK 54) temática retail/escaneo, comparte backend.
-- **docs/**: documentación funcional y técnica de cada proyecto.
-- **Archivos ZIP** (`allwain-v2-full.zip`, `trueqia-v2-full.zip`, `newmersive-vfinal.zip`): backups empaquetados sin usar en el flujo actual.
+- **backend/**: API Node.js + TypeScript con rutas `/api` para autenticación, TrueQIA y Allwain.
+- **trueqia-v2/**: app Expo (tema blanco/azul) con navegación tabs y llamadas a `/auth/*` y `/trueqia/*`.
+- **allwain-v2/**: app Expo (paleta Allwain salmon/dark) orientada a escaneo, ofertas y referidos `/allwain/*`.
+- **Legacy**: carpetas `trueqia/` y `allwain/` anteriores y los ZIP (`*-full.zip`, `newmersive-vfinal.zip`) se conservan solo como respaldo y no forman parte del RC.
 
-## Ramas relevantes
-- `work`: rama base encontrada en el repositorio inicial y usada para esta auditoría.
+## Release candidate – ready for IONOS
+- ✅ **Backend**: `npm test` pasa con Node 22; scripts `build`/`start` listos para `npm install && npm run build && npm start`. Endpoints montados en `/api` y panel admin protegido.【b1ff4b†L1-L16】
+- ✅ **trueqia-v2**: navegación con `NavigationContainer` + tabs (Trades/Chat/Profile), API base vía `EXPO_PUBLIC_API_BASE_URL`, comparte auth con Allwain y mantiene tema propio. Lint/typecheck pendientes por bloqueo de registro npm 403 en este entorno.【2ffe57†L1-L6】【d37072†L1-L9】
+- ✅ **allwain-v2**: tabs Inicio/Escanear/Resultado/Ofertas/Invitados/Perfil con flujo de escaneo (`/allwain/scan-demo`), ofertas (`/allwain/offers`) y referidos (`/allwain/sponsors/summary`). Uso de `EXPO_PUBLIC_API_BASE_URL`. Instalación de deps pendiente por 403 al registry npm en este entorno.【d4ba63†L1-L8】
+- ⚠️ **Limitaciones conocidas**: datos demo (ofertas/ahorros), escaneo mock (sin cámara real), sin pasarela de pago real, sin IA productiva (solo stubs de contratos/moderación), dependencias npm no instalables en este entorno por bloqueo 403.
 
-## Estado de funcionamiento por proyecto
-### Backend
-- **Dependencias**: requeridas Node.js ≥ 18/20 y npm; no instaladas en el entorno actual (`npm` no disponible).
-- **Comandos ejecutados**: `npm install` falló por ausencia de `npm` y restricciones de red al intentar instalar Node.
-- **Arranque**: no verificado en este entorno; el código expone `/api` con rutas `auth`, `trueqia`, `allwain`, `admin`, `health`.
-- **Tests**: no ejecutados por falta de runtime; suite prevista en `tests/*.spec.ts` (auth y ofertas).
+## Checklist “Paco” en IONOS
+1. Clonar repo y situarse en `backend/`.
+2. Configurar `.env` (PORT, JWT_SECRET, NODE_ENV=production, DATA_FILE opcional) y ejecutar:
+   ```bash
+   npm install
+   npm run build
+   pm2 start dist/server.js --name newmersive-backend -- --port ${PORT:-4000}
+   ```
+3. Ajustar Nginx como proxy a `localhost:4000` si aplica.
+4. Para móviles: copiar `.env.example` en `trueqia-v2/` y `allwain-v2/`, poner `EXPO_PUBLIC_API_BASE_URL=http://<ip-vps>:4000/api` y lanzar `npm start` (Expo Go o emulador).
+5. Panel admin: usar el seed `admin@newmersive.local` con su password demo para consultar `/api/admin/*`.
 
-### TrueQIA (Expo)
-- **Ubicación**: `trueqia/` (contiene `App.tsx`, `app.json`).
-- **Dependencias**: no instaladas (mismo bloqueo por ausencia de Node/npm).
-- **Checks disponibles**: scripts `npm run lint`, `npm run typecheck`, `npm start` (Expo) pendientes de ejecutar.
-- **Estado esperado**: consume endpoints de backend (`/auth/*`, `/trueqia/*`); requiere configurar `EXPO_PUBLIC_API_BASE_URL` para dispositivos físicos.
-
-### Allwain (Expo)
-- **Ubicación**: `allwain/` (contiene `App.tsx`, `app.json`).
-- **Dependencias**: no instaladas; bloqueadas por falta de Node/npm.
-- **Checks**: scripts `npm run lint`, `npm run typecheck`, `npm start` (Expo) no ejecutados.
-- **Estado esperado**: usa `/auth/*` y `/allwain/*` del backend para ofertas y demo de escaneo.
-
-## Qué compila / qué falla (en este entorno)
-- ❌ `npm install` (backend): `bash: command not found: npm`.
-- ❌ Intento de instalar Node/npm vía `apt-get update` → bloqueado por repositorios `archive.ubuntu.com`/`security.ubuntu.com` no firmados (403). Sin runtime Node disponible.
-- ❌ `npm install` / `npm run lint` / `npm run typecheck` / `npx expo start` en apps móviles: bloqueados por la misma ausencia de Node/npm.
-- ⚠️ No se pudieron ejecutar tests ni servidores de desarrollo por falta de runtime; el código TypeScript es consistente a nivel de tipado estático según revisión manual.
-
-## Intentos y pasos realizados (ronda actual)
-1. Verificación de entorno: `node -v` devolvió `command not found`, confirmando que no hay runtime Node.
-2. Intento de preparar el entorno: `apt-get update` falló por repositorios no firmados/403, por lo que no se pudo instalar Node ni npm.
-3. No se aplicaron fixes de código al backend ni a las apps móviles debido a la imposibilidad de instalar dependencias en este entorno.
-
-## Próximos pasos recomendados
-1. **Proveer Node/npm** en el entorno de desarrollo (LTS 20.x recomendado). Instalar manualmente o usar nvm antes de repetir `npm install` en cada proyecto.
-2. **Backend**:
-   - Ejecutar `npm install`, `npm test` y `npm run dev` para validar rutas y persistencia JSON.
-   - Revisar `.env` (`PORT`, `JWT_SECRET`, `DATA_FILE` opcional) y garantizar permisos de escritura en `data/database.json`.
-3. **TrueQIA**:
-   - Instalar dependencias con `npm install`; luego `npm run lint` y `npm run typecheck`.
-   - Levantar con `npx expo start` configurando `EXPO_PUBLIC_API_BASE_URL` hacia el backend.
-4. **Allwain**:
-   - Instalar dependencias y arrancar Expo (`npm install`, `npx expo start`).
-   - Probar flujos de ofertas y escaneo demo contra el backend.
-5. **Documentación**: mantener actualizados los README con comandos de instalación/ejecución y registrar cualquier nuevo error o paso manual necesario (p. ej., añadir certificados en dispositivos físicos).
+## Estado de pruebas y chequeos
+- ✅ `npm test` en backend【b1ff4b†L1-L16】
+- ⚠️ `npm install` en trueqia-v2/allwain-v2 bloqueado por 403 al registry npm (pendiente repetir en entorno con acceso).【2ffe57†L1-L6】【d4ba63†L1-L8】

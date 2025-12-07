@@ -1,79 +1,44 @@
 import React from "react";
-import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import { View, Text, Button } from "react-native";
 import { useAuthStore } from "../../store/auth.store";
-import { colors } from "../../theme/colors";
+import { CompositeScreenProps } from "@react-navigation/native";
+import { BottomTabScreenProps } from "@react-navigation/bottom-tabs";
+import { NativeStackScreenProps } from "@react-navigation/native-stack";
+import { MainTabParamList } from "../../navigation/types";
+import { RootStackParamList } from "../../navigation/types";
 
-export default function ProfileMainScreen({ navigation }: any) {
+type Props = CompositeScreenProps<
+  BottomTabScreenProps<MainTabParamList, "Perfil">,
+  NativeStackScreenProps<RootStackParamList>
+>;
+
+export default function ProfileMainScreen({ navigation }: Props) {
   const user = useAuthStore((s) => s.user);
-  const logout = useAuthStore((s) => s.logout);
+  const clearAuth = useAuthStore((s) => s.clearAuth);
 
-  async function handleLogout() {
-    await logout();
+  function logout() {
+    clearAuth();
+    navigation.replace("Login");
   }
 
   return (
-    <View style={styles.container}>
-      <View style={styles.card}>
-        <Text style={styles.title}>Perfil</Text>
-        <Text style={styles.detail}>Email: {user?.email}</Text>
-        <Text style={styles.detail}>Rol: {user?.role}</Text>
+    <View style={{ flex: 1, padding: 24 }}>
+      <Text style={{ fontSize: 24, marginBottom: 8 }}>Perfil</Text>
+      <Text>Email: {user?.email}</Text>
+      <Text>Rol: {user?.role}</Text>
 
-        {user?.role === "admin" && (
-          <TouchableOpacity
-            style={styles.button}
+      {user?.role === "admin" && (
+        <>
+          <View style={{ height: 12 }} />
+          <Button
+            title="Panel Admin"
             onPress={() => navigation.navigate("AdminDashboard")}
-            activeOpacity={0.9}
-          >
-            <Text style={styles.buttonText}>Panel Admin</Text>
-          </TouchableOpacity>
-        )}
+          />
+        </>
+      )}
 
-        <TouchableOpacity
-          style={styles.button}
-          onPress={() => navigation.navigate("Sponsors")}
-          activeOpacity={0.9}
-        >
-          <Text style={styles.buttonText}>Patrocinadores</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.button}
-          onPress={handleLogout}
-          activeOpacity={0.9}
-        >
-          <Text style={styles.buttonText}>Cerrar sesión</Text>
-        </TouchableOpacity>
-      </View>
+      <View style={{ height: 12 }} />
+      <Button title="Cerrar sesión" onPress={logout} />
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, padding: 24, backgroundColor: colors.background },
-  card: {
-    backgroundColor: colors.card,
-    padding: 20,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: colors.cardBorder,
-  },
-  title: {
-    fontSize: 24,
-    marginBottom: 12,
-    color: colors.text,
-    fontWeight: "700",
-  },
-  detail: { color: colors.text, marginBottom: 6 },
-  button: {
-    marginTop: 12,
-    backgroundColor: colors.button,
-    paddingVertical: 12,
-    borderRadius: 10,
-    alignItems: "center",
-  },
-  buttonText: {
-    color: colors.buttonText,
-    f
-
-  buttonText: { color: colors.buttonText, fontWeight: "700" },
-});
