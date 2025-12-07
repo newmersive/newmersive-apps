@@ -65,6 +65,7 @@ export interface Trade {
   status: TradeStatus;
   createdAt: string;
   resolvedAt?: string;
+  contractId?: string;
 }
 
 /* =========================

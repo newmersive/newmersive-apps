@@ -6,7 +6,10 @@
       "email": "admin@newmersive.local",
       "passwordHash": "$2a$10$Ljb/uUGMma.UWeFZ1lok6ubGIi2wZoa8dhTAZur6gvVuLMHAuEkTW",
       "role": "admin",
-      "createdAt": "2024-01-01T00:00:00.000Z"
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "tokens": 0,
+      "allwainBalance": 0,
+      "sponsorCode": "SPN-ADMIN"
     },
     {
       "id": "2",
@@ -15,7 +18,10 @@
       "passwordHash": "$2a$10$Ljb/uUGMma.UWeFZ1lok6ubGIi2wZoa8dhTAZur6gvVuLMHAuEkTW",
       "role": "user",
       "createdAt": "2024-01-02T00:00:00.000Z",
-      "avatarUrl": "https://api.dicebear.com/8.x/shapes/svg?seed=trueqia-demo"
+      "avatarUrl": "https://api.dicebear.com/8.x/shapes/svg?seed=trueqia-demo",
+      "tokens": 0,
+      "allwainBalance": 0,
+      "sponsorCode": "SPN-TRUEQIA"
     },
     {
       "id": "3",
@@ -24,7 +30,46 @@
       "passwordHash": "$2a$10$Ljb/uUGMma.UWeFZ1lok6ubGIi2wZoa8dhTAZur6gvVuLMHAuEkTW",
       "role": "company",
       "createdAt": "2024-01-03T00:00:00.000Z",
-      "avatarUrl": "https://api.dicebear.com/8.x/shapes/svg?seed=allwain"
+      "avatarUrl": "https://api.dicebear.com/8.x/shapes/svg?seed=allwain",
+      "tokens": 0,
+      "allwainBalance": 0,
+      "sponsorCode": "SPN-ALLWAIN"
+    },
+    {
+      "id": "4",
+      "name": "Demo Producer",
+      "email": "demo-producer@trueqia.local",
+      "passwordHash": "$2a$10$Ljb/uUGMma.UWeFZ1lok6ubGIi2wZoa8dhTAZur6gvVuLMHAuEkTW",
+      "role": "user",
+      "createdAt": "2024-01-04T00:00:00.000Z",
+      "avatarUrl": "https://i.pravatar.cc/300?img=11",
+      "tokens": 0,
+      "allwainBalance": 0,
+      "sponsorCode": "SPN-DEMO-PROD"
+    },
+    {
+      "id": "5",
+      "name": "Demo Videographer",
+      "email": "demo-video@trueqia.local",
+      "passwordHash": "$2a$10$Ljb/uUGMma.UWeFZ1lok6ubGIi2wZoa8dhTAZur6gvVuLMHAuEkTW",
+      "role": "user",
+      "createdAt": "2024-01-05T00:00:00.000Z",
+      "avatarUrl": "https://i.pravatar.cc/300?img=12",
+      "tokens": 0,
+      "allwainBalance": 0,
+      "sponsorCode": "SPN-DEMO-VID"
+    },
+    {
+      "id": "6",
+      "name": "Demo Strategist",
+      "email": "demo-strategy@trueqia.local",
+      "passwordHash": "$2a$10$Ljb/uUGMma.UWeFZ1lok6ubGIi2wZoa8dhTAZur6gvVuLMHAuEkTW",
+      "role": "user",
+      "createdAt": "2024-01-06T00:00:00.000Z",
+      "avatarUrl": "https://i.pravatar.cc/300?img=13",
+      "tokens": 0,
+      "allwainBalance": 0,
+      "sponsorCode": "SPN-DEMO-STR"
     }
   ],
   "offers": [
@@ -47,11 +92,38 @@
       "meta": { "category": "formación" }
     },
     {
+      "id": "offer-trueqia-demo-1",
+      "title": "Storyboard exprés por fotos del backstage",
+      "description": "Bosquejo de guion visual en 48h a cambio de un paquete de fotografías del rodaje.",
+      "owner": "trueqia",
+      "ownerUserId": "4",
+      "tokens": 10,
+      "meta": { "category": "preproducción" }
+    },
+    {
+      "id": "offer-trueqia-demo-2",
+      "title": "Set de reels verticales",
+      "description": "Edición de 3 reels verticales listos para publicar a cambio de testimonios grabados.",
+      "owner": "trueqia",
+      "ownerUserId": "5",
+      "tokens": 20,
+      "meta": { "category": "social" }
+    },
+    {
+      "id": "offer-trueqia-demo-3",
+      "title": "Copy + pauta básica",
+      "description": "Redacción y configuración inicial de campaña con IA a cambio de assets del producto.",
+      "owner": "trueqia",
+      "ownerUserId": "6",
+      "tokens": 50,
+      "meta": { "category": "growth" }
+    },
+    {
       "id": "offer-allwain-1",
       "title": "Compra de lote café de especialidad",
       "description": "Pack degustación 3 orígenes con envío 24h y puntos Allwain acumulados.",
       "owner": "allwain",
-      "ownerUserId": "1",
+      "ownerUserId": "3",
       "price": 30,
       "productId": "product-1",
       "meta": { "category": "gourmet" }
@@ -61,19 +133,19 @@
       "title": "Comisión: análisis de etiquetas",
       "description": "Revisión bajo demanda del QR nutricional y sugerencias de mejora para tu línea de producto.",
       "owner": "allwain",
-{
-  "id": "offer-allwain-3",
-  "title": "Bundle Allwain + TrueQIA",
-  "description": "Tokens conjuntos para lanzar campaña conjunta con catálogo Allwain y activaciones TrueQIA.",
-  "tokens": 150,
-  "owner": "allwain",
-  "ownerUserId": "1",
-  "price": 45,
-  "meta": {
-    "category": "alianzas"
-  }
-}
-
+      "ownerUserId": "3",
+      "price": 45,
+      "meta": { "category": "análisis" }
+    },
+    {
+      "id": "offer-allwain-3",
+      "title": "Bundle Allwain + TrueQIA",
+      "description": "Tokens conjuntos para lanzar campaña conjunta con catálogo Allwain y activaciones TrueQIA.",
+      "tokens": 150,
+      "owner": "allwain",
+      "ownerUserId": "3",
+      "price": 45,
+      "meta": { "category": "alianzas" }
     }
   ],
   "trades": [
@@ -151,14 +223,10 @@
       "id": "contract-1",
       "title": "Piloto Allwain x tienda local",
       "status": "draft",
-      "counterparties": [
-        "ops@allwain.app",
-        "hola@cafedebarrio.local"
-      ],
+      "counterparties": ["ops@allwain.app", "hola@cafedebarrio.local"],
       "valueTokens": 250,
       "createdAt": "2024-01-06T00:00:00.000Z",
       "notes": "Contrato simulado en memoria hasta migrar a PostgreSQL."
     }
   ]
 }
-

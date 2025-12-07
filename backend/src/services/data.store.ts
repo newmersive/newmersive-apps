@@ -1,7 +1,16 @@
 import fs from "fs";
 import path from "path";
 import { ENV } from "../config/env";
-import { Contract, Lead, Offer, Product, Trade, User } from "../shared/types";
+import {
+  Contract,
+  ContractStatus,
+  Lead,
+  Offer,
+  Product,
+  Trade,
+  TradeStatus,
+  User,
+} from "../shared/types";
 
 interface Database {
   users: User[];
@@ -12,12 +21,19 @@ interface Database {
   contracts: Contract[];
 }
 
+interface PasswordResetToken {
+  token: string;
+  userId: string;
+  expiresAt: number;
+}
+
 const DEFAULT_DATA_FILE = path.resolve(__dirname, "../../data/database.json");
 const DATA_FILE = ENV.DATA_FILE
   ? path.resolve(process.cwd(), ENV.DATA_FILE)
   : DEFAULT_DATA_FILE;
 
 let cache: Database | null = null;
+const passwordResetTokens: PasswordResetToken[] = [];
 
 /**
  * =========================
@@ -64,24 +80,82 @@ const defaultUsers: User[] = [
     allwainBalance: 0,
     sponsorCode: "SPN-ALLWAIN",
   },
+  // DEMO ONLY
+  {
+    id: "4",
+    name: "Demo Producer",
+    email: "demo-producer@trueqia.local",
+    passwordHash:
+      "$2a$10$Ljb/uUGMma.UWeFZ1lok6ubGIi2wZoa8dhTAZur6gvVuLMHAuEkTW",
+    role: "user",
+    createdAt: "2024-01-04T00:00:00.000Z",
+    avatarUrl: "https://i.pravatar.cc/300?img=11",
+    tokens: 0,
+    allwainBalance: 0,
+    sponsorCode: "SPN-DEMO-PROD",
+  },
+  {
+    id: "5",
+    name: "Demo Videographer",
+    email: "demo-video@trueqia.local",
+    passwordHash:
+      "$2a$10$Ljb/uUGMma.UWeFZ1lok6ubGIi2wZoa8dhTAZur6gvVuLMHAuEkTW",
+    role: "user",
+    createdAt: "2024-01-05T00:00:00.000Z",
+    avatarUrl: "https://i.pravatar.cc/300?img=12",
+    tokens: 0,
+    allwainBalance: 0,
+    sponsorCode: "SPN-DEMO-VID",
+  },
+  {
+    id: "6",
+    name: "Demo Strategist",
+    email: "demo-strategy@trueqia.local",
+    passwordHash:
+      "$2a$10$Ljb/uUGMma.UWeFZ1lok6ubGIi2wZoa8dhTAZur6gvVuLMHAuEkTW",
+    role: "user",
+    createdAt: "2024-01-06T00:00:00.000Z",
+    avatarUrl: "https://i.pravatar.cc/300?img=13",
+    tokens: 0,
+    allwainBalance: 0,
+    sponsorCode: "SPN-DEMO-STR",
+  },
 ];
 
 const defaultProducts: Product[] = [
   {
-    id: "product-1",
+    id: "product-allwain-1",
     name: "Pack degustación Allwain",
+    description:
+      "Selección de granos de especialidad con ficha sensorial y QR nutricional.",
     brand: "Allwain",
+    priceTokens: 35 as any, // el tipo Product no lleva precio, pero no rompe nada
     category: "café",
+    imageUrl: "https://images.unsplash.com/photo-1509042239860-f550ce710b93",
   },
   {
-    id: "product-2",
+    id: "product-allwain-2",
     name: "Kit etiquetas inteligentes",
+    description:
+      "Lote demo de etiquetas inteligentes para trazabilidad y recompensas.",
     brand: "Allwain",
+    priceTokens: 55 as any,
     category: "packaging",
+    imageUrl: "https://images.unsplash.com/photo-1497534446932-c925b458314e",
+  },
+  {
+    id: "product-1",
+    name: "Café de especialidad",
+    description: "Café de especialidad demo para el catálogo Allwain.",
+    brand: "Allwain",
+    priceTokens: 0 as any,
+    category: "gourmet",
+    imageUrl: "",
   },
 ];
 
-const defaultOffers: Offer[] = [
+// Ofertas demo TrueQIA
+const demoTrueqiaOffers: Offer[] = [
   {
     id: "offer-trueqia-1",
     title: "Trueque: edición de video por fotografías",
@@ -103,6 +177,40 @@ const defaultOffers: Offer[] = [
     meta: { category: "formación" },
   },
   {
+    id: "offer-trueqia-demo-1",
+    title: "Storyboard exprés por fotos del backstage",
+    description:
+      "Bosquejo de guion visual en 48h a cambio de un paquete de fotografías del rodaje.",
+    owner: "trueqia",
+    ownerUserId: "4",
+    tokens: 10,
+    meta: { category: "preproducción" },
+  },
+  {
+    id: "offer-trueqia-demo-2",
+    title: "Set de reels verticales",
+    description:
+      "Edición de 3 reels verticales listos para publicar a cambio de testimonios grabados.",
+    owner: "trueqia",
+    ownerUserId: "5",
+    tokens: 20,
+    meta: { category: "social" },
+  },
+  {
+    id: "offer-trueqia-demo-3",
+    title: "Copy + pauta básica",
+    description:
+      "Redacción y configuración inicial de campaña con IA a cambio de assets del producto.",
+    owner: "trueqia",
+    ownerUserId: "6",
+    tokens: 50,
+    meta: { category: "growth" },
+  },
+];
+
+const defaultOffers: Offer[] = [
+  ...demoTrueqiaOffers,
+  {
     id: "offer-allwain-1",
     title: "Compra de lote café de especialidad",
     description:
@@ -122,6 +230,17 @@ const defaultOffers: Offer[] = [
     ownerUserId: "3",
     price: 45,
     meta: { category: "análisis" },
+  },
+  {
+    id: "offer-allwain-3",
+    title: "Bundle Allwain + TrueQIA",
+    description:
+      "Tokens conjuntos para lanzar campaña conjunta con catálogo Allwain y activaciones TrueQIA.",
+    owner: "allwain",
+    ownerUserId: "3",
+    tokens: 150,
+    price: 45,
+    meta: { category: "alianzas" },
   },
 ];
 
@@ -147,89 +266,148 @@ const defaultTrades: Trade[] = [
   },
 ];
 
+// OJO: Lead y Contract usan los tipos "nuevos" de shared/types
 const defaultLeads: Lead[] = [];
 const defaultContracts: Contract[] = [];
 
-function mergeSeed<T extends { id: string }>(current: T[], seed: T[]): T[] {
-  const existingIds = new Set(current.map((item) => item.id));
-  const merged = [...current];
+const defaultDatabase: Database = {
+  users: defaultUsers,
+  offers: defaultOffers,
+  trades: defaultTrades,
+  products: defaultProducts,
+  leads: defaultLeads,
+  contracts: defaultContracts,
+};
 
-  for (const item of seed) {
-    if (!existingIds.has(item.id)) {
-      merged.push(item);
-    }
+/**
+ * =========================
+ * UTILIDADES
+ * =========================
+ */
+
+function ensureDirExists(filePath: string) {
+  const dir = path.dirname(filePath);
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
   }
+}
 
-  return merged;
+function mergeById<T extends { id: string }>(
+  defaults: T[],
+  existing: T[] = []
+): T[] {
+  const map = new Map<string, T>();
+  defaults.forEach((item) => map.set(item.id, item));
+  existing.forEach((item) =>
+    map.set(item.id, { ...(map.get(item.id) as T), ...item })
+  );
+  return Array.from(map.values());
 }
 
 function loadDatabase(): Database {
   if (cache) return cache;
 
-  let fileData: Partial<Database> = {};
+  let data: Partial<Database> = {};
+
   if (fs.existsSync(DATA_FILE)) {
     try {
-      const raw = fs.readFileSync(DATA_FILE, "utf-8");
-      fileData = JSON.parse(raw) as Partial<Database>;
+      const content = fs.readFileSync(DATA_FILE, "utf-8");
+      data = JSON.parse(content) as Partial<Database>;
     } catch {
-      fileData = {};
+      data = {};
     }
   }
 
-  const db: Database = {
-    users: mergeSeed(fileData.users ?? [], defaultUsers),
-    offers: mergeSeed(fileData.offers ?? [], defaultOffers),
-    trades: mergeSeed(fileData.trades ?? [], defaultTrades),
-    products: mergeSeed(fileData.products ?? [], defaultProducts),
-    leads: fileData.leads ?? defaultLeads,
-    contracts: fileData.contracts ?? defaultContracts,
+  const merged: Database = {
+    users: mergeById(defaultUsers, data.users ?? []),
+    offers: mergeById(defaultOffers, data.offers ?? []),
+    trades: mergeById(defaultTrades, data.trades ?? []),
+    products: mergeById(defaultProducts, data.products ?? []),
+    leads: mergeById(defaultLeads, data.leads ?? []),
+    contracts: mergeById(defaultContracts, data.contracts ?? []),
   };
 
-  cache = db;
-  return db;
+  persistDatabase(merged);
+  return merged;
 }
 
-export function persistDatabase(db: Database) {
+function saveDatabase(db: Database): void {
+  ensureDirExists(DATA_FILE);
+  fs.writeFileSync(DATA_FILE, JSON.stringify(db, null, 2), "utf-8");
   cache = db;
-  fs.writeFileSync(DATA_FILE, JSON.stringify(db, null, 2));
+}
+
+/**
+ * =========================
+ * API PÚBLICA DB
+ * =========================
+ */
+
+export function getDatabase(): Database {
+  if (!cache) {
+    cache = loadDatabase();
+  }
+  return cache;
+}
+
+export function persistDatabase(db?: Database) {
+  const current = db ?? getDatabase();
+  saveDatabase(current);
 }
 
 export function resetDatabase() {
-  cache = null;
-  persistDatabase(loadDatabase());
+  saveDatabase({ ...defaultDatabase });
 }
 
-export function getDatabase(): Database {
-  return loadDatabase();
+/**
+ * =========================
+ * USERS
+ * =========================
+ */
+
+export function getUsers(): User[] {
+  return getDatabase().users;
+}
+
+export function getUserById(id: string): User | undefined {
+  return getDatabase().users.find((u) => u.id === id);
 }
 
 export function getUserByEmail(email: string): User | undefined {
-  return getDatabase().users.find((u) => u.email === email);
+  return getDatabase().users.find(
+    (u) => u.email.toLowerCase() === email.toLowerCase()
+  );
 }
 
-export function getUserById(userId: string): User | undefined {
-  return getDatabase().users.find((u) => u.id === userId);
-}
-
-export function upsertUser(user: User): void {
+export function upsertUser(user: User) {
   const db = getDatabase();
   const index = db.users.findIndex((u) => u.id === user.id);
-  if (index >= 0) {
-    db.users[index] = user;
-  } else {
+  if (index === -1) {
     db.users.push(user);
+  } else {
+    db.users[index] = { ...db.users[index], ...user };
   }
   persistDatabase(db);
 }
 
-export function setUsers(users: User[]): void {
+export function setUsers(users: User[]) {
   const db = getDatabase();
   db.users = users;
   persistDatabase(db);
 }
 
+/**
+ * =========================
+ * OFFERS & TRADES
+ * =========================
+ */
+
 export function getOffersByOwner(owner: "trueqia" | "allwain"): Offer[] {
-  return getDatabase().offers.filter((offer) => offer.owner === owner);
+  return getDatabase().offers.filter((o) => o.owner === owner);
+}
+
+export function getOfferById(id: string): Offer | undefined {
+  return getDatabase().offers.find((o) => o.id === id);
 }
 
 export function addOffer(offer: Offer): Offer {
@@ -243,24 +421,9 @@ export function getTrades(): Trade[] {
   return getDatabase().trades;
 }
 
-export function getTradeById(tradeId: string): Trade | undefined {
-  return getDatabase().trades.find((trade) => trade.id === tradeId);
+export function getTradeById(id: string): Trade | undefined {
+  return getDatabase().trades.find((t) => t.id === id);
 }
 
-export function addTrade(trade: Trade): Trade {
-  const db = getDatabase();
-  db.trades.push(trade);
-  persistDatabase(db);
-  return trade;
-}
+ex
 
-export function updateTrade(trade: Trade): Trade {
-  const db = getDatabase();
-  const index = db.trades.findIndex((t) => t.id === trade.id);
-  if (index === -1) {
-    throw new Error("TRADE_NOT_FOUND");
-  }
-  db.trades[index] = trade;
-  persistDatabase(db);
-  return trade;
-}
