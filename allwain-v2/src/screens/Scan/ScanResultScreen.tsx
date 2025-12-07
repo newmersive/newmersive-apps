@@ -41,13 +41,18 @@ type ScanResultScreenProps = {
   route?: { params?: { initialData?: ScanDemoResponse | null } };
 };
 
-export default function ScanResultScreen({ navigation, route }: ScanResultScreenProps) {
+export default function ScanResultScreen({
+  navigation,
+  route,
+}: ScanResultScreenProps) {
   const initialData = route?.params?.initialData || null;
   const [data, setData] = useState<ScanDemoResponse | null>(initialData);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [actionMessage, setActionMessage] = useState<string | null>(null);
-  const [interestLoadingId, setInterestLoadingId] = useState<string | null>(null);
+  const [interestLoadingId, setInterestLoadingId] = useState<string | null>(
+    null
+  );
 
   async function loadScanDemo() {
     try {
@@ -59,9 +64,7 @@ export default function ScanResultScreen({ navigation, route }: ScanResultScreen
       setData(res);
     } catch (err: any) {
       console.error("Error al obtener demo de escaneo", err);
-      setError(
-        err?.message || "No se pudo obtener el resultado del escaneo"
-      );
+      setError(err?.message || "No se pudo obtener el resultado del escaneo");
       setData(null);
     } finally {
       setLoading(false);
@@ -109,7 +112,10 @@ export default function ScanResultScreen({ navigation, route }: ScanResultScreen
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 32 }}>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={{ paddingBottom: 32 }}
+    >
       <View style={styles.card}>
         <Text style={styles.title}>Resultado escaneo</Text>
 
@@ -131,7 +137,10 @@ export default function ScanResultScreen({ navigation, route }: ScanResultScreen
         </View>
 
         {loading && (
-          <ActivityIndicator style={{ marginTop: 16 }} color={colors.button} />
+          <ActivityIndicator
+            style={{ marginTop: 16 }}
+            color={colors.button}
+          />
         )}
 
         {error && <Text style={styles.error}>{error}</Text>}
@@ -139,11 +148,16 @@ export default function ScanResultScreen({ navigation, route }: ScanResultScreen
         {data && !loading && (
           <>
             <View style={styles.productBox}>
-              <Image source={{ uri: productImage }} style={styles.productImage} />
+              <Image
+                source={{ uri: productImage }}
+                style={styles.productImage}
+              />
               <View style={{ flex: 1 }}>
                 <Text style={styles.productName}>{data.product.name}</Text>
                 {data.product.brand && (
-                  <Text style={styles.productMeta}>Marca: {data.product.brand}</Text>
+                  <Text style={styles.productMeta}>
+                    Marca: {data.product.brand}
+                  </Text>
                 )}
                 <Text style={styles.productMessage}>{data.message}</Text>
               </View>
@@ -167,21 +181,29 @@ export default function ScanResultScreen({ navigation, route }: ScanResultScreen
                     />
                     <View style={{ flex: 1 }}>
                       <Text style={styles.offerTitle}>{offer.title}</Text>
-                      <Text style={styles.offerDescription}>{offer.description}</Text>
+                      <Text style={styles.offerDescription}>
+                        {offer.description}
+                      </Text>
                     </View>
                   </View>
 
                   <View style={styles.offerMetaRow}>
                     {offer.price && (
-                      <Text style={styles.offerChip}>${offer.price.toFixed(2)}</Text>
+                      <Text style={styles.offerChip}>
+                        €{offer.price.toFixed(2)}
+                      </Text>
                     )}
                     {offer.tokens && (
-                      <Text style={styles.offerChip}>{offer.tokens} tokens</Text>
+                      <Text style={styles.offerChip}>
+                        {offer.tokens} tokens
+                      </Text>
                     )}
                     {distance !== null && (
                       <Text style={styles.offerChip}>{distance} km</Text>
                     )}
-                    <Text style={styles.offerChip}>Ahorro estimado ${savings}</Text>
+                    <Text style={styles.offerChip}>
+                      Ahorro estimado €{savings}
+                    </Text>
                   </View>
 
                   <TouchableOpacity
@@ -191,7 +213,9 @@ export default function ScanResultScreen({ navigation, route }: ScanResultScreen
                     activeOpacity={0.9}
                   >
                     <Text style={styles.buttonText}>
-                      {interestLoadingId === offer.id ? "Enviando..." : "Me interesa"}
+                      {interestLoadingId === offer.id
+                        ? "Enviando..."
+                        : "Me interesa"}
                     </Text>
                   </TouchableOpacity>
                 </View>
@@ -206,14 +230,16 @@ export default function ScanResultScreen({ navigation, route }: ScanResultScreen
           </Text>
         )}
 
-        {actionMessage && <Text style={styles.actionMessage}>{actionMessage}</Text>}
+        {actionMessage && (
+          <Text style={styles.actionMessage}>{actionMessage}</Text>
+        )}
       </View>
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 24, backgroundColor: colors.primary },
+  container: { flex: 1, padding: 24, backgroundColor: colors.background },
   card: {
     backgroundColor: colors.card,
     padding: 20,
@@ -326,3 +352,4 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
 });
+

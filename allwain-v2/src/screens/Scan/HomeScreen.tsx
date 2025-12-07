@@ -1,5 +1,11 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ActivityIndicator,
+} from "react-native";
 import { apiAuthGet } from "../../config/api";
 import { useAuthStore } from "../../store/auth.store";
 import { colors } from "../../theme/colors";
@@ -21,12 +27,15 @@ export default function HomeScreen({ navigation }: any) {
     try {
       setLoading(true);
       setError(null);
-      const data = await apiAuthGet<SponsorSummary>("/allwain/sponsors/summary");
+      const data = await apiAuthGet<SponsorSummary>(
+        "/allwain/sponsors/summary"
+      );
       setSummary(data);
     } catch (err: any) {
       console.error("Error al cargar resumen", err);
       setError(
-        err?.message || "No pudimos calcular tu ahorro acumulado. Intenta de nuevo."
+        err?.message ||
+          "No pudimos calcular tu ahorro acumulado. Intenta de nuevo."
       );
     } finally {
       setLoading(false);
@@ -51,7 +60,9 @@ export default function HomeScreen({ navigation }: any) {
         activeOpacity={0.92}
       >
         <Text style={styles.scanLabel}>ESCANEAR PRODUCTO</Text>
-        <Text style={styles.scanHint}>Simula el lector y ve el resultado al instante.</Text>
+        <Text style={styles.scanHint}>
+          Simula el lector y ve el resultado al instante.
+        </Text>
       </TouchableOpacity>
 
       <View style={styles.card}>
@@ -60,11 +71,13 @@ export default function HomeScreen({ navigation }: any) {
           <ActivityIndicator color={colors.button} />
         ) : (
           <Text style={styles.savingsAmount}>
-            ${summary?.totalSaved?.toFixed(2) || "0.00"}
+            €{summary?.totalSaved?.toFixed(2) || "0.00"}
           </Text>
         )}
         {error && <Text style={styles.error}>{error}</Text>}
-        <Text style={styles.caption}>Datos obtenidos del backend Allwain (demo).</Text>
+        <Text style={styles.caption}>
+          Datos obtenidos del backend Allwain (demo).
+        </Text>
       </View>
 
       <View style={styles.quickActions}>
@@ -74,7 +87,9 @@ export default function HomeScreen({ navigation }: any) {
           activeOpacity={0.9}
         >
           <Text style={styles.actionTitle}>Ofertas</Text>
-          <Text style={styles.actionBody}>Explora packs y servicios activos.</Text>
+          <Text style={styles.actionBody}>
+            Explora packs y servicios activos.
+          </Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -83,7 +98,9 @@ export default function HomeScreen({ navigation }: any) {
           activeOpacity={0.9}
         >
           <Text style={styles.actionTitle}>Historial</Text>
-          <Text style={styles.actionBody}>Revisa el último resultado de escaneo.</Text>
+          <Text style={styles.actionBody}>
+            Revisa el último resultado de escaneo.
+          </Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -92,7 +109,9 @@ export default function HomeScreen({ navigation }: any) {
           activeOpacity={0.9}
         >
           <Text style={styles.actionTitle}>Perfil</Text>
-          <Text style={styles.actionBody}>Tus datos y balance en Allwain.</Text>
+          <Text style={styles.actionBody}>
+            Tus datos y balance en Allwain.
+          </Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -100,7 +119,8 @@ export default function HomeScreen({ navigation }: any) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 24, backgroundColor: colors.primary },
+  // Fondo general Allwain (blanco limpio). Si lo quieres salmón, cambia a colors.primary.
+  container: { flex: 1, padding: 24, backgroundColor: colors.background },
   heading: {
     fontSize: 26,
     fontWeight: "800",
@@ -137,6 +157,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 1,
     borderColor: colors.cardBorder,
+    marginTop: 8,
   },
   cardLabel: {
     color: colors.text,

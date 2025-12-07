@@ -1,6 +1,14 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, Button, ActivityIndicator, ScrollView } from "react-native";
+import {
+  View,
+  Text,
+  Button,
+  ActivityIndicator,
+  ScrollView,
+  StyleSheet,
+} from "react-native";
 import { apiAuthGet } from "../../config/api";
+import { colors } from "../../theme/colors";
 
 export default function AdminDashboardScreen() {
   const [dashboard, setDashboard] = useState<any>(null);
@@ -30,8 +38,8 @@ export default function AdminDashboardScreen() {
   }, []);
 
   return (
-    <ScrollView style={{ flex: 1, padding: 24 }}>
-      <Text style={{ fontSize: 24 }}>Panel Admin (Allwain)</Text>
+    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 24 }}>
+      <Text style={styles.title}>Panel Admin (Allwain)</Text>
 
       <View style={{ height: 12 }} />
       <Button title="Recargar datos" onPress={loadAll} />
@@ -39,17 +47,17 @@ export default function AdminDashboardScreen() {
       {loading && <ActivityIndicator style={{ marginTop: 12 }} />}
 
       {dashboard && (
-        <View style={{ marginTop: 16 }}>
-          <Text style={{ fontWeight: "600" }}>Dashboard:</Text>
-          <Text>Admin: {dashboard.admin}</Text>
+        <View style={styles.block}>
+          <Text style={styles.blockTitle}>Dashboard:</Text>
+          <Text style={styles.text}>Admin: {dashboard.admin}</Text>
         </View>
       )}
 
       {users.length > 0 && (
-        <View style={{ marginTop: 16 }}>
-          <Text style={{ fontWeight: "600" }}>Usuarios:</Text>
+        <View style={styles.block}>
+          <Text style={styles.blockTitle}>Usuarios:</Text>
           {users.map((u) => (
-            <Text key={u.id}>
+            <Text key={u.id} style={styles.text}>
               - {u.email} ({u.role})
             </Text>
           ))}
@@ -57,10 +65,10 @@ export default function AdminDashboardScreen() {
       )}
 
       {events.length > 0 && (
-        <View style={{ marginTop: 16 }}>
-          <Text style={{ fontWeight: "600" }}>Eventos IA:</Text>
+        <View style={styles.block}>
+          <Text style={styles.blockTitle}>Eventos IA:</Text>
           {events.map((ev) => (
-            <Text key={ev.id}>
+            <Text key={ev.id} style={styles.text}>
               - [{ev.severity}] {ev.userEmail}: {ev.reason}
             </Text>
           ))}
@@ -69,3 +77,18 @@ export default function AdminDashboardScreen() {
     </ScrollView>
   );
 }
+
+const styles = StyleSheet.create({
+  container: { flex: 1, padding: 24, backgroundColor: colors.background },
+  title: { fontSize: 24, color: colors.text, fontWeight: "700" },
+  block: {
+    marginTop: 16,
+    padding: 12,
+    borderRadius: 12,
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
+  },
+  blockTitle: { fontWeight: "700", color: colors.text, marginBottom: 6 },
+  text: { color: colors.mutedText, fontWeight: "600" },
+});
