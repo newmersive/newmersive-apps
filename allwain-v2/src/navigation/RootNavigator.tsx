@@ -10,6 +10,7 @@ import RegisterScreen from "../screens/Auth/RegisterScreen";
 
 import MainTabs from "./MainTabs";
 import AdminDashboardScreen from "../screens/Admin/AdminDashboardScreen";
+import SponsorsScreen from "../screens/Sponsors/SponsorsScreen";
 
 const Stack = createNativeStackNavigator();
 
@@ -26,6 +27,7 @@ export default function RootNavigator() {
       {isLogged ? (
         <>
           <Stack.Screen name="MainTabs" component={MainTabs} />
+          <Stack.Screen name="Sponsors" component={SponsorsScreen} />
           {isAdmin && (
             <Stack.Screen
               name="AdminDashboard"

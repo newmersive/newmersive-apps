@@ -29,6 +29,14 @@ export default function ProfileMainScreen({ navigation }: any) {
           </TouchableOpacity>
         )}
 
+        <TouchableOpacity
+          style={styles.button}
+          onPress={() => navigation.navigate("Sponsors")}
+          activeOpacity={0.9}
+        >
+          <Text style={styles.buttonText}>Patrocinadores</Text>
+        </TouchableOpacity>
+
         <TouchableOpacity style={styles.button} onPress={logout} activeOpacity={0.9}>
           <Text style={styles.buttonText}>Cerrar sesión</Text>
         </TouchableOpacity>
