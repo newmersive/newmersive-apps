@@ -192,6 +192,8 @@
 
 > Nota: este endpoint se documenta para que la arquitectura esté preparada; la implementación concreta puede añadirse o adaptarse en `admin.routes.ts` o un router específico de `leads`.
 
+Payload esperado: `{ message: string; sourceApp: "trueqia" | "allwain"; phone?: string; email?: string; name?: string; status?: "new" | "contacted" | "closed" }` donde `message` y `sourceApp` son obligatorios y al menos uno de `phone/email` debe estar presente.
+
 ### Admin
 
 | Método | Ruta | Descripción | Auth |
@@ -231,18 +233,35 @@
 
 ---
 
+## Consumo desde panel admin / reportes
+
+- `GET /api/admin/users` → `{ users: Array<AuthUser> }` sin `passwordHash`.
+- `GET /api/admin/leads` → `{ items: LeadGlobal[] }` con campos `id`, `channel`, `sourceApp`, `message`, `phone/email`, `status`.
+- `GET /api/admin/ai/activity` → `{ events: Array<{ id, userEmail, reason, severity }> }`.
+- `GET /api/admin/dashboard` → `{ admin: true }` como ping protegido.
+
+Estas rutas usan los middlewares `authRequired` + `adminOnly`; se deben llamar con `Authorization: Bearer <token-admin>`.
+
 ## Cómo se despliega
 
 1. **Variables de entorno** (`.env`):
    - `PORT=4000`
    - `JWT_SECRET=<cadena-secreta>`
    - `DATA_FILE=/ruta/persistente/database.json` (opcional, por defecto `data/database.json` en el proyecto).
-   - Flags de demo como `DEMO_MODE=true` si se usan.
+   - `NODE_ENV=production` en VPS.
 
-2. **Instalar dependencias**:
+2. **Instalar y compilar**:
    ```bash
    cd backend
    npm install
+   npm run build
+   ```
 
-2. `npm run dev` (puerto 4000).
-3. Ajustar `EXPO_PUBLIC_API_BASE_URL` en apps a `http://<tu-ip>:4000/api`.
+3. **Ejecutar** (Node o pm2):
+   ```bash
+   npm start                   # usa dist/server.js
+   # o
+   pm2 start dist/server.js --name newmersive-backend
+   ```
+
+4. **Apps móviles**: configura `EXPO_PUBLIC_API_BASE_URL` a `http://<ip-vps>:4000/api` en `trueqia-v2` y `allwain-v2`.

@@ -1,4 +1,4 @@
-# TRUEQIA (app móvil)
+# TRUEQIA v2 (app móvil)
 
 Aplicación Expo/React Native orientada a trueques con autenticación JWT y navegación por pestañas (Trades, Chat, Profile).
 
@@ -11,16 +11,17 @@ Aplicación Expo/React Native orientada a trueques con autenticación JWT y nave
 
 ## Instalación y comandos
 ```bash
-cd trueqia
+cd trueqia-v2
 npm install
-npm run lint      # linting (si falla por dependencias, revisa versiones de RN/Expo)
+npm run lint      # linting (usa eslint-config-expo)
 npm run typecheck # comprobación TypeScript
 npm start         # alias de `npx expo start`
 ```
 Configura `EXPO_PUBLIC_API_BASE_URL` en `.env` o variables de entorno para apuntar al backend (por defecto `http://localhost:4000/api`).
 
-## Problemas detectados
-- En este entorno no se pudieron ejecutar los comandos porque `npm`/`node` no están instalados. Instala Node (v20 LTS) antes de lanzar Expo.
+## Notas rápidas
+- Usa el tema blanco/azul propio de TrueQIA, separado de la paleta de Allwain.
+- Comparte backend y autenticación con Allwain pero consume rutas `/trueqia/*`.
 - Si Expo lanza advertencias de peer dependencies, reinstala sin `--legacy-peer-deps` y valida con `npm run lint`.
 
 ## Flujo rápido
