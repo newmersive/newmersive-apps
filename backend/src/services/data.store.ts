@@ -2,11 +2,13 @@ import fs from "fs";
 import path from "path";
 import { ENV } from "../config/env";
 import {
+  AllwainSavingTransaction,
   Contract,
   ContractStatus,
   Lead,
   Offer,
   Product,
+  ReferralStat,
   Trade,
   TradeStatus,
   User,
@@ -19,6 +21,8 @@ interface Database {
   products: Product[];
   leads: Lead[];
   contracts: Contract[];
+  referralStats: ReferralStat[];
+  allwainSavings: AllwainSavingTransaction[];
 }
 
 interface PasswordResetToken {
@@ -267,17 +271,21 @@ const defaultTrades: Trade[] = [
 ];
 
 // OJO: Lead y Contract usan los tipos "nuevos" de shared/types
-const defaultLeads: Lead[] = [];
-const defaultContracts: Contract[] = [];
+  const defaultLeads: Lead[] = [];
+  const defaultContracts: Contract[] = [];
+  const defaultReferralStats: ReferralStat[] = [];
+  const defaultAllwainSavings: AllwainSavingTransaction[] = [];
 
 const defaultDatabase: Database = {
   users: defaultUsers,
-  offers: defaultOffers,
-  trades: defaultTrades,
-  products: defaultProducts,
-  leads: defaultLeads,
-  contracts: defaultContracts,
-};
+    offers: defaultOffers,
+    trades: defaultTrades,
+    products: defaultProducts,
+    leads: defaultLeads,
+    contracts: defaultContracts,
+    referralStats: defaultReferralStats,
+    allwainSavings: defaultAllwainSavings,
+  };
 
 /**
  * =========================
@@ -325,6 +333,8 @@ function loadDatabase(): Database {
     products: mergeById(defaultProducts, data.products ?? []),
     leads: mergeById(defaultLeads, data.leads ?? []),
     contracts: mergeById(defaultContracts, data.contracts ?? []),
+    referralStats: mergeById(defaultReferralStats, data.referralStats ?? []),
+    allwainSavings: mergeById(defaultAllwainSavings, data.allwainSavings ?? []),
   };
 
   persistDatabase(merged);
@@ -425,5 +435,72 @@ export function getTradeById(id: string): Trade | undefined {
   return getDatabase().trades.find((t) => t.id === id);
 }
 
-ex
+export function addTrade(trade: Trade): Trade {
+  const db = getDatabase();
+  db.trades.push(trade);
+  persistDatabase(db);
+  return trade;
+}
+
+export function updateTrade(trade: Trade): Trade {
+  const db = getDatabase();
+  const index = db.trades.findIndex((t) => t.id === trade.id);
+  if (index === -1) {
+    db.trades.push(trade);
+  } else {
+    db.trades[index] = { ...db.trades[index], ...trade };
+  }
+  persistDatabase(db);
+  return trade;
+}
+
+export function findUserBySponsorCode(code: string): User | undefined {
+  return getDatabase().users.find((user) => user.sponsorCode === code);
+}
+
+export function getReferralStats(): ReferralStat[] {
+  return getDatabase().referralStats;
+}
+
+export function getReferralStat(
+  userId: string,
+  invitedUserId: string
+): ReferralStat | undefined {
+  return getDatabase().referralStats.find(
+    (stat) => stat.userId === userId && stat.invitedUserId === invitedUserId
+  );
+}
+
+export function getReferralStatsBySponsor(userId: string): ReferralStat[] {
+  return getDatabase().referralStats.filter((stat) => stat.userId === userId);
+}
+
+export function upsertReferralStat(stat: ReferralStat): ReferralStat {
+  const db = getDatabase();
+  const index = db.referralStats.findIndex(
+    (item) => item.userId === stat.userId && item.invitedUserId === stat.invitedUserId
+  );
+
+  if (index === -1) {
+    db.referralStats.push(stat);
+  } else {
+    db.referralStats[index] = { ...db.referralStats[index], ...stat };
+  }
+
+  persistDatabase(db);
+  return stat;
+}
+
+export function addAllwainSavingTransaction(
+  transaction: AllwainSavingTransaction
+): AllwainSavingTransaction {
+  const db = getDatabase();
+  db.allwainSavings.push(transaction);
+  persistDatabase(db);
+  return transaction;
+}
+
+export function getAllwainSavingTransactions(): AllwainSavingTransaction[] {
+  return getDatabase().allwainSavings;
+}
 
