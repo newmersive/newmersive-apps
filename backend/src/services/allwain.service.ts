@@ -105,12 +105,17 @@ export function createAllwainOffer(input: CreateAllwainOfferInput): Offer {
 
 export function createOfferInterest(
   offerId: string,
-  user: User,
+  userId: string,
   message?: string
 ): Lead {
   const offer = getOfferById(offerId);
   if (!offer) {
     throw new Error("OFFER_NOT_FOUND");
+  }
+
+  const user = getUserById(userId);
+  if (!user) {
+    throw new Error("USER_NOT_FOUND");
   }
 
   const lead: Lead = {
