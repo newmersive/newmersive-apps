@@ -1,7 +1,16 @@
 import fs from "fs";
 import path from "path";
 import { ENV } from "../config/env";
-import { Contract, Lead, Offer, Product, Trade, User } from "../shared/types";
+import {
+  Contract,
+  ContractStatus,
+  Lead,
+  Offer,
+  Product,
+  Trade,
+  TradeStatus,
+  User,
+} from "../shared/types";
 
 interface Database {
   users: User[];
@@ -12,14 +21,19 @@ interface Database {
   contracts: Contract[];
 }
 
+interface PasswordResetToken {
+  token: string;
+  userId: string;
+  expiresAt: number;
+}
+
 const DEFAULT_DATA_FILE = path.resolve(__dirname, "../../data/database.json");
 const DATA_FILE = ENV.DATA_FILE
   ? path.resolve(process.cwd(), ENV.DATA_FILE)
   : DEFAULT_DATA_FILE;
 
 let cache: Database | null = null;
-
-const passwordResetTokens = new Map<string, { userId: string; token: string; expiresAt: number }>();
+const passwordResetTokens: PasswordResetToken[] = [];
 
 /**
  * =========================
@@ -32,7 +46,8 @@ const defaultUsers: User[] = [
     id: "1",
     name: "Admin Demo",
     email: "admin@newmersive.local",
-    passwordHash: "$2a$10$Ljb/uUGMma.UWeFZ1lok6ubGIi2wZoa8dhTAZur6gvVuLMHAuEkTW",
+    passwordHash:
+      "$2a$10$Ljb/uUGMma.UWeFZ1lok6ubGIi2wZoa8dhTAZur6gvVuLMHAuEkTW",
     role: "admin",
     createdAt: "2024-01-01T00:00:00.000Z",
     tokens: 0,
@@ -43,7 +58,8 @@ const defaultUsers: User[] = [
     id: "2",
     name: "TrueQIA Demo",
     email: "trueqia-demo@newmersive.app",
-    passwordHash: "$2a$10$Ljb/uUGMma.UWeFZ1lok6ubGIi2wZoa8dhTAZur6gvVuLMHAuEkTW",
+    passwordHash:
+      "$2a$10$Ljb/uUGMma.UWeFZ1lok6ubGIi2wZoa8dhTAZur6gvVuLMHAuEkTW",
     role: "user",
     createdAt: "2024-01-02T00:00:00.000Z",
     avatarUrl: "https://api.dicebear.com/8.x/shapes/svg?seed=trueqia-demo",
@@ -55,7 +71,8 @@ const defaultUsers: User[] = [
     id: "3",
     name: "Allwain Ops",
     email: "ops@allwain.app",
-    passwordHash: "$2a$10$Ljb/uUGMma.UWeFZ1lok6ubGIi2wZoa8dhTAZur6gvVuLMHAuEkTW",
+    passwordHash:
+      "$2a$10$Ljb/uUGMma.UWeFZ1lok6ubGIi2wZoa8dhTAZur6gvVuLMHAuEkTW",
     role: "company",
     createdAt: "2024-01-03T00:00:00.000Z",
     avatarUrl: "https://api.dicebear.com/8.x/shapes/svg?seed=allwain",
@@ -68,7 +85,8 @@ const defaultUsers: User[] = [
     id: "4",
     name: "Demo Producer",
     email: "demo-producer@trueqia.local",
-    passwordHash: "$2a$10$Ljb/uUGMma.UWeFZ1lok6ubGIi2wZoa8dhTAZur6gvVuLMHAuEkTW",
+    passwordHash:
+      "$2a$10$Ljb/uUGMma.UWeFZ1lok6ubGIi2wZoa8dhTAZur6gvVuLMHAuEkTW",
     role: "user",
     createdAt: "2024-01-04T00:00:00.000Z",
     avatarUrl: "https://i.pravatar.cc/300?img=11",
@@ -76,12 +94,12 @@ const defaultUsers: User[] = [
     allwainBalance: 0,
     sponsorCode: "SPN-DEMO-PROD",
   },
-  // DEMO ONLY
   {
     id: "5",
     name: "Demo Videographer",
     email: "demo-video@trueqia.local",
-    passwordHash: "$2a$10$Ljb/uUGMma.UWeFZ1lok6ubGIi2wZoa8dhTAZur6gvVuLMHAuEkTW",
+    passwordHash:
+      "$2a$10$Ljb/uUGMma.UWeFZ1lok6ubGIi2wZoa8dhTAZur6gvVuLMHAuEkTW",
     role: "user",
     createdAt: "2024-01-05T00:00:00.000Z",
     avatarUrl: "https://i.pravatar.cc/300?img=12",
@@ -89,12 +107,12 @@ const defaultUsers: User[] = [
     allwainBalance: 0,
     sponsorCode: "SPN-DEMO-VID",
   },
-  // DEMO ONLY
   {
     id: "6",
     name: "Demo Strategist",
     email: "demo-strategy@trueqia.local",
-    passwordHash: "$2a$10$Ljb/uUGMma.UWeFZ1lok6ubGIi2wZoa8dhTAZur6gvVuLMHAuEkTW",
+    passwordHash:
+      "$2a$10$Ljb/uUGMma.UWeFZ1lok6ubGIi2wZoa8dhTAZur6gvVuLMHAuEkTW",
     role: "user",
     createdAt: "2024-01-06T00:00:00.000Z",
     avatarUrl: "https://i.pravatar.cc/300?img=13",
@@ -106,19 +124,37 @@ const defaultUsers: User[] = [
 
 const defaultProducts: Product[] = [
   {
-    id: "product-1",
+    id: "product-allwain-1",
     name: "Pack degustación Allwain",
+    description:
+      "Selección de granos de especialidad con ficha sensorial y QR nutricional.",
     brand: "Allwain",
+    priceTokens: 35,
     category: "café",
+    imageUrl: "https://images.unsplash.com/photo-1509042239860-f550ce710b93",
   },
   {
-    id: "product-2",
+    id: "product-allwain-2",
     name: "Kit etiquetas inteligentes",
+    description:
+      "Lote demo de etiquetas inteligentes para trazabilidad y recompensas.",
     brand: "Allwain",
+    priceTokens: 55,
     category: "packaging",
+    imageUrl: "https://images.unsplash.com/photo-1497534446932-c925b458314e",
+  },
+  {
+    id: "product-1",
+    name: "Café de especialidad",
+    description: "Café de especialidad demo para el catálogo Allwain.",
+    brand: "Allwain",
+    priceTokens: 0,
+    category: "gourmet",
+    imageUrl: "",
   },
 ];
 
+// Ofertas demo TrueQIA
 const demoTrueqiaOffers: Offer[] = [
   {
     id: "offer-trueqia-1",
@@ -202,8 +238,8 @@ const defaultOffers: Offer[] = [
       "Tokens conjuntos para lanzar campaña conjunta con catálogo Allwain y activaciones TrueQIA.",
     owner: "allwain",
     ownerUserId: "3",
-    price: 45,
     tokens: 150,
+    price: 45,
     meta: { category: "alianzas" },
   },
 ];
@@ -263,16 +299,20 @@ const defaultContracts: Contract[] = [
   },
 ];
 
-function getDefaultDatabase(): Database {
-  return {
-    users: [...defaultUsers],
-    offers: [...defaultOffers],
-    trades: [...defaultTrades],
-    products: [...defaultProducts],
-    leads: [...defaultLeads],
-    contracts: [...defaultContracts],
-  };
-}
+const defaultDatabase: Database = {
+  users: defaultUsers,
+  offers: defaultOffers,
+  trades: defaultTrades,
+  products: defaultProducts,
+  leads: defaultLeads,
+  contracts: defaultContracts,
+};
+
+/**
+ * =========================
+ * UTILIDADES
+ * =========================
+ */
 
 function ensureDirExists(filePath: string) {
   const dir = path.dirname(filePath);
@@ -281,53 +321,100 @@ function ensureDirExists(filePath: string) {
   }
 }
 
-function mergeById<T extends { id: string }>(defaults: T[], existing: T[]): T[] {
+function mergeById<T extends { id: string }>(
+  defaults: T[],
+  existing: T[] = []
+): T[] {
   const map = new Map<string, T>();
   defaults.forEach((item) => map.set(item.id, item));
-  existing.forEach((item) => map.set(item.id, { ...map.get(item.id), ...item } as T));
+  existing.forEach((item) =>
+    map.set(item.id, { ...(map.get(item.id) as T), ...item })
+  );
   return Array.from(map.values());
 }
 
 function loadDatabase(): Database {
   if (cache) return cache;
 
-  let data: Database;
+  let data: Partial<Database> = {};
+
   if (fs.existsSync(DATA_FILE)) {
-    const content = fs.readFileSync(DATA_FILE, "utf-8");
-    data = JSON.parse(content) as Database;
-  } else {
-    data = getDefaultDatabase();
+    try {
+      const content = fs.readFileSync(DATA_FILE, "utf-8");
+      data = JSON.parse(content) as Partial<Database>;
+    } catch {
+      data = {};
+    }
   }
 
-  data = {
-    users: mergeById(defaultUsers, data.users || []),
-    offers: mergeById(defaultOffers, data.offers || []),
-    trades: mergeById(defaultTrades, data.trades || []),
-    products: mergeById(defaultProducts, data.products || []),
-    leads: mergeById(defaultLeads, data.leads || []),
-    contracts: mergeById(defaultContracts, data.contracts || []),
+  const merged: Database = {
+    users: mergeById(defaultUsers, data.users ?? []),
+    offers: mergeById(defaultOffers, data.offers ?? []),
+    trades: mergeById(defaultTrades, data.trades ?? []),
+    products: mergeById(defaultProducts, data.products ?? []),
+    leads: mergeById(defaultLeads, data.leads ?? []),
+    contracts: mergeById(defaultContracts, data.contracts ?? []),
   };
 
-  persistDatabase(data);
-  return data;
+  persistDatabase(merged);
+  return merged;
 }
 
-export function persistDatabase(data: Database) {
+function saveDatabase(db: Database): void {
   ensureDirExists(DATA_FILE);
-  fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2), "utf-8");
-  cache = data;
+  fs.writeFileSync(DATA_FILE, JSON.stringify(db, null, 2), "utf-8");
+  cache = db;
 }
 
-export function resetDatabase() {
-  const defaults = getDefaultDatabase();
-  persistDatabase(defaults);
-}
+/**
+ * =========================
+ * API PÚBLICA DB
+ * =========================
+ */
 
 export function getDatabase(): Database {
   if (!cache) {
     cache = loadDatabase();
   }
-  return cache as Database;
+  return cache;
+}
+
+export function persistDatabase(db?: Database) {
+  const current = db ?? getDatabase();
+  saveDatabase(current);
+}
+
+export function resetDatabase() {
+  saveDatabase({ ...defaultDatabase });
+}
+
+/**
+ * =========================
+ * USERS
+ * =========================
+ */
+
+export function getUsers(): User[] {
+  return getDatabase().users;
+}
+
+export function getUserById(id: string): User | undefined {
+  return getDatabase().users.find((u) => u.id === id);
+}
+
+export function getUserByEmail(email: string): User | undefined {
+  return getDatabase().users.find(
+    (u) => u.email.toLowerCase() === email.toLowerCase()
+  );
+}
+
+export function getUserBySponsorCode(code?: string): User | undefined {
+  if (!code) return undefined;
+  return getDatabase().users.find((u) => u.sponsorCode === code);
+}
+
+export function getUserProfile(userId: string): User | undefined {
+  return getUserById(userId);
 }
 
 export function upsertUser(user: User) {
@@ -347,60 +434,143 @@ export function setUsers(users: User[]) {
   persistDatabase(db);
 }
 
-export function getUserByEmail(email: string): User | undefined {
-  return getDatabase().users.find((u) => u.email.toLowerCase() === email.toLowerCase());
-}
-
-export function getUserBySponsorCode(code?: string): User | undefined {
-  if (!code) return undefined;
-  return getDatabase().users.find((u) => u.sponsorCode === code);
-}
-
-function ensureDemoOffers(offers: Offer[]): Offer[] {
-  if (ENV.DEMO_MODE !== "true") return offers;
-  if (offers.length >= 5) return offers;
-
-  const existingIds = new Set(offers.map((o) => o.id));
-  const augmented = [...offers];
-
-  for (const offer of demoTrueqiaOffers) {
-    if (augmented.length >= 5) break;
-    if (!existingIds.has(offer.id)) {
-      augmented.push(offer);
-    }
-  }
-
-  return augmented;
-}
+/**
+ * =========================
+ * OFFERS & TRADES
+ * =========================
+ */
 
 export function getOffersByOwner(owner: "trueqia" | "allwain"): Offer[] {
-  const offers = getDatabase().offers.filter((o) => o.owner === owner);
-  return owner === "trueqia" ? ensureDemoOffers(offers) : offers;
+  return getDatabase().offers.filter((o) => o.owner === owner);
+}
+
+export function getOfferById(id: string): Offer | undefined {
+  return getDatabase().offers.find((o) => o.id === id);
 }
 
 export function getTrades(): Trade[] {
   return getDatabase().trades;
 }
 
-export function getUserProfile(userId: string): User | undefined {
-  return getDatabase().users.find((u) => u.id === userId);
+export function getTradeById(id: string): Trade | undefined {
+  return getDatabase().trades.find((t) => t.id === id);
 }
 
-export function savePasswordResetToken(userId: string, token: string, ttlMinutes = 30) {
-  const expiresAt = Date.now() + ttlMinutes * 60 * 1000;
-  passwordResetTokens.set(userId, { userId, token, expiresAt });
+export function saveTrade(trade: Trade): Trade {
+  const db = getDatabase();
+  const index = db.trades.findIndex((t) => t.id === trade.id);
+  if (index === -1) {
+    db.trades.push(trade);
+  } else {
+    db.trades[index] = trade;
+  }
+  persistDatabase(db);
+  return trade;
 }
 
-export function getPasswordResetToken(userId: string) {
-  const entry = passwordResetTokens.get(userId);
-  if (!entry) return undefined;
-  if (Date.now() > entry.expiresAt) {
-    passwordResetTokens.delete(userId);
+export function updateTradeStatus(
+  tradeId: string,
+  status: TradeStatus,
+  _contractId?: string
+): Trade | null {
+  const trade = getTradeById(tradeId);
+  if (!trade) return null;
+
+  const updated: Trade = {
+    ...trade,
+    status,
+    resolvedAt:
+      status === "pending" ? undefined : new Date().toISOString(),
+  };
+
+  return saveTrade(updated);
+}
+
+/**
+ * =========================
+ * CONTRACTS
+ * =========================
+ */
+
+export function createContract(
+  contract: Omit<Contract, "createdAt" | "id"> & Partial<Contract>
+): Contract {
+  const db = getDatabase();
+  const newContract: Contract = {
+    id: contract.id ?? `contract-${Date.now()}`,
+    createdAt: contract.createdAt ?? new Date().toISOString(),
+    status: contract.status ?? "draft",
+    ...contract,
+  };
+  db.contracts.push(newContract);
+  persistDatabase(db);
+  return newContract;
+}
+
+export function getContractById(id: string): Contract | undefined {
+  return getDatabase().contracts.find((c) => c.id === id);
+}
+
+export function updateContractStatus(
+  id: string,
+  status: ContractStatus
+): Contract | null {
+  const db = getDatabase();
+  const index = db.contracts.findIndex((c) => c.id === id);
+  if (index === -1) return null;
+
+  db.contracts[index] = {
+    ...db.contracts[index],
+    status,
+    updatedAt: new Date().toISOString(),
+  };
+
+  persistDatabase(db);
+  return db.contracts[index];
+}
+
+/**
+ * =========================
+ * PASSWORD RESET TOKENS
+ * =========================
+ * (coherente con auth.service: token → userId)
+ */
+
+export function savePasswordResetToken(
+  token: string,
+  userId: string,
+  expiresAt: number
+) {
+  // Limpia caducados o tokens previos del mismo usuario
+  const now = Date.now();
+  for (let i = passwordResetTokens.length - 1; i >= 0; i--) {
+    if (
+      passwordResetTokens[i].expiresAt <= now ||
+      passwordResetTokens[i].userId === userId
+    ) {
+      passwordResetTokens.splice(i, 1);
+    }
+  }
+  passwordResetTokens.push({ token, userId, expiresAt });
+}
+
+export function getPasswordResetToken(
+  token: string
+): PasswordResetToken | undefined {
+  const now = Date.now();
+  const record = passwordResetTokens.find((t) => t.token === token);
+  if (!record) return undefined;
+  if (record.expiresAt <= now) {
+    deletePasswordResetToken(token);
     return undefined;
   }
-  return entry.token;
+  return record;
 }
 
-export function deletePasswordResetToken(userId: string) {
-  passwordResetTokens.delete(userId);
+export function deletePasswordResetToken(token: string) {
+  const index = passwordResetTokens.findIndex((t) => t.token === token);
+  if (index >= 0) {
+    passwordResetTokens.splice(index, 1);
+  }
 }
+
