@@ -7,10 +7,12 @@ export interface User {
   passwordHash: string;
   role: UserRole;
   createdAt: string;
-  tokens: number;
-  allwainBalance: number;
-  sponsorCode: string;
+  // Sistema de referidos / balances
+  sponsorCode?: string;
   referredByCode?: string;
+  avatarUrl?: string;
+  tokens?: number;
+  allwainBalance?: number;
 }
 
 export interface AuthTokenResponse {
@@ -24,25 +26,44 @@ export interface AuthUser {
   email: string;
   role: UserRole;
   createdAt: string;
-  tokens: number;
-  allwainBalance: number;
-  sponsorCode: string;
+  sponsorCode?: string;
   referredByCode?: string;
+  avatarUrl?: string;
+  tokens?: number;
+  allwainBalance?: number;
 }
 
 export interface Offer {
   id: string;
   title: string;
   description: string;
-  tokens: number;
   owner: "trueqia" | "allwain";
-  category: string;
+  ownerUserId: string;
+  tokens?: number;
+  price?: number;
+  productId?: string;
+  meta?: Record<string, unknown>;
 }
+
+export type TradeStatus = "pending" | "accepted" | "rejected" | "cancelled";
 
 export interface Trade {
   id: string;
-  title: string;
-  status: string;
-  participants: string[];
+  offerId: string;
+  fromUserId: string;
+  toUserId: string;
   tokens: number;
+  status: TradeStatus;
+  createdAt: string;
+  resolvedAt?: string;
 }
+
+export interface Product {
+  id: string;
+  name: string;
+  ean?: string;
+  category?: string;
+  brand?: string;
+}
+
+expor
