@@ -12,20 +12,20 @@ import {
   getSponsorSummary,
   registerAllwainSaving,
 } from "../services/allwain.service";
-import { buildAllwainScanDemo } from "../services/allwain-demo.service";
+import { scanProductImage } from "../services/scan.service";
 
 const router = Router();
 
 /**
  * Demo de escaneo Allwain (flujo inicial / demo)
  */
-router.get("/scan-demo", authRequired, (_req: AuthRequest, res) => {
-  const scanDemo = buildAllwainScanDemo();
+router.get("/scan-demo", authRequired, async (_req: AuthRequest, res) => {
+  const scanDemo = await scanProductImage({ provider: "mock" });
 
   res.json({
     product: scanDemo.product,
-    offers: scanDemo.offers,
-    message: scanDemo.message,
+    offers: scanDemo.rawData?.offers ?? [],
+    message: scanDemo.rawData?.message ?? "Demo de escaneo Allwain",
   });
 });
 
