@@ -1,97 +1,116 @@
 import { Router } from "express";
 import { authRequired, AuthRequest } from "../middleware/auth.middleware";
-import { generateTrueqiaContract } from "../ia/trueqia.contracts";
-import { listOffers, listTrades } from "../services/market.service";
+import { generateDemoContract } from "../ia/contracts.service";
 import {
-  createContract,
-  getOfferById,
-  getUserById,
-  updateContractStatus,
-  updateTradeStatus,
-} from "../services/data.store";
-import { ContractStatus, TradeStatus } from "../shared/types";
+  acceptTrade,
+  createTrade,
+  createTrueqiaOffer,
+  listTrueqiaOffers,
+  rejectTrade,
+} from "../services/trueqia.service";
+import { listTrades } from "../services/market.service";
 
 const router = Router();
 
+/**
+ * Listado de ofertas TrueQIA
+ * GET /api/trueqia/offers?excludeMine=true|false
+ */
 router.get("/offers", authRequired, (req: AuthRequest, res) => {
-  res.json({ items: listOffers("trueqia"), user: req.user });
+  const excludeMine = req.query.excludeMine === "true";
+  const items = listTrueqiaOffers({
+    excludeUserId: excludeMine ? req.user?.id : undefined,
+  });
+
+  res.json({ items, user: req.user });
 });
 
+/**
+ * Listado de trueques (trades)
+ */
 router.get("/trades", authRequired, (_req, res) => {
   res.json({ items: listTrades() });
 });
 
-router.post("/contracts/preview", authRequired, (req: AuthRequest, res) => {
-  const { offerId, fromUserId, toUserId, tokens } = req.body as {
-    offerId?: string;
-    fromUserId?: string;
-    toUserId?: string;
-    tokens?: number;
-  };
+/**
+ * Crear oferta TrueQIA
+ */
+router.post("/offers", authRequired, (req: AuthRequest, res) => {
+  const { title, description, tokens, meta } = req.body as any;
 
-  const offer = offerId ? getOfferById(offerId) : undefined;
-  const fromUser = fromUserId ? getUserById(fromUserId) : undefined;
-  const toUser = toUserId ? getUserById(toUserId) : undefined;
-
-  if (!offer || !fromUser || !toUser || typeof tokens !== "number") {
-    return res
-      .status(400)
-      .json({
-        message:
-          "offerId, fromUserId, toUserId y tokens son obligatorios para generar el contrato.",
-      });
+  if (!title || !description || typeof tokens !== "number") {
+    return res.status(400).json({ error: "MISSING_FIELDS" });
   }
 
-  const contractText = generateTrueqiaContract({ offer, fromUser, toUser, tokens });
-
-  const contract = createContract({
-    title: `Contrato trueque: ${offer.title}`,
-    app: "trueqia",
-    type: "trade",
-    status: "draft",
-    counterparties: [fromUser.id, toUser.id],
-    valueTokens: tokens,
-    generatedText: contractText,
+  const offer = createTrueqiaOffer({
+    title,
+    description,
+    tokens,
+    meta,
+    ownerUserId: req.user!.id,
   });
 
-  res.json({ contractText, contractId: contract.id });
+  res.status(201).json({ offer });
 });
 
-router.patch("/contracts/:id/status", authRequired, (req, res) => {
-  const { id } = req.params;
-  const { status } = req.body as { status?: ContractStatus };
-  const allowed: ContractStatus[] = ["draft", "active", "closed", "conflict"];
+/**
+ * Crear trade
+ */
+router.post("/trades", authRequired, (req: AuthRequest, res) => {
+  const { offerId, toUserId, tokens } = req.body as any;
+  const fromUserId = req.user!.id;
 
-  if (!status || !allowed.includes(status)) {
-    return res.status(400).json({ message: "Estado de contrato inválido" });
+  if (!offerId || !toUserId || typeof tokens !== "number") {
+    return res.status(400).json({ error: "MISSING_FIELDS" });
   }
 
-  const contract = updateContractStatus(id, status);
-  if (!contract) {
-    return res.status(404).json({ message: "Contrato no encontrado" });
+  try {
+    const trade = createTrade({ offerId, fromUserId, toUserId, tokens });
+    res.status(201).json({ trade });
+  } catch (err: unknown) {
+    if (err instanceof Error && err.message === "INVALID_TOKENS") {
+      return res.status(400).json({ error: "INVALID_TOKENS" });
+    }
+    return res.status(500).json({ error: "INTERNAL_ERROR" });
   }
-
-  res.json(contract);
 });
 
-router.patch("/trades/:id/status", authRequired, (req, res) => {
-  const { id } = req.params;
-  const { status, contractId } = req.body as {
-    status?: TradeStatus;
-    contractId?: string;
-  };
-
-  const allowed: TradeStatus[] = ["pending", "accepted", "rejected", "cancelled"];
-  if (!status || !allowed.includes(status)) {
-    return res.status(400).json({ message: "Estado de trade inválido" });
+/**
+ * Aceptar trade
+ */
+router.post("/trades/:id/accept", authRequired, (req: AuthRequest, res) => {
+  try {
+    const trade = acceptTrade(req.params.id, req.user!.id);
+    res.json({ trade });
+  } catch (err: unknown) {
+    return handleTradeError(err, res);
   }
-
-  const trade = updateTradeStatus(id, status, contractId);
-  if (!trade) {
-    return res.status(404).json({ message: "Trade no encontrado" });
-  }
-
-  res.json(trade);
 });
 
-export default router;
+/**
+ * Rechazar trade
+ */
+router.post("/trades/:id/reject", authRequired, (req: AuthRequest, res) => {
+  try {
+    const trade = rejectTrade(req.params.id, req.user!.id);
+    res.json({ trade });
+  } catch (err: unknown) {
+    return handleTradeError(err, res);
+  }
+});
+
+/**
+ * Preview contrato IA (solo texto, sin guardar contrato)
+ */
+router.post("/contracts/preview", authRequired, (req: AuthRequest, res) => {
+  const text = generateDemoContract(req.body);
+  res.json({ contractText: text });
+});
+
+function handleTradeError(err: unknown, res: any) {
+  if (!(err instanceof Error)) {
+    return res.status(500).json({ error: "INTERNAL_ERROR" });
+  }
+
+  if (err.message === "TRADE_NOT_FOUND") {
+    retur

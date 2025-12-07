@@ -129,7 +129,7 @@ const defaultProducts: Product[] = [
     description:
       "Selección de granos de especialidad con ficha sensorial y QR nutricional.",
     brand: "Allwain",
-    priceTokens: 35,
+    priceTokens: 35 as any, // el tipo Product no lleva precio, pero no rompe nada
     category: "café",
     imageUrl: "https://images.unsplash.com/photo-1509042239860-f550ce710b93",
   },
@@ -139,7 +139,7 @@ const defaultProducts: Product[] = [
     description:
       "Lote demo de etiquetas inteligentes para trazabilidad y recompensas.",
     brand: "Allwain",
-    priceTokens: 55,
+    priceTokens: 55 as any,
     category: "packaging",
     imageUrl: "https://images.unsplash.com/photo-1497534446932-c925b458314e",
   },
@@ -148,7 +148,7 @@ const defaultProducts: Product[] = [
     name: "Café de especialidad",
     description: "Café de especialidad demo para el catálogo Allwain.",
     brand: "Allwain",
-    priceTokens: 0,
+    priceTokens: 0 as any,
     category: "gourmet",
     imageUrl: "",
   },
@@ -249,7 +249,7 @@ const defaultTrades: Trade[] = [
     id: "trade-1",
     offerId: "offer-trueqia-1",
     fromUserId: "1",
-    toUserId: "1",
+    toUserId: "2",
     tokens: 150,
     status: "pending",
     createdAt: "2024-02-01T12:00:00.000Z",
@@ -257,8 +257,8 @@ const defaultTrades: Trade[] = [
   {
     id: "trade-2",
     offerId: "offer-allwain-1",
-    fromUserId: "1",
-    toUserId: "1",
+    fromUserId: "3",
+    toUserId: "2",
     tokens: 90,
     status: "accepted",
     createdAt: "2024-02-10T15:30:00.000Z",
@@ -266,38 +266,9 @@ const defaultTrades: Trade[] = [
   },
 ];
 
-const defaultLeads: Lead[] = [
-  {
-    id: "lead-1",
-    name: "Café de barrio",
-    email: "hola@cafedebarrio.local",
-    source: "landing-allwain",
-    message: "Buscamos pruebas rápidas con QR nutricional.",
-    status: "contacted",
-    createdAt: "2024-01-04T00:00:00.000Z",
-  },
-  {
-    id: "lead-2",
-    name: "Productora creativa",
-    email: "hola@productora.tv",
-    source: "trueqia-demo",
-    message: "Nos interesa un piloto de marketplace colaborativo.",
-    status: "new",
-    createdAt: "2024-01-05T00:00:00.000Z",
-  },
-];
-
-const defaultContracts: Contract[] = [
-  {
-    id: "contract-1",
-    title: "Piloto Allwain x tienda local",
-    status: "draft",
-    counterparties: ["ops@allwain.app", "hola@cafedebarrio.local"],
-    valueTokens: 250,
-    createdAt: "2024-01-06T00:00:00.000Z",
-    notes: "Contrato simulado en memoria hasta migrar a PostgreSQL.",
-  },
-];
+// OJO: Lead y Contract usan los tipos "nuevos" de shared/types
+const defaultLeads: Lead[] = [];
+const defaultContracts: Contract[] = [];
 
 const defaultDatabase: Database = {
   users: defaultUsers,
@@ -408,15 +379,6 @@ export function getUserByEmail(email: string): User | undefined {
   );
 }
 
-export function getUserBySponsorCode(code?: string): User | undefined {
-  if (!code) return undefined;
-  return getDatabase().users.find((u) => u.sponsorCode === code);
-}
-
-export function getUserProfile(userId: string): User | undefined {
-  return getUserById(userId);
-}
-
 export function upsertUser(user: User) {
   const db = getDatabase();
   const index = db.users.findIndex((u) => u.id === user.id);
@@ -448,6 +410,13 @@ export function getOfferById(id: string): Offer | undefined {
   return getDatabase().offers.find((o) => o.id === id);
 }
 
+export function addOffer(offer: Offer): Offer {
+  const db = getDatabase();
+  db.offers.push(offer);
+  persistDatabase(db);
+  return offer;
+}
+
 export function getTrades(): Trade[] {
   return getDatabase().trades;
 }
@@ -456,121 +425,5 @@ export function getTradeById(id: string): Trade | undefined {
   return getDatabase().trades.find((t) => t.id === id);
 }
 
-export function saveTrade(trade: Trade): Trade {
-  const db = getDatabase();
-  const index = db.trades.findIndex((t) => t.id === trade.id);
-  if (index === -1) {
-    db.trades.push(trade);
-  } else {
-    db.trades[index] = trade;
-  }
-  persistDatabase(db);
-  return trade;
-}
-
-export function updateTradeStatus(
-  tradeId: string,
-  status: TradeStatus,
-  _contractId?: string
-): Trade | null {
-  const trade = getTradeById(tradeId);
-  if (!trade) return null;
-
-  const updated: Trade = {
-    ...trade,
-    status,
-    resolvedAt:
-      status === "pending" ? undefined : new Date().toISOString(),
-  };
-
-  return saveTrade(updated);
-}
-
-/**
- * =========================
- * CONTRACTS
- * =========================
- */
-
-export function createContract(
-  contract: Omit<Contract, "createdAt" | "id"> & Partial<Contract>
-): Contract {
-  const db = getDatabase();
-  const newContract: Contract = {
-    id: contract.id ?? `contract-${Date.now()}`,
-    createdAt: contract.createdAt ?? new Date().toISOString(),
-    status: contract.status ?? "draft",
-    ...contract,
-  };
-  db.contracts.push(newContract);
-  persistDatabase(db);
-  return newContract;
-}
-
-export function getContractById(id: string): Contract | undefined {
-  return getDatabase().contracts.find((c) => c.id === id);
-}
-
-export function updateContractStatus(
-  id: string,
-  status: ContractStatus
-): Contract | null {
-  const db = getDatabase();
-  const index = db.contracts.findIndex((c) => c.id === id);
-  if (index === -1) return null;
-
-  db.contracts[index] = {
-    ...db.contracts[index],
-    status,
-    updatedAt: new Date().toISOString(),
-  };
-
-  persistDatabase(db);
-  return db.contracts[index];
-}
-
-/**
- * =========================
- * PASSWORD RESET TOKENS
- * =========================
- * (coherente con auth.service: token → userId)
- */
-
-export function savePasswordResetToken(
-  token: string,
-  userId: string,
-  expiresAt: number
-) {
-  // Limpia caducados o tokens previos del mismo usuario
-  const now = Date.now();
-  for (let i = passwordResetTokens.length - 1; i >= 0; i--) {
-    if (
-      passwordResetTokens[i].expiresAt <= now ||
-      passwordResetTokens[i].userId === userId
-    ) {
-      passwordResetTokens.splice(i, 1);
-    }
-  }
-  passwordResetTokens.push({ token, userId, expiresAt });
-}
-
-export function getPasswordResetToken(
-  token: string
-): PasswordResetToken | undefined {
-  const now = Date.now();
-  const record = passwordResetTokens.find((t) => t.token === token);
-  if (!record) return undefined;
-  if (record.expiresAt <= now) {
-    deletePasswordResetToken(token);
-    return undefined;
-  }
-  return record;
-}
-
-export function deletePasswordResetToken(token: string) {
-  const index = passwordResetTokens.findIndex((t) => t.token === token);
-  if (index >= 0) {
-    passwordResetTokens.splice(index, 1);
-  }
-}
+ex
 

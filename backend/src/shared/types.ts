@@ -14,6 +14,7 @@ export interface User {
   sponsorCode?: string;
   referredByCode?: string;
   avatarUrl?: string;
+  appMode?: string[];
   tokens?: number;
   allwainBalance?: number;
 }
@@ -32,6 +33,7 @@ export interface AuthUser {
   sponsorCode?: string;
   referredByCode?: string;
   avatarUrl?: string;
+  appMode?: string[];
   tokens?: number;
   allwainBalance?: number;
 }

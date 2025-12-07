@@ -14,7 +14,14 @@ const allowedRoles: UserRole[] = ["user", "company", "admin", "buyer"];
 type RegisterRequest = Request<
   Record<string, never>,
   unknown,
-  { name?: string; email?: string; password?: string; role?: UserRole; sponsorCode?: string }
+  {
+    name?: string;
+    email?: string;
+    password?: string;
+    role?: UserRole;
+    sponsorCode?: string;
+    appMode?: string[];
+  }
 >;
 
 type LoginRequest = Request<
@@ -25,7 +32,7 @@ type LoginRequest = Request<
 
 export async function postRegister(req: RegisterRequest, res: Response) {
   try {
-    const { name, email, password, role, sponsorCode } = req.body as any;
+    const { name, email, password, role, sponsorCode, appMode } = req.body as any;
 
     if (!name || !email || !password) {
       return res.status(400).json({ error: "MISSING_FIELDS" });
@@ -39,7 +46,8 @@ export async function postRegister(req: RegisterRequest, res: Response) {
       email,
       password,
       normalizedRole,
-      sponsorCode
+      sponsorCode,
+      appMode
     );
 
     return res.status(201).json(result);
@@ -86,4 +94,25 @@ export async function postForgotPassword(req: Request, res: Response) {
       await requestPasswordReset(email);
     }
     return res.status(200).json({ ok: true });
-  } cat
+  } catch {
+    return res.status(500).json({ error: "INTERNAL_ERROR" });
+  }
+}
+
+export async function postResetPassword(req: Request, res: Response) {
+  const { token, password } = req.body as any;
+
+  if (!token || !password) {
+    return res.status(400).json({ error: "MISSING_FIELDS" });
+  }
+
+  try {
+    await resetPassword(token, password);
+    return res.status(200).json({ ok: true });
+  } catch (err: unknown) {
+    if (err instanceof Error && err.message === "INVALID_TOKEN") {
+      return res.status(400).json({ error: "INVALID_TOKEN" });
+    }
+    return res.status(500).json({ error: "INTERNAL_ERROR" });
+  }
+}
