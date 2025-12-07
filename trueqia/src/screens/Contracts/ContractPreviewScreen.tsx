@@ -1,15 +1,25 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { View, Text, TextInput, Button, ScrollView, ActivityIndicator } from "react-native";
 import { apiAuthPost } from "../../config/api";
 import { TrueqiaOffer } from "../../store/offers.store";
+import { Trade } from "../../store/trades.store";
 
 export default function ContractPreviewScreen({ route }: any) {
   const offer: TrueqiaOffer | undefined = route.params?.offer;
+  const trade: Trade | undefined = route.params?.trade;
 
-  const [requesterName, setRequesterName] = useState("Solicitante demo");
-  const [providerName, setProviderName] = useState("Proveedor demo");
+  const [requesterName, setRequesterName] = useState(
+    trade?.participants?.[0] || "Solicitante demo"
+  );
+  const [providerName, setProviderName] = useState(
+    trade?.participants?.[1] || "Proveedor demo"
+  );
   const [tokens, setTokens] = useState(
-    offer?.tokens !== undefined ? String(offer.tokens) : "10"
+    offer?.tokens !== undefined
+      ? String(offer.tokens)
+      : trade?.tokens !== undefined
+      ? String(trade.tokens)
+      : "10"
   );
   const [notes, setNotes] = useState("");
   const [contractText, setContractText] = useState<string | null>(null);
@@ -17,15 +27,16 @@ export default function ContractPreviewScreen({ route }: any) {
   const [error, setError] = useState<string | null>(null);
 
   const offerTitle = useMemo(
-    () => offer?.title || "Oferta demo",
-    [offer?.title]
+    () => trade?.title || offer?.title || "Oferta demo",
+    [offer?.title, trade?.title]
   );
 
   async function generate() {
     setError(null);
     setLoading(true);
     const body = {
-      offerId: offer?.id,
+      offerId: offer?.id || trade?.offerId,
+      tradeId: trade?.id,
       offerTitle,
       requesterName,
       providerName,
@@ -51,6 +62,13 @@ export default function ContractPreviewScreen({ route }: any) {
     }
   }
 
+  useEffect(() => {
+    if (trade?.status === "accepted") {
+      generate();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [trade?.id, trade?.status]);
+
   return (
     <ScrollView style={{ flex: 1, padding: 24 }}>
       <Text style={{ fontSize: 20, marginBottom: 8 }}>
@@ -62,6 +80,11 @@ export default function ContractPreviewScreen({ route }: any) {
         {offer?.id && <Text>ID: {offer.id}</Text>}
         {offer?.tokens !== undefined && <Text>Tokens: {offer.tokens}</Text>}
         {offer?.description && <Text>{offer.description}</Text>}
+        {trade?.id && (
+          <Text style={{ color: "#444", marginTop: 4 }}>
+            Trueque {trade.id} – estado {trade.status || "pending"}
+          </Text>
+        )}
       </View>
 
       <Text>Nombre solicitante:</Text>
