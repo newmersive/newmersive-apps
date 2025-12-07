@@ -1,37 +1,62 @@
-import React, { useCallback, useState } from "react";
+import React, { useEffect } from "react";
+import { ActivityIndicator, View } from "react-native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { useAuthStore } from "../store/auth.store";
 
-import LoginScreen from "../screens/Auth/LoginScreen";
-import RegisterScreen from "../screens/Auth/RegisterScreen";
-import SplashScreen from "../screens/Auth/SplashScreen";
+import DemoLandingScreen from "../screens/Demo/DemoLandingScreen";
+import DemoScanResultScreen from "../screens/Demo/DemoScanResultScreen";
+
+import AuthScreen from "../screens/Auth/AuthScreen";
+import SponsorQRScreen from "../screens/Auth/SponsorQRScreen";
 
 import MainTabs from "./MainTabs";
 import AdminDashboardScreen from "../screens/Admin/AdminDashboardScreen";
-import ScanResultScreen from "../screens/Scan/ScanResultScreen";
+import { colors } from "../theme/colors";
 
-const Stack = createNativeStackNavigator();
+export type RootStackParamList = {
+  Auth:
+    | {
+        sponsorCode?: string;
+        mode?: "login" | "register";
+      }
+    | undefined;
+  SponsorQR: { code?: string } | undefined;
+  DemoLanding: undefined;
+  DemoScanResult: undefined;
+  MainTabs: undefined;
+  AdminDashboard: undefined;
+};
+
+const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export default function RootNavigator() {
   const user = useAuthStore((s) => s.user);
-  const isLogged = Boolean(user);
+  const hydrated = useAuthStore((s) => s.hydrated);
+  const restoreSession = useAuthStore((s) => s.restoreSession);
   const isAdmin = user?.role === "admin";
-  const [showSplash, setShowSplash] = useState(true);
 
-  const handleSplashDone = useCallback(() => setShowSplash(false), []);
+  useEffect(() => {
+    if (!hydrated) {
+      restoreSession();
+    }
+  }, [hydrated, restoreSession]);
+
+  if (!hydrated) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        <ActivityIndicator color={colors.primary} />
+      </View>
+    );
+  }
 
   return (
     <Stack.Navigator
+      key={user ? "app" : "auth"}
       screenOptions={{ headerShown: false }}
     >
-      {showSplash ? (
-        <Stack.Screen name="Splash">
-          {() => <SplashScreen onReady={handleSplashDone} />}
-        </Stack.Screen>
-      ) : isLogged ? (
+      {user ? (
         <>
           <Stack.Screen name="MainTabs" component={MainTabs} />
-          <Stack.Screen name="ScanResult" component={ScanResultScreen} />
           {isAdmin && (
             <Stack.Screen
               name="AdminDashboard"
@@ -41,10 +66,16 @@ export default function RootNavigator() {
         </>
       ) : (
         <>
-          <Stack.Screen name="Login" component={LoginScreen} />
-          <Stack.Screen name="Register" component={RegisterScreen} />
+          <Stack.Screen name="Auth" component={AuthScreen} />
+          <Stack.Screen name="SponsorQR" component={SponsorQRScreen} />
+          <Stack.Screen name="DemoLanding" component={DemoLandingScreen} />
+          <Stack.Screen
+            name="DemoScanResult"
+            component={DemoScanResultScreen}
+          />
         </>
       )}
     </Stack.Navigator>
   );
 }
+

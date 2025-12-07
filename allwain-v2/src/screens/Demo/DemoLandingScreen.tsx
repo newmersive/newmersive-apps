@@ -15,11 +15,11 @@ export default function DemoLandingScreen({ navigation }: any) {
         onPress={() => navigation.navigate("DemoScanResult")}
       />
       <View style={{ height: 12 }} />
-      <Button title="Iniciar sesión" onPress={() => navigation.navigate("Login")} />
+      <Button title="Iniciar sesión" onPress={() => navigation.navigate("Auth")} />
       <View style={{ height: 12 }} />
       <Button
         title="Crear cuenta"
-        onPress={() => navigation.navigate("Register")}
+        onPress={() => navigation.navigate("Auth", { mode: "register" })}
       />
     </View>
   );
