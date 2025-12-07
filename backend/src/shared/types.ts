@@ -7,6 +7,7 @@ export interface User {
   passwordHash: string;
   role: UserRole;
   createdAt: string;
+  avatarUrl?: string;
 }
 
 export interface AuthTokenResponse {
@@ -36,4 +37,34 @@ export interface Trade {
   status: string;
   participants: string[];
   tokens: number;
+}
+
+export interface Product {
+  id: string;
+  name: string;
+  description: string;
+  brand: string;
+  priceTokens: number;
+  category?: string;
+  imageUrl?: string;
+}
+
+export interface Lead {
+  id: string;
+  name: string;
+  email: string;
+  source: string;
+  message?: string;
+  status: "new" | "contacted" | "qualified" | "closed";
+  createdAt: string;
+}
+
+export interface Contract {
+  id: string;
+  title: string;
+  status: string;
+  counterparties: string[];
+  valueTokens: number;
+  createdAt: string;
+  notes?: string;
 }

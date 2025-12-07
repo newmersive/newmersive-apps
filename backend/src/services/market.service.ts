@@ -1,8 +1,8 @@
-import { getOffersForOwner, getTrades } from "./data.store";
+import { getOffersByOwner, getTrades } from "./data.store";
 import { Offer, Trade } from "../shared/types";
 
 export function listOffers(owner: "trueqia" | "allwain"): Offer[] {
-  return getOffersForOwner(owner);
+  return getOffersByOwner(owner);
 }
 
 export function listTrades(): Trade[] {

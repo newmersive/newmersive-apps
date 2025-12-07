@@ -2,29 +2,9 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { ENV } from "../config/env";
 import { AuthTokenResponse, AuthUser, User, UserRole } from "../shared/types";
-import { getDatabase, upsertUser } from "./data.store";
+import { getUserByEmail, getUsers, upsertUser } from "./data.store";
 
-let userIdCounter = 1;
-
-(function seedAdmin() {
-  const db = getDatabase();
-  const adminEmail = "admin@newmersive.local";
-  const existing = db.users.find((u) => u.email === adminEmail);
-  if (!existing) {
-    const passwordHash = bcrypt.hashSync("admin123", 10);
-    const adminUser: User = {
-      id: String(userIdCounter++),
-      name: "Admin Demo",
-      email: adminEmail,
-      passwordHash,
-      role: "admin",
-      createdAt: new Date().toISOString(),
-    };
-    upsertUser(adminUser);
-  } else {
-    userIdCounter = Math.max(userIdCounter, Number(existing.id) + 1);
-  }
-})();
+let userIdCounter = computeNextUserId();
 
 export async function registerUser(
   name: string,
@@ -32,14 +12,13 @@ export async function registerUser(
   password: string,
   role: UserRole = "user"
 ): Promise<AuthTokenResponse> {
-  const db = getDatabase();
   const normalizedEmail = email.toLowerCase();
-  const existing = db.users.find((u) => u.email === normalizedEmail);
+  const existing = getUserByEmail(normalizedEmail);
   if (existing) throw new Error("EMAIL_ALREADY_EXISTS");
 
   const passwordHash = await bcrypt.hash(password, 10);
   const user: User = {
-    id: String(++userIdCounter),
+    id: String(userIdCounter++),
     name,
     email: normalizedEmail,
     passwordHash,
@@ -55,9 +34,8 @@ export async function loginUser(
   email: string,
   password: string
 ): Promise<AuthTokenResponse> {
-  const db = getDatabase();
   const normalizedEmail = email.toLowerCase();
-  const user = db.users.find((u) => u.email === normalizedEmail);
+  const user = getUserByEmail(normalizedEmail);
   if (!user) throw new Error("INVALID_CREDENTIALS");
 
   const match = await bcrypt.compare(password, user.passwordHash);
@@ -73,16 +51,28 @@ function createAuthTokenResponse(user: User): AuthTokenResponse {
 }
 
 export function getAllUsers(): User[] {
-  return getDatabase().users;
+  return getUsers();
 }
 
 export function getPublicUsers(): AuthUser[] {
-  return getDatabase().users.map((u) => mapUser(u));
+  return getUsers().map((u) => mapUser(u));
 }
 
 export function getUserProfile(userId: string): AuthUser | null {
-  const user = getDatabase().users.find((u) => u.id === userId);
+  const user = getUsers().find((u) => u.id === userId);
   return user ? mapUser(user) : null;
+}
+
+function computeNextUserId(): number {
+  const numericIds = getUsers()
+    .map((user) => Number(user.id))
+    .filter((id) => Number.isFinite(id));
+
+  if (numericIds.length === 0) {
+    return getUsers().length + 1;
+  }
+
+  return Math.max(...numericIds) + 1;
 }
 
 function mapUser(user: User): AuthUser {
