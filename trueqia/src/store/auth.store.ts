@@ -17,7 +17,12 @@ interface AuthState {
   setAuth: (payload: AuthResponse) => void;
   restoreSession: () => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
-  register: (name: string, email: string, password: string) => Promise<void>;
+  register: (
+    name: string,
+    email: string,
+    password: string,
+    sponsorCode?: string,
+  ) => Promise<void>;
   logout: (message?: string) => Promise<void>;
   clearSessionMessage: () => void;
 }
@@ -46,6 +51,8 @@ export const useAuthStore = create<AuthState>((set) => ({
       if (parsed?.token && parsed?.user) {
         set({ token: parsed.token, user: parsed.user });
       }
+    } catch (err) {
+      await clearPersistedAuth();
     } finally {
       set({ hydrated: true });
     }
@@ -55,8 +62,13 @@ export const useAuthStore = create<AuthState>((set) => ({
     await persistAuth(res.token, res.user);
     set({ token: res.token, user: res.user, sessionMessage: null });
   },
-  register: async (name, email, password) => {
-    const res = await apiPost<AuthResponse>("/auth/register", { name, email, password });
+  register: async (name, email, password, sponsorCode) => {
+    const res = await apiPost<AuthResponse>("/auth/register", {
+      name,
+      email,
+      password,
+      ...(sponsorCode ? { sponsorCode } : {}),
+    });
     await persistAuth(res.token, res.user);
     set({ token: res.token, user: res.user, sessionMessage: null });
   },
