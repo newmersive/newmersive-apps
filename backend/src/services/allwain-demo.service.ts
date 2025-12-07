@@ -13,6 +13,15 @@ interface ScanDemoPayload {
   message: string;
 }
 
+const DEMO_LOCATIONS = [
+  "Roma Norte",
+  "Polanco",
+  "La Condesa",
+  "Centro",
+  "Del Valle",
+  "Coyoacán",
+];
+
 const DEMO_SCENARIOS: DemoScenario[] = [
   {
     product: {
@@ -123,39 +132,56 @@ const DEMO_SCENARIOS: DemoScenario[] = [
   },
 ];
 
+function pickRandomLocation(): string {
+  const randomIndex = Math.floor(Math.random() * DEMO_LOCATIONS.length);
+  return DEMO_LOCATIONS[randomIndex];
+}
+
 function pickRandomScenario(): DemoScenario {
   const randomIndex = Math.floor(Math.random() * DEMO_SCENARIOS.length);
   return DEMO_SCENARIOS[randomIndex];
 }
 
-function buildLiveLikeScenario(): DemoScenario {
+function buildLiveLikeScenario(fallback: DemoScenario): DemoScenario {
   const allwainOffers = getOffersByOwner("allwain");
-  const defaultScenario = DEMO_SCENARIOS[0];
 
   const offerWithProduct = allwainOffers.find((offer) => Boolean(offer.productId));
   const productFromDb = offerWithProduct?.productId
     ? getProductById(offerWithProduct.productId)
     : undefined;
 
-  const product = productFromDb ?? defaultScenario.product;
+  const product = productFromDb ?? fallback.product;
 
   const relatedOffers = allwainOffers.filter((offer) => {
-    if (!offer.productId) return true;
-    return offer.productId === product.id;
+    if (!offer.productId) return offer.owner === "allwain";
+    return offer.productId === product.id && offer.owner === "allwain";
   });
 
   return {
     product,
-    offers: relatedOffers.length > 0 ? relatedOffers : defaultScenario.offers,
+    offers: relatedOffers.length > 0 ? relatedOffers : fallback.offers,
   };
 }
 
+function buildDemoScenario(): DemoScenario {
+  const scenario = pickRandomScenario();
+  const offers = scenario.offers.filter((offer) => offer.owner === "allwain");
+
+  return { product: scenario.product, offers };
+}
+
 export function buildAllwainScanDemo(): ScanDemoPayload {
-  const scenario = ENV.DEMO_MODE ? pickRandomScenario() : buildLiveLikeScenario();
+  const demoScenario = buildDemoScenario();
+  const scenario = ENV.DEMO_MODE
+    ? demoScenario
+    : buildLiveLikeScenario(demoScenario);
+
+  const area = pickRandomLocation();
+  const locationText = area ? `tu zona (${area})` : "tu zona";
 
   return {
     product: scenario.product,
     offers: scenario.offers,
-    message: `Producto detectado: ${scenario.product.name} en tu zona`,
+    message: `Producto detectado: ${scenario.product.name} en ${locationText}`,
   };
 }
