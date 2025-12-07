@@ -1,17 +1,34 @@
-import React from "react";
-import { View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView } from "react-native";
+import React, { useState } from "react";
+import { View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView, ActivityIndicator } from "react-native";
+import { CompositeNavigationProp, useNavigation } from "@react-navigation/native";
+import { BottomTabNavigationProp } from "@react-navigation/bottom-tabs";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useAuthStore } from "../../store/auth.store";
 import { colors } from "../../theme/colors";
+import { AppStackParamList, AppTabParamList } from "../../navigation/types";
+
+type ProfileNavigationProp = CompositeNavigationProp<
+  BottomTabNavigationProp<AppTabParamList, "Perfil">,
+  NativeStackNavigationProp<AppStackParamList>
+>;
 
 export default function ProfileScreen() {
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
+  const navigation = useNavigation<ProfileNavigationProp>();
+  const [loading, setLoading] = useState(false);
 
   const displayUser =
     user || ({ name: "Allwain User", email: "demo@allwain.com", role: "Comprador" } as const);
 
   function handleEdit() {
     Alert.alert("Función en desarrollo", "Editar perfil estará disponible pronto.");
+  }
+
+  async function handleLogout() {
+    setLoading(true);
+    await logout();
+    setLoading(false);
   }
 
   return (
@@ -35,8 +52,25 @@ export default function ProfileScreen() {
         <Text style={styles.buttonText}>Editar perfil (mock)</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.logoutButton} onPress={logout} activeOpacity={0.9}>
-        <Text style={styles.logoutText}>Cerrar sesión</Text>
+      <TouchableOpacity
+        style={styles.secondaryButton}
+        onPress={() => navigation.navigate("Guests")}
+        activeOpacity={0.9}
+      >
+        <Text style={styles.secondaryButtonText}>Invitados y comisiones</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={[styles.logoutButton, loading && { opacity: 0.7 }]}
+        onPress={handleLogout}
+        activeOpacity={0.9}
+        disabled={loading}
+      >
+        {loading ? (
+          <ActivityIndicator color={colors.white} />
+        ) : (
+          <Text style={styles.logoutText}>Cerrar sesión</Text>
+        )}
       </TouchableOpacity>
     </ScrollView>
   );
@@ -90,6 +124,19 @@ const styles = StyleSheet.create({
     borderColor: colors.dark,
   },
   buttonText: {
+    color: colors.dark,
+    fontWeight: "800",
+  },
+  secondaryButton: {
+    backgroundColor: colors.white,
+    borderRadius: 12,
+    paddingVertical: 12,
+    alignItems: "center",
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: colors.line,
+  },
+  secondaryButtonText: {
     color: colors.dark,
     fontWeight: "800",
   },

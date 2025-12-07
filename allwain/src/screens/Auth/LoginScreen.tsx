@@ -7,10 +7,13 @@ import {
   StyleSheet,
   ActivityIndicator,
 } from "react-native";
+import { NavigationProp, ParamListBase } from "@react-navigation/native";
 import { useAuthStore } from "../../store/auth.store";
 import { colors } from "../../theme/colors";
 
-export default function LoginScreen({ navigation }: any) {
+type LoginScreenProps = { navigation: NavigationProp<ParamListBase> };
+
+export default function LoginScreen({ navigation }: LoginScreenProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
@@ -31,8 +34,8 @@ export default function LoginScreen({ navigation }: any) {
 
       await login(email, password);
       navigation.replace("MainTabs");
-    } catch (err: any) {
-      if (err?.message === "INVALID_CREDENTIALS") {
+    } catch (err: unknown) {
+      if (err instanceof Error && err.message === "INVALID_CREDENTIALS") {
         setError("Credenciales incorrectas");
       } else {
         setError("Error al iniciar sesión");

@@ -1,18 +1,14 @@
 import React, { useEffect, useState } from "react";
 import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity } from "react-native";
-import { apiAuthGet } from "../../config/api";
+import { NativeStackScreenProps } from "@react-navigation/native-stack";
+import { getAllwainScanDemo, ScanDemoResponse } from "../../api/allwain.api";
 import { colors } from "../../theme/colors";
+import { AppStackParamList } from "../../navigation/types";
 
-interface ScanDemoResponse {
-  result: string;
-  productName?: string;
-  suggestions?: string[];
-  user?: string;
-  demoMode?: boolean;
-}
+type ScanResultProps = NativeStackScreenProps<AppStackParamList, "ScanResult">;
 
-export default function ScanResultScreen({ navigation }: any) {
-  const [data, setData] = useState<ScanDemoResponse | null>(null);
+export default function ScanResultScreen({ navigation, route }: ScanResultProps) {
+  const [data, setData] = useState<ScanDemoResponse | null>(route.params?.result || null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -21,17 +17,23 @@ export default function ScanResultScreen({ navigation }: any) {
       setLoading(true);
       setError(null);
 
-      const res = await apiAuthGet<ScanDemoResponse>("/allwain/scan-demo");
+      const res = await getAllwainScanDemo();
       setData(res);
-    } catch (err: any) {
-      setError("No se pudo obtener el resultado del escaneo");
+    } catch (err: unknown) {
+      if (err instanceof Error && err.message === "SESSION_EXPIRED") {
+        setError("Sesión expirada. Inicia sesión de nuevo.");
+      } else {
+        setError("No se ha podido completar el escaneo.");
+      }
     } finally {
       setLoading(false);
     }
   }
 
   useEffect(() => {
-    loadScanDemo();
+    if (!data) {
+      loadScanDemo();
+    }
   }, []);
 
   return (
@@ -40,7 +42,7 @@ export default function ScanResultScreen({ navigation }: any) {
 
       <TouchableOpacity
         style={styles.primaryButton}
-        onPress={() => navigation.navigate("Escanear")}
+        onPress={() => navigation.goBack()}
         activeOpacity={0.9}
       >
         <Text style={styles.primaryButtonText}>Volver a escanear</Text>

@@ -1,8 +1,12 @@
 import React from "react";
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
+import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { colors } from "../../theme/colors";
+import { AppStackParamList } from "../../navigation/types";
 
-export default function DemoLandingScreen({ navigation }: any) {
+type DemoLandingProps = NativeStackScreenProps<AppStackParamList, "DemoLanding">;
+
+export default function DemoLandingScreen({ navigation }: DemoLandingProps) {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Bienvenido a Allwain (Demo)</Text>
@@ -20,18 +24,18 @@ export default function DemoLandingScreen({ navigation }: any) {
 
       <TouchableOpacity
         style={styles.secondaryButton}
-        onPress={() => navigation.navigate("Login")}
+        onPress={() => navigation.navigate("Scan")}
         activeOpacity={0.9}
       >
-        <Text style={styles.secondaryButtonText}>Iniciar sesión</Text>
+        <Text style={styles.secondaryButtonText}>Ir al escaneo conectado</Text>
       </TouchableOpacity>
 
       <TouchableOpacity
         style={styles.secondaryButton}
-        onPress={() => navigation.navigate("Register")}
+        onPress={() => navigation.navigate("MainTabs", { screen: "Ofertas" })}
         activeOpacity={0.9}
       >
-        <Text style={styles.secondaryButtonText}>Crear cuenta</Text>
+        <Text style={styles.secondaryButtonText}>Volver a ofertas</Text>
       </TouchableOpacity>
     </View>
   );

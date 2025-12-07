@@ -1,14 +1,17 @@
 import React from "react";
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
+import { NavigationProp, ParamListBase } from "@react-navigation/native";
 import { useAuthStore } from "../../store/auth.store";
 import { colors } from "../../theme/colors";
 
-export default function ProfileMainScreen({ navigation }: any) {
-  const user = useAuthStore((s) => s.user);
-  const clearAuth = useAuthStore((s) => s.clearAuth);
+type ProfileMainProps = { navigation: NavigationProp<ParamListBase> };
 
-  function logout() {
-    clearAuth();
+export default function ProfileMainScreen({ navigation }: ProfileMainProps) {
+  const user = useAuthStore((s) => s.user);
+  const logout = useAuthStore((s) => s.logout);
+
+  async function handleLogout() {
+    await logout();
     navigation.replace("Login");
   }
 
@@ -30,7 +33,7 @@ export default function ProfileMainScreen({ navigation }: any) {
         </>
       )}
 
-      <TouchableOpacity style={[styles.secondaryButton, { marginTop: 12 }]} onPress={logout} activeOpacity={0.9}>
+      <TouchableOpacity style={[styles.secondaryButton, { marginTop: 12 }]} onPress={handleLogout} activeOpacity={0.9}>
         <Text style={styles.secondaryButtonText}>Cerrar sesión</Text>
       </TouchableOpacity>
     </View>

@@ -3,23 +3,27 @@ import { View, Text, ActivityIndicator, ScrollView, StyleSheet, TouchableOpacity
 import { apiAuthGet } from "../../config/api";
 import { colors } from "../../theme/colors";
 
+type AdminDashboard = { admin?: string };
+type AdminUser = { id: string; email: string; role: string };
+type AdminEvent = { id: string; severity: string; userEmail: string; reason: string };
+
 export default function AdminDashboardScreen() {
-  const [dashboard, setDashboard] = useState<any>(null);
-  const [users, setUsers] = useState<any[]>([]);
-  const [events, setEvents] = useState<any[]>([]);
+  const [dashboard, setDashboard] = useState<AdminDashboard | null>(null);
+  const [users, setUsers] = useState<AdminUser[]>([]);
+  const [events, setEvents] = useState<AdminEvent[]>([]);
   const [loading, setLoading] = useState(false);
 
   async function loadAll() {
     setLoading(true);
     try {
-      const [d, u, e] = await Promise.all([
-        apiAuthGet("/admin/dashboard"),
-        apiAuthGet("/admin/users"),
-        apiAuthGet("/admin/ai/activity"),
+      const [dashboardData, usersData, eventsData] = await Promise.all([
+        apiAuthGet<AdminDashboard>("/admin/dashboard"),
+        apiAuthGet<{ users?: AdminUser[] }>("/admin/users"),
+        apiAuthGet<{ events?: AdminEvent[] }>("/admin/ai/activity"),
       ]);
-      setDashboard(d);
-      setUsers(u.users || []);
-      setEvents(e.events || []);
+      setDashboard(dashboardData);
+      setUsers(usersData.users || []);
+      setEvents(eventsData.events || []);
     } catch (err) {
       console.log("ADMIN LOAD ERROR:", err);
     }
