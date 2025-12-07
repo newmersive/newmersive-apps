@@ -1,6 +1,13 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, StyleSheet, ActivityIndicator, Button } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  ActivityIndicator,
+  TouchableOpacity,
+} from "react-native";
 import { apiAuthGet } from "../../config/api";
+import { colors } from "../../theme/colors";
 
 interface ScanDemoResponse {
   result: string;
@@ -47,70 +54,116 @@ export default function ScanResultScreen({ navigation, route }: ScanResultScreen
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Resultado escaneo</Text>
+      <View style={styles.card}>
+        <Text style={styles.title}>Resultado escaneo</Text>
 
-      <Button title="Volver a escanear" onPress={() => navigation.navigate("Escanear")} />
-      <View style={{ height: 12 }} />
-      <Button title="Recargar resultado demo" onPress={loadScanDemo} />
+        <TouchableOpacity
+          style={styles.button}
+          onPress={() => navigation.navigate("Escanear")}
+          activeOpacity={0.9}
+        >
+          <Text style={styles.buttonText}>Volver a escanear</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.button, styles.secondaryButton]}
+          onPress={loadScanDemo}
+          activeOpacity={0.9}
+        >
+          <Text style={styles.buttonText}>Recargar resultado demo</Text>
+        </TouchableOpacity>
 
-      {loading && <ActivityIndicator style={{ marginTop: 16 }} />}
+        {loading && (
+          <ActivityIndicator style={{ marginTop: 16 }} color={colors.button} />
+        )}
 
-      {error && <Text style={styles.error}>{error}</Text>}
+        {error && <Text style={styles.error}>{error}</Text>}
 
-      {data && !loading && (
-        <View style={styles.resultBox}>
-          <Text style={styles.resultTitle}>Respuesta backend:</Text>
-          <Text style={styles.resultText}>{data.result}</Text>
+        {data && !loading && (
+          <View style={styles.resultBox}>
+            <Text style={styles.resultTitle}>Respuesta backend:</Text>
+            <Text style={styles.resultText}>{data.result}</Text>
 
-          {data.productName && (
-            <Text style={styles.resultText}>
-              Producto detectado: {data.productName}
-            </Text>
-          )}
+            {data.productName && (
+              <Text style={styles.resultText}>
+                Producto detectado: {data.productName}
+              </Text>
+            )}
 
-          {data.suggestions && data.suggestions.length > 0 && (
-            <>
-              <Text style={[styles.resultTitle, { marginTop: 8 }]}>Sugerencias:</Text>
-              {data.suggestions.map((s, idx) => (
-                <Text key={idx} style={styles.resultText}>
-                  • {s}
-                </Text>
-              ))}
-            </>
-          )}
+            {data.suggestions && data.suggestions.length > 0 && (
+              <>
+                <Text style={[styles.resultTitle, { marginTop: 8 }]}>Sugerencias:</Text>
+                {data.suggestions.map((s, idx) => (
+                  <Text key={idx} style={styles.resultText}>
+                    • {s}
+                  </Text>
+                ))}
+              </>
+            )}
 
-          {data.user && (
-            <Text style={[styles.resultText, { marginTop: 8 }]}>
-              Usuario: {data.user}
-            </Text>
-          )}
+            {data.user && (
+              <Text style={[styles.resultText, { marginTop: 8 }]}>
+                Usuario: {data.user}
+              </Text>
+            )}
 
-          {data.demoMode && (
-            <Text style={[styles.resultText, { marginTop: 4, fontStyle: "italic" }]}> 
-              (Modo demo activo)
-            </Text>
-          )}
-        </View>
-      )}
+            {data.demoMode && (
+              <Text
+                style={[styles.resultText, { marginTop: 4, fontStyle: "italic" }]}
+              >
+                (Modo demo activo)
+              </Text>
+            )}
+          </View>
+        )}
 
-      {!loading && !error && !data && (
-        <Text style={{ marginTop: 12 }}>No hay datos de escaneo todavía.</Text>
-      )}
+        {!loading && !error && !data && (
+          <Text style={[styles.resultText, { marginTop: 12 }]}> 
+            No hay datos de escaneo todavía.
+          </Text>
+        )}
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 24 },
-  title: { fontSize: 24, fontWeight: "bold", marginBottom: 12 },
+  container: { flex: 1, padding: 24, backgroundColor: colors.primary },
+  card: {
+    backgroundColor: colors.card,
+    padding: 20,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
+    flex: 1,
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: "bold",
+    marginBottom: 12,
+    color: colors.text,
+  },
   error: { color: "red", marginTop: 8 },
   resultBox: {
     marginTop: 16,
     padding: 12,
     borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 6,
+    borderColor: colors.cardBorder,
+    borderRadius: 10,
+    backgroundColor: colors.card,
   },
-  resultTitle: { fontWeight: "600", marginBottom: 4 },
-  resultText: { color: "#333" },
+  resultTitle: { fontWeight: "600", marginBottom: 4, color: colors.text },
+  resultText: { color: colors.text },
+  button: {
+    backgroundColor: colors.button,
+    paddingVertical: 12,
+    borderRadius: 10,
+    alignItems: "center",
+  },
+  secondaryButton: {
+    marginTop: 10,
+  },
+  buttonText: {
+    color: colors.buttonText,
+    fontWeight: "700",
+  },
 });

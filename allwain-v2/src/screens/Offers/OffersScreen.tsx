@@ -1,13 +1,14 @@
 import React, { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
-  Button,
   FlatList,
   StyleSheet,
   Text,
   View,
+  TouchableOpacity,
 } from "react-native";
 import { apiAuthGet } from "../../config/api";
+import { colors } from "../../theme/colors";
 
 interface Offer {
   id: string;
@@ -58,13 +59,22 @@ export default function OffersScreen() {
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>Ofertas de tiendas</Text>
-        <Button title="Recargar" onPress={loadOffers} disabled={loading} />
+        <TouchableOpacity
+          style={[styles.button, loading && styles.buttonDisabled]}
+          onPress={loadOffers}
+          disabled={loading}
+          activeOpacity={0.9}
+        >
+          <Text style={styles.buttonText}>Recargar</Text>
+        </TouchableOpacity>
       </View>
       <Text style={styles.subtitle}>
         Datos obtenidos de /allwain/offers (requiere usuario autenticado).
       </Text>
 
-      {loading && <ActivityIndicator style={{ marginTop: 16 }} />}
+      {loading && (
+        <ActivityIndicator style={{ marginTop: 16 }} color={colors.button} />
+      )}
 
       {error && <Text style={styles.error}>{error}</Text>}
 
@@ -90,25 +100,33 @@ export default function OffersScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 24 },
+  container: { flex: 1, padding: 24, backgroundColor: colors.primary },
   header: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
   },
-  title: { fontSize: 24, fontWeight: "bold" },
-  subtitle: { marginTop: 4, color: "#555" },
+  title: { fontSize: 24, fontWeight: "bold", color: colors.text },
+  subtitle: { marginTop: 4, color: colors.text },
   error: { color: "red", marginTop: 12 },
-  empty: { marginTop: 16, color: "#666" },
+  empty: { marginTop: 16, color: colors.text },
   offerCard: {
     marginTop: 16,
     padding: 12,
     borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 8,
-    backgroundColor: "#fff",
+    borderColor: colors.cardBorder,
+    borderRadius: 10,
+    backgroundColor: colors.card,
   },
-  offerTitle: { fontSize: 18, fontWeight: "600", marginBottom: 4 },
-  offerDescription: { color: "#333", marginBottom: 6 },
-  offerMeta: { color: "#555" },
+  offerTitle: { fontSize: 18, fontWeight: "600", marginBottom: 4, color: colors.text },
+  offerDescription: { color: colors.text, marginBottom: 6 },
+  offerMeta: { color: colors.text },
+  button: {
+    backgroundColor: colors.button,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 10,
+  },
+  buttonDisabled: { opacity: 0.8 },
+  buttonText: { color: colors.buttonText, fontWeight: "700" },
 });
