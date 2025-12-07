@@ -1,0 +1,95 @@
+import React from "react";
+import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import { NativeStackScreenProps } from "@react-navigation/native-stack";
+import { RootStackParamList } from "../../navigation/RootNavigator";
+import { colors } from "../../theme/colors";
+
+const MOCK_SPONSOR_CODE = "SPONSOR-DEMO-QR";
+
+type Props = NativeStackScreenProps<RootStackParamList, "SponsorQR">;
+
+export default function SponsorQRScreen({ navigation, route }: Props) {
+  const handleUseCode = (code?: string) => {
+    navigation.navigate("Auth", { sponsorCode: code || MOCK_SPONSOR_CODE });
+  };
+
+  return (
+    <View style={styles.container}>
+      <Text style={styles.title}>Escanear QR de patrocinador</Text>
+      <Text style={styles.subtitle}>
+        Esta pantalla simula la lectura de un QR de invitación. Al integrar el
+        escáner, navega aquí y pasa el código leído.
+      </Text>
+
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Código detectado</Text>
+        <Text style={styles.code}>{route.params?.code || MOCK_SPONSOR_CODE}</Text>
+        <TouchableOpacity
+          style={styles.button}
+          onPress={() => handleUseCode(route.params?.code)}
+        >
+          <Text style={styles.buttonText}>Usar en registro</Text>
+        </TouchableOpacity>
+      </View>
+
+      <TouchableOpacity style={styles.link} onPress={() => handleUseCode()}>
+        <Text style={styles.linkText}>Probar con código de ejemplo</Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: colors.primary,
+    padding: 24,
+    justifyContent: "center",
+    gap: 16,
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: "800",
+    color: colors.button,
+  },
+  subtitle: {
+    color: colors.button,
+    fontSize: 15,
+    lineHeight: 22,
+  },
+  card: {
+    backgroundColor: colors.card,
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
+    gap: 10,
+  },
+  cardTitle: {
+    color: colors.text,
+    fontWeight: "600",
+  },
+  code: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: colors.text,
+  },
+  button: {
+    backgroundColor: colors.button,
+    paddingVertical: 12,
+    borderRadius: 10,
+    alignItems: "center",
+  },
+  buttonText: {
+    color: colors.buttonText,
+    fontWeight: "700",
+  },
+  link: {
+    alignItems: "center",
+    padding: 8,
+  },
+  linkText: {
+    color: colors.button,
+    fontWeight: "700",
+  },
+});

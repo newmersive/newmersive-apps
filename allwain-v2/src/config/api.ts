@@ -12,69 +12,88 @@ export interface AuthResponse {
     name: string;
     email: string;
     role: string;
+    sponsorCode?: string;
+    referredByCode?: string;
+    avatarUrl?: string;
+    tokens?: number;
+    tokensFromInvites?: number;
+    invitedUsers?: Array<{
+      id: string;
+      name: string;
+      email?: string;
+      avatarUrl?: string;
+      tokensEarned?: number;
+      tokensAwarded?: number;
+    }>;
   };
 }
 
-type ApiError = Error & { status?: number; body?: unknown };
-
-function buildUrl(path: string) {
-  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
-  return `${API_BASE_URL}${normalizedPath}`;
-}
-
-async function parseJson(res: Response) {
-  try {
-    return await res.json();
-  } catch (err) {
-    console.error("No se pudo parsear la respuesta JSON", err);
-    return null;
+function handleUnauthorized(status: number, message?: string) {
+  if (status === 401) {
+    useAuthStore
+      .getState()
+      .logout(message || "Sesión expirada, vuelve a iniciar sesión.");
+    throw new Error("SESSION_EXPIRED");
   }
 }
 
-function buildApiError(res: Response, body: any): ApiError {
-  const message = body?.message || body?.error || `API_ERROR_${res.status}`;
-  const error = new Error(message) as ApiError;
-  error.status = res.status;
-  error.body = body;
-  return error;
-}
-
-function authHeaders() {
-  const token = useAuthStore.getState().token;
-  return token ? { Authorization: `Bearer ${token}` } : {};
-}
-
 export async function apiPost<T>(path: string, body: unknown): Promise<T> {
+  const url = `${API_BASE_URL}${path.startsWith("/") ? path : `/${path}`}`;
+
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+
+  let data: any = null;
+  try {
+    data = await res.json();
+  } catch {}
+
+  if (!res.ok) {
+    handleUnauthorized(res.status, data?.message || data?.error);
+    throw new Error(data?.message || data?.error || `API_ERROR_${res.status}`);
+  }
+
+  return data as T;
+}
+
+export async function apiAuthGet<T>(path: string): Promise<T> {
+  const url = `${API_BASE_URL}${path.startsWith("/") ? path : `/${path}`}`;
+  const token = useAuthStore.getState().token;
+
+  const res = await fetch(url, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+  });
+
+  let data: any = null;
+  try {
+    data = await res.json();
+  } catch {}
+
+  if (!res.ok) {
+    handleUnauthorized(res.status, data?.message || data?.error);
+    throw new Error(data?.message || data?.error || `API_ERROR_${res.status}`);
+  }
+
+  return data as T;
+}
+
+export async function apiAuthPost<T>(path: string, body?: unknown): Promise<T> {
   const url = buildUrl(path);
   try {
     const res = await fetch(url, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
-
-    const data = await parseJson(res);
-    if (!res.ok) {
-      console.error(`POST ${url} fallo`, res.status, data);
-      throw buildApiError(res, data);
-    }
-
-    return data as T;
-  } catch (err) {
-    console.error(`POST ${url} error`, err);
-    throw err;
-  }
-}
-
-export async function apiAuthGet<T>(path: string): Promise<T> {
-  const url = buildUrl(path);
-  try {
-    const res = await fetch(url, {
-      method: "GET",
       headers: {
         "Content-Type": "application/json",
         ...authHeaders(),
       },
+      body: body ? JSON.stringify(body) : undefined,
     });
 
     const data = await parseJson(res);
@@ -83,13 +102,13 @@ export async function apiAuthGet<T>(path: string): Promise<T> {
       if (res.status === 401) {
         useAuthStore.getState().clearAuth();
       }
-      console.error(`GET ${url} fallo`, res.status, data);
+      console.error(`POST ${url} fallo`, res.status, data);
       throw buildApiError(res, data);
     }
 
     return data as T;
   } catch (err) {
-    console.error(`GET ${url} error`, err);
+    console.error(`POST ${url} error`, err);
     throw err;
   }
 }

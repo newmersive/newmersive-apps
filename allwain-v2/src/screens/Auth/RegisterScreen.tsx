@@ -69,7 +69,7 @@ export default function RegisterScreen({ navigation }: any) {
         <TextInput
           style={styles.input}
           placeholder="Nombre"
-          placeholderTextColor="rgba(64, 64, 65, 0.6)"
+          placeholderTextColor={colors.mutedText}
           value={name}
           onChangeText={setName}
         />
@@ -77,7 +77,7 @@ export default function RegisterScreen({ navigation }: any) {
         <TextInput
           style={styles.input}
           placeholder="Email"
-          placeholderTextColor="rgba(64, 64, 65, 0.6)"
+          placeholderTextColor={colors.mutedText}
           autoCapitalize="none"
           keyboardType="email-address"
           value={email}
@@ -87,7 +87,7 @@ export default function RegisterScreen({ navigation }: any) {
         <TextInput
           style={styles.input}
           placeholder="Contraseña"
-          placeholderTextColor="rgba(64, 64, 65, 0.6)"
+          placeholderTextColor={colors.mutedText}
           secureTextEntry
           value={password}
           onChangeText={setPassword}
@@ -155,7 +155,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     padding: 24,
-    backgroundColor: colors.primary,
+    backgroundColor: colors.background,
   },
   card: {
     backgroundColor: colors.card,
@@ -196,7 +196,7 @@ const styles = StyleSheet.create({
   },
   roleButtonText: { color: colors.text, fontWeight: "700" },
   roleButtonTextActive: { color: colors.buttonText },
-  error: { color: "red", marginTop: 12, marginBottom: 12 },
+  error: { color: colors.danger, marginTop: 12, marginBottom: 12 },
   button: {
     backgroundColor: colors.button,
     paddingVertical: 12,

@@ -5,11 +5,10 @@ import { colors } from "../../theme/colors";
 
 export default function ProfileMainScreen({ navigation }: any) {
   const user = useAuthStore((s) => s.user);
-  const clearAuth = useAuthStore((s) => s.clearAuth);
+  const logout = useAuthStore((s) => s.logout);
 
-  function logout() {
-    clearAuth();
-    navigation.replace("Login");
+  async function handleLogout() {
+    await logout();
   }
 
   return (
@@ -37,7 +36,11 @@ export default function ProfileMainScreen({ navigation }: any) {
           <Text style={styles.buttonText}>Patrocinadores</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.button} onPress={logout} activeOpacity={0.9}>
+        <TouchableOpacity
+          style={styles.button}
+          onPress={handleLogout}
+          activeOpacity={0.9}
+        >
           <Text style={styles.buttonText}>Cerrar sesión</Text>
         </TouchableOpacity>
       </View>
@@ -46,7 +49,7 @@ export default function ProfileMainScreen({ navigation }: any) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 24, backgroundColor: colors.primary },
+  container: { flex: 1, padding: 24, backgroundColor: colors.background },
   card: {
     backgroundColor: colors.card,
     padding: 20,
@@ -54,7 +57,12 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.cardBorder,
   },
-  title: { fontSize: 24, marginBottom: 12, color: colors.text, fontWeight: "700" },
+  title: {
+    fontSize: 24,
+    marginBottom: 12,
+    color: colors.text,
+    fontWeight: "700",
+  },
   detail: { color: colors.text, marginBottom: 6 },
   button: {
     marginTop: 12,
@@ -63,5 +71,9 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     alignItems: "center",
   },
+  buttonText: {
+    color: colors.buttonText,
+    f
+
   buttonText: { color: colors.buttonText, fontWeight: "700" },
 });

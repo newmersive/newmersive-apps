@@ -1,30 +1,62 @@
-import React from "react";
+import React, { useEffect } from "react";
+import { ActivityIndicator, View } from "react-native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { useAuthStore } from "../store/auth.store";
 
 import DemoLandingScreen from "../screens/Demo/DemoLandingScreen";
 import DemoScanResultScreen from "../screens/Demo/DemoScanResultScreen";
 
-import LoginScreen from "../screens/Auth/LoginScreen";
-import RegisterScreen from "../screens/Auth/RegisterScreen";
+import AuthScreen from "../screens/Auth/AuthScreen";
+import SponsorQRScreen from "../screens/Auth/SponsorQRScreen";
 
 import MainTabs from "./MainTabs";
 import AdminDashboardScreen from "../screens/Admin/AdminDashboardScreen";
 import SponsorsScreen from "../screens/Sponsors/SponsorsScreen";
+import { colors } from "../theme/colors";
 
-const Stack = createNativeStackNavigator();
+export type RootStackParamList = {
+  Auth:
+    | {
+        sponsorCode?: string;
+        mode?: "login" | "register";
+      }
+    | undefined;
+  SponsorQR: { code?: string } | undefined;
+  DemoLanding: undefined;
+  DemoScanResult: undefined;
+  MainTabs: undefined;
+  AdminDashboard: undefined;
+  Sponsors: undefined;
+};
+
+const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export default function RootNavigator() {
   const user = useAuthStore((s) => s.user);
-  const isLogged = Boolean(user);
+  const hydrated = useAuthStore((s) => s.hydrated);
+  const restoreSession = useAuthStore((s) => s.restoreSession);
   const isAdmin = user?.role === "admin";
+
+  useEffect(() => {
+    if (!hydrated) {
+      restoreSession();
+    }
+  }, [hydrated, restoreSession]);
+
+  if (!hydrated) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        <ActivityIndicator color={colors.primary} />
+      </View>
+    );
+  }
 
   return (
     <Stack.Navigator
-      key={isLogged ? "app" : "auth"}
+      key={user ? "app" : "auth"}
       screenOptions={{ headerShown: false }}
     >
-      {isLogged ? (
+      {user ? (
         <>
           <Stack.Screen name="MainTabs" component={MainTabs} />
           <Stack.Screen name="Sponsors" component={SponsorsScreen} />
@@ -37,12 +69,16 @@ export default function RootNavigator() {
         </>
       ) : (
         <>
+          <Stack.Screen name="Auth" component={AuthScreen} />
+          <Stack.Screen name="SponsorQR" component={SponsorQRScreen} />
           <Stack.Screen name="DemoLanding" component={DemoLandingScreen} />
-          <Stack.Screen name="DemoScanResult" component={DemoScanResultScreen} />
-          <Stack.Screen name="Login" component={LoginScreen} />
-          <Stack.Screen name="Register" component={RegisterScreen} />
+          <Stack.Screen
+            name="DemoScanResult"
+            component={DemoScanResultScreen}
+          />
         </>
       )}
     </Stack.Navigator>
   );
 }
+

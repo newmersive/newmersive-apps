@@ -9,12 +9,29 @@ import {
 import { apiAuthGet } from "../../config/api";
 import { colors } from "../../theme/colors";
 
+interface ScanDemoProduct {
+  id: string;
+  name: string;
+  description?: string;
+  brand?: string;
+  imageUrl?: string;
+}
+
+interface ScanDemoOffer {
+  id: string;
+  title: string;
+  description: string;
+  owner: string;
+  ownerUserId: string;
+  price?: number;
+  tokens?: number;
+  meta?: Record<string, unknown>;
+}
+
 interface ScanDemoResponse {
-  result: string;
-  productName?: string;
-  suggestions?: string[];
-  user?: string;
-  demoMode?: boolean;
+  product: ScanDemoProduct;
+  offers: ScanDemoOffer[];
+  message: string;
 }
 
 export default function ScanScreen({ navigation }: any) {
@@ -27,7 +44,7 @@ export default function ScanScreen({ navigation }: any) {
       setError(null);
       const data = await apiAuthGet<ScanDemoResponse>("/allwain/scan-demo");
 
-      navigation.navigate("Resultado", { initialData: data });
+      navigation.navigate("ScanResult", { initialData: data });
     } catch (err: any) {
       console.error("Error al lanzar demo de escaneo", err);
       setError(err?.message || "No se pudo ejecutar el escaneo demo");
@@ -41,9 +58,8 @@ export default function ScanScreen({ navigation }: any) {
       <View style={styles.card}>
         <Text style={styles.title}>Escanear producto</Text>
         <Text style={styles.body}>
-          Aquí irá la cámara real y el lector de etiquetas / imagen con IA. Por
-          ahora, lanza el flujo demo que consulta /api/allwain/scan-demo y te
-          lleva al resultado.
+          Simula la lectura de una etiqueta o QR, consulta el backend demo y
+          navega automáticamente a la pantalla de resultado con ofertas.
         </Text>
 
         <TouchableOpacity
@@ -53,7 +69,7 @@ export default function ScanScreen({ navigation }: any) {
           activeOpacity={0.9}
         >
           <Text style={styles.buttonText}>
-            {loading ? "Consultando demo..." : "Simular escaneo y ver resultado"}
+            {loading ? "Consultando demo..." : "Simular escaneo demo"}
           </Text>
         </TouchableOpacity>
 
@@ -71,7 +87,7 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 24,
     justifyContent: "center",
-    backgroundColor: colors.primary,
+    backgroundColor: colors.background,
   },
   card: {
     backgroundColor: colors.card,
@@ -82,7 +98,7 @@ const styles = StyleSheet.create({
   },
   title: { fontSize: 24, marginBottom: 12, fontWeight: "700", color: colors.text },
   body: { marginBottom: 20, color: colors.text },
-  error: { marginTop: 12, color: "red" },
+  error: { marginTop: 12, color: colors.danger },
   button: {
     backgroundColor: colors.button,
     paddingVertical: 12,
