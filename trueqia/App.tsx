@@ -1,5 +1,8 @@
 import React from "react";
 import { NavigationContainer, DefaultTheme } from "@react-navigation/native";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { SafeAreaProvider } from "react-native-safe-area-context";
+import { StatusBar } from "react-native";
 import RootNavigator from "./src/navigation/RootNavigator";
 import { colors } from "./src/config/theme";
 
@@ -17,8 +20,13 @@ const navigationTheme = {
 
 export default function App() {
   return (
-    <NavigationContainer theme={navigationTheme}>
-      <RootNavigator />
-    </NavigationContainer>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider>
+        <NavigationContainer theme={navigationTheme}>
+          <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
+          <RootNavigator />
+        </NavigationContainer>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }

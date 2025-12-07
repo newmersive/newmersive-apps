@@ -1,16 +1,23 @@
 import React, { useEffect } from "react";
+import { ActivityIndicator, View } from "react-native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { ActivityIndicator, View } from "react-native";
 import AuthScreen from "../screens/Auth/AuthScreen";
-import MainTabs from "./MainTabs";
-import { useAuthStore } from "../store/auth.store";
 import SponsorQRScreen from "../screens/Auth/SponsorQRScreen";
+import MainTabs from "./MainTabs";
+import OffersListScreen from "../screens/Offers/OffersListScreen";
+import ContractPreviewScreen from "../screens/Contracts/ContractPreviewScreen";
+import TradeDetailScreen from "../screens/Trades/TradeDetailScreen";
+import { useAuthStore } from "../store/auth.store";
+import { colors } from "../config/theme";
 
 export type RootStackParamList = {
   Auth: { sponsorCode?: string } | undefined;
   SponsorQR: { code?: string } | undefined;
   MainTabs: undefined;
+  OffersList: undefined;
+  TradeDetail: { [key: string]: any } | undefined;
+  ContractPreview: { [key: string]: any } | undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -28,30 +35,63 @@ export default function RootNavigator() {
 
   if (!hydrated) {
     return (
-      <GestureHandlerRootView style={{ flex: 1 }}>
-        <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-          <ActivityIndicator />
-        </View>
-      </GestureHandlerRootView>
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        <ActivityIndicator color={colors.primary} />
+      </View>
     );
   }
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Navigator
+        screenOptions={{
+          headerStyle: { backgroundColor: colors.background },
+          headerTitleStyle: { color: colors.text },
+          headerShadowVisible: false,
+          contentStyle: { backgroundColor: colors.background },
+        }}
+      >
         {user ? (
-          <Stack.Screen name="MainTabs" component={MainTabs} />
+          <>
+            <Stack.Screen
+              name="MainTabs"
+              component={MainTabs}
+              options={{ headerShown: false }}
+            />
+            <Stack.Screen
+              name="OffersList"
+              component={OffersListScreen}
+              options={{ title: "Ofertas" }}
+            />
+            <Stack.Screen
+              name="TradeDetail"
+              component={TradeDetailScreen}
+              options={{ title: "Detalle de trueque" }}
+            />
+            <Stack.Screen
+              name="ContractPreview"
+              component={ContractPreviewScreen}
+              options={{ title: "Contrato IA" }}
+            />
+          </>
         ) : (
           <>
-            <Stack.Screen name="Auth" component={AuthScreen} />
+            <Stack.Screen
+              name="Auth"
+              component={AuthScreen}
+              options={{ headerShown: false }}
+            />
             <Stack.Screen
               name="SponsorQR"
               component={SponsorQRScreen}
-              options={{ headerShown: true, title: "Invitación" }}
+              options={{ title: "Invitación" }}
             />
           </>
         )}
       </Stack.Navigator>
     </GestureHandlerRootView>
+  );
+}
+
   );
 }
