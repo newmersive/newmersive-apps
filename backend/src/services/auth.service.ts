@@ -80,6 +80,10 @@ export function getUserProfile(userId: string): AuthUser | null {
   return publicUser;
 }
 
+export function getPublicUsers(): AuthUser[] {
+  return getDatabase().users.map(({ passwordHash, ...user }) => user);
+}
+
 /**
  * Forgot password
  */

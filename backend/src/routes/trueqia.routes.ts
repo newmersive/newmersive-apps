@@ -113,4 +113,22 @@ function handleTradeError(err: unknown, res: any) {
   }
 
   if (err.message === "TRADE_NOT_FOUND") {
-    retur
+    return res.status(404).json({ error: "TRADE_NOT_FOUND" });
+  }
+
+  if (err.message === "TRADE_NOT_PENDING") {
+    return res.status(400).json({ error: "TRADE_NOT_PENDING" });
+  }
+
+  if (err.message === "NOT_PARTICIPANT") {
+    return res.status(403).json({ error: "NOT_PARTICIPANT" });
+  }
+
+  if (err.message === "INSUFFICIENT_TOKENS") {
+    return res.status(400).json({ error: "INSUFFICIENT_TOKENS" });
+  }
+
+  return res.status(500).json({ error: "INTERNAL_ERROR" });
+}
+
+export default router;

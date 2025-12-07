@@ -39,6 +39,33 @@ export interface AuthUser {
 }
 
 /* =========================
+   ALLWAIN SPONSORS
+========================= */
+
+export interface ReferralMonthlyHistory {
+  month: number;
+  year: number;
+  saved: number;
+  commission: number;
+}
+
+export interface ReferralStat {
+  id: string;
+  userId: string;
+  invitedUserId: string;
+  totalSavedByInvited: number;
+  commissionEarned: number;
+  monthlyHistory: ReferralMonthlyHistory[];
+}
+
+export interface AllwainSavingTransaction {
+  id: string;
+  userId: string;
+  amount: number;
+  createdAt: string;
+}
+
+/* =========================
    OFFERS & TRADES
 ========================= */
 

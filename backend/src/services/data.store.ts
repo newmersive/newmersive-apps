@@ -2,12 +2,14 @@ import fs from "fs";
 import path from "path";
 import { ENV } from "../config/env";
 import {
+  AllwainSavingTransaction,
   Contract,
   ContractStatus,
   Lead,
   OrderGroup,
   Offer,
   Product,
+  ReferralStat,
   Trade,
   TradeStatus,
   User,
@@ -20,6 +22,8 @@ interface Database {
   products: Product[];
   leads: Lead[];
   contracts: Contract[];
+  referralStats: ReferralStat[];
+  allwainSavings: AllwainSavingTransaction[];
   orderGroups: OrderGroup[];
 }
 
@@ -131,7 +135,8 @@ const defaultProducts: Product[] = [
     description:
       "Selección de granos de especialidad con ficha sensorial y QR nutricional.",
     brand: "Allwain",
-    priceTokens: 35 as any, // el tipo Product no lleva precio, pero no rompe nada
+    // Product no define precio, usamos extra field para demo
+    priceTokens: 35 as any,
     category: "café",
     imageUrl: "https://images.unsplash.com/photo-1509042239860-f550ce710b93",
   },
@@ -268,9 +273,10 @@ const defaultTrades: Trade[] = [
   },
 ];
 
-// OJO: Lead y Contract usan los tipos "nuevos" de shared/types
 const defaultLeads: Lead[] = [];
 const defaultContracts: Contract[] = [];
+const defaultReferralStats: ReferralStat[] = [];
+const defaultAllwainSavings: AllwainSavingTransaction[] = [];
 const defaultOrderGroups: OrderGroup[] = [];
 
 const defaultDatabase: Database = {
@@ -280,6 +286,8 @@ const defaultDatabase: Database = {
   products: defaultProducts,
   leads: defaultLeads,
   contracts: defaultContracts,
+  referralStats: defaultReferralStats,
+  allwainSavings: defaultAllwainSavings,
   orderGroups: defaultOrderGroups,
 };
 
@@ -329,6 +337,12 @@ function loadDatabase(): Database {
     products: mergeById(defaultProducts, data.products ?? []),
     leads: mergeById(defaultLeads, data.leads ?? []),
     contracts: mergeById(defaultContracts, data.contracts ?? []),
+    referralStats: mergeById(defaultReferralStats, data.referralStats ?? []),
+    allwainSavings: mergeById(
+      defaultAllwainSavings,
+      data.allwainSavings ?? []
+    ),
+    orderGroups: mergeById(defaultOrderGroups, data.orderGroups ?? []),
   };
 
   persistDatabase(merged);
@@ -383,6 +397,16 @@ export function getUserByEmail(email: string): User | undefined {
   );
 }
 
+export function getUserBySponsorCode(code?: string): User | undefined {
+  if (!code) return undefined;
+  return getDatabase().users.find((u) => u.sponsorCode === code);
+}
+
+// alias usado en allwain.service
+export function findUserBySponsorCode(code: string): User | undefined {
+  return getUserBySponsorCode(code);
+}
+
 export function upsertUser(user: User) {
   const db = getDatabase();
   const index = db.users.findIndex((u) => u.id === user.id);
@@ -414,6 +438,10 @@ export function getProductById(id: string): Product | undefined {
   return getDatabase().products.find((p) => p.id === id);
 }
 
+export function getProductByEan(ean: string): Product | undefined {
+  return getDatabase().products.find((p) => p.ean === ean);
+}
+
 /**
  * =========================
  * OFFERS & TRADES
@@ -443,22 +471,46 @@ export function getTradeById(id: string): Trade | undefined {
   return getDatabase().trades.find((t) => t.id === id);
 }
 
-/**
- * =========================
- * PRODUCTS
- * =========================
- */
-
-export function getProducts(): Product[] {
-  return getDatabase().products;
+export function addTrade(trade: Trade): Trade {
+  const db = getDatabase();
+  db.trades.push(trade);
+  persistDatabase(db);
+  return trade;
 }
 
-export function getProductById(id: string): Product | undefined {
-  return getDatabase().products.find((p) => p.id === id);
+export function updateTrade(trade: Trade): Trade {
+  const db = getDatabase();
+  const index = db.trades.findIndex((t) => t.id === trade.id);
+  if (index === -1) {
+    db.trades.push(trade);
+  } else {
+    db.trades[index] = { ...db.trades[index], ...trade };
+  }
+  persistDatabase(db);
+  return trade;
 }
 
-export function getProductByEan(ean: string): Product | undefined {
-  return getDatabase().products.find((p) => p.ean === ean);
+export function saveTrade(trade: Trade): Trade {
+  // por compatibilidad con versiones anteriores
+  return updateTrade(trade);
+}
+
+export function updateTradeStatus(
+  tradeId: string,
+  status: TradeStatus,
+  _contractId?: string
+): Trade | null {
+  const trade = getTradeById(tradeId);
+  if (!trade) return null;
+
+  const updated: Trade = {
+    ...trade,
+    status,
+    resolvedAt:
+      status === "pending" ? undefined : new Date().toISOString(),
+  };
+
+  return updateTrade(updated);
 }
 
 /**
@@ -480,7 +532,7 @@ export function getLeads(): Lead[] {
 
 /**
  * =========================
- * ORDER GROUPS
+ * ORDER GROUPS (Allwain pedidos grupales)
  * =========================
  */
 
@@ -509,4 +561,144 @@ export function updateOrderGroup(orderGroup: OrderGroup): OrderGroup {
   persistDatabase(db);
   return orderGroup;
 }
+
+/**
+ * =========================
+ * CONTRACTS
+ * =========================
+ */
+
+export function createContract(
+  contract: Omit<Contract, "createdAt" | "id"> & Partial<Contract>
+): Contract {
+  const db = getDatabase();
+  const newContract: Contract = {
+    id: contract.id ?? `contract-${Date.now()}`,
+    createdAt: contract.createdAt ?? new Date().toISOString(),
+    status: contract.status ?? ("draft" as ContractStatus),
+    ...contract,
+  };
+  db.contracts.push(newContract);
+  persistDatabase(db);
+  return newContract;
+}
+
+export function getContractById(id: string): Contract | undefined {
+  return getDatabase().contracts.find((c) => c.id === id);
+}
+
+export function updateContractStatus(
+  id: string,
+  status: ContractStatus
+): Contract | null {
+  const db = getDatabase();
+  const index = db.contracts.findIndex((c) => c.id === id);
+  if (index === -1) return null;
+
+  db.contracts[index] = {
+    ...db.contracts[index],
+    status,
+    updatedAt: new Date().toISOString(),
+  };
+
+  persistDatabase(db);
+  return db.contracts[index];
+}
+
+/**
+ * =========================
+ * REFERRALS / SPONSORS (Allwain)
+ * =========================
+ */
+
+export function getReferralStats(): ReferralStat[] {
+  return getDatabase().referralStats;
+}
+
+export function getReferralStat(
+  userId: string,
+  invitedUserId: string
+): ReferralStat | undefined {
+  return getDatabase().referralStats.find(
+    (stat) => stat.userId === userId && stat.invitedUserId === invitedUserId
+  );
+}
+
+export function getReferralStatsBySponsor(userId: string): ReferralStat[] {
+  return getDatabase().referralStats.filter((stat) => stat.userId === userId);
+}
+
+export function upsertReferralStat(stat: ReferralStat): ReferralStat {
+  const db = getDatabase();
+  const index = db.referralStats.findIndex(
+    (item) =>
+      item.userId === stat.userId &&
+      item.invitedUserId === stat.invitedUserId
+  );
+
+  if (index === -1) {
+    db.referralStats.push(stat);
+  } else {
+    db.referralStats[index] = { ...db.referralStats[index], ...stat };
+  }
+
+  persistDatabase(db);
+  return stat;
+}
+
+export function addAllwainSavingTransaction(
+  transaction: AllwainSavingTransaction
+): AllwainSavingTransaction {
+  const db = getDatabase();
+  db.allwainSavings.push(transaction);
+  persistDatabase(db);
+  return transaction;
+}
+
+export function getAllwainSavingTransactions(): AllwainSavingTransaction[] {
+  return getDatabase().allwainSavings;
+}
+
+/**
+ * =========================
+ * PASSWORD RESET TOKENS
+ * =========================
+ */
+
+export function savePasswordResetToken(
+  token: string,
+  userId: string,
+  expiresAt: number
+) {
+  // limpiamos caducados y duplicados del mismo user
+  const now = Date.now();
+  for (let i = passwordResetTokens.length - 1; i >= 0; i--) {
+    const t = passwordResetTokens[i];
+    if (t.expiresAt <= now || t.userId === userId) {
+      passwordResetTokens.splice(i, 1);
+    }
+  }
+  passwordResetTokens.push({ token, userId, expiresAt });
+}
+
+export function getPasswordResetToken(
+  token: string
+): PasswordResetToken | undefined {
+  const now = Date.now();
+  const record = passwordResetTokens.find((t) => t.token === token);
+  if (!record) return undefined;
+  if (record.expiresAt <= now) {
+    deletePasswordResetToken(token);
+    return undefined;
+  }
+  return record;
+}
+
+export function deletePasswordResetToken(token: string) {
+  const index = passwordResetTokens.findIndex((t) => t.token === token);
+  if (index >= 0) {
+    passwordResetTokens.splice(index, 1);
+  }
+}
+
 
