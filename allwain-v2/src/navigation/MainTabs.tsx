@@ -2,6 +2,7 @@ import React from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 
 import HomeScreen from "../screens/Scan/HomeScreen";
+import SearchScreen from "../screens/Search/SearchScreen";
 import ScanScreen from "../screens/Scan/ScanScreen";
 import ScanResultScreen from "../screens/Scan/ScanResultScreen";
 import OffersScreen from "../screens/Offers/OffersScreen";
@@ -14,6 +15,7 @@ export default function MainTabs() {
   return (
     <Tab.Navigator screenOptions={{ headerShown: true }}>
       <Tab.Screen name="Inicio" component={HomeScreen} />
+      <Tab.Screen name="Buscar" component={SearchScreen} />
       <Tab.Screen name="Escanear" component={ScanScreen} />
       <Tab.Screen name="Resultado" component={ScanResultScreen} />
       <Tab.Screen name="Ofertas" component={OffersScreen} />

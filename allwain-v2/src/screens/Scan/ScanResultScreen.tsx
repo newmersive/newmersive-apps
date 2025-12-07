@@ -10,8 +10,14 @@ interface ScanDemoResponse {
   demoMode?: boolean;
 }
 
-export default function ScanResultScreen({ navigation }: any) {
-  const [data, setData] = useState<ScanDemoResponse | null>(null);
+type ScanResultScreenProps = {
+  navigation: any;
+  route?: { params?: { initialData?: ScanDemoResponse | null } };
+};
+
+export default function ScanResultScreen({ navigation, route }: ScanResultScreenProps) {
+  const initialData = route?.params?.initialData || null;
+  const [data, setData] = useState<ScanDemoResponse | null>(initialData);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -34,8 +40,10 @@ export default function ScanResultScreen({ navigation }: any) {
   }
 
   useEffect(() => {
-    loadScanDemo();
-  }, []);
+    if (!initialData) {
+      loadScanDemo();
+    }
+  }, [initialData]);
 
   return (
     <View style={styles.container}>
