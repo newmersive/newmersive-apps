@@ -1,5 +1,6 @@
 import fs from "fs";
 import path from "path";
+import { ENV } from "../config/env";
 import { Contract, Lead, Offer, Product, Trade, User } from "../shared/types";
 
 interface Database {
@@ -11,20 +12,17 @@ interface Database {
   contracts: Contract[];
 }
 
-interface PasswordResetToken {
-  token: string;
-  userId: string;
-  expiresAt: number;
-}
-
-const DATA_FILE =
-  process.env.DATA_FILE || path.join(__dirname, "../../data/database.json");
+const DEFAULT_DATA_FILE = path.resolve(__dirname, "../../data/database.json");
+const DATA_FILE = ENV.DATA_FILE
+  ? path.resolve(process.cwd(), ENV.DATA_FILE)
+  : DEFAULT_DATA_FILE;
 
 let cache: Database | null = null;
-const passwordResetTokens: PasswordResetToken[] = [];
 
 /**
- * Datos por defecto
+ * =========================
+ * DATOS POR DEFECTO
+ * =========================
  */
 
 const defaultUsers: User[] = [
@@ -35,6 +33,48 @@ const defaultUsers: User[] = [
     passwordHash: "$2a$10$Ljb/uUGMma.UWeFZ1lok6ubGIi2wZoa8dhTAZur6gvVuLMHAuEkTW",
     role: "admin",
     createdAt: "2024-01-01T00:00:00.000Z",
+    tokens: 0,
+    allwainBalance: 0,
+    sponsorCode: "SPN-ADMIN",
+  },
+  {
+    id: "2",
+    name: "TrueQIA Demo",
+    email: "trueqia-demo@newmersive.app",
+    passwordHash: "$2a$10$Ljb/uUGMma.UWeFZ1lok6ubGIi2wZoa8dhTAZur6gvVuLMHAuEkTW",
+    role: "user",
+    createdAt: "2024-01-02T00:00:00.000Z",
+    avatarUrl: "https://api.dicebear.com/8.x/shapes/svg?seed=trueqia-demo",
+    tokens: 0,
+    allwainBalance: 0,
+    sponsorCode: "SPN-TRUEQIA",
+  },
+  {
+    id: "3",
+    name: "Allwain Ops",
+    email: "ops@allwain.app",
+    passwordHash: "$2a$10$Ljb/uUGMma.UWeFZ1lok6ubGIi2wZoa8dhTAZur6gvVuLMHAuEkTW",
+    role: "company",
+    createdAt: "2024-01-03T00:00:00.000Z",
+    avatarUrl: "https://api.dicebear.com/8.x/shapes/svg?seed=allwain",
+    tokens: 0,
+    allwainBalance: 0,
+    sponsorCode: "SPN-ALLWAIN",
+  },
+];
+
+const defaultProducts: Product[] = [
+  {
+    id: "product-1",
+    name: "Pack degustación Allwain",
+    brand: "Allwain",
+    category: "café",
+  },
+  {
+    id: "product-2",
+    name: "Kit etiquetas inteligentes",
+    brand: "Allwain",
+    category: "packaging",
   },
 ];
 
@@ -47,7 +87,7 @@ const defaultOffers: Offer[] = [
     owner: "trueqia",
     ownerUserId: "1",
     tokens: 80,
-    meta: { category: "creativos" } as any,
+    meta: { category: "creativos" },
   },
   {
     id: "offer-trueqia-2",
@@ -57,7 +97,7 @@ const defaultOffers: Offer[] = [
     owner: "trueqia",
     ownerUserId: "1",
     tokens: 120,
-    meta: { category: "formación" } as any,
+    meta: { category: "formación" },
   },
   {
     id: "offer-allwain-1",
@@ -65,14 +105,18 @@ const defaultOffers: Offer[] = [
     description:
       "Pack degustación 3 orígenes con envío 24h y puntos Allwain acumulados.",
     owner: "allwain",
-    ownerUserId: "1",
-    price: 30 as any,
-    productId: "product-1" as any,
-    meta: { category: "gourmet" } as any,
+    ownerUserId: "3",
+    price: 30,
+    productId: "product-1",
+    meta: { category: "gourmet" },
   },
   {
     id: "offer-allwain-2",
     title: "Comisión: análisis de etiquetas",
     description:
-      "Revisi
+      "Revisión bajo demanda del QR nutricional y sugerencias de mejora para tu línea de producto.",
+    owner: "allwain",
+    ownerUserId: "3",
+    price: 45,
+    meta: { category: "análisis
 

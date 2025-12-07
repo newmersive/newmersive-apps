@@ -1,5 +1,9 @@
 export type UserRole = "user" | "buyer" | "company" | "admin";
 
+/* =========================
+   USER & AUTH
+========================= */
+
 export interface User {
   id: string;
   name: string;
@@ -7,7 +11,6 @@ export interface User {
   passwordHash: string;
   role: UserRole;
   createdAt: string;
-  // Sistema de referidos / balances
   sponsorCode?: string;
   referredByCode?: string;
   avatarUrl?: string;
@@ -32,6 +35,10 @@ export interface AuthUser {
   tokens?: number;
   allwainBalance?: number;
 }
+
+/* =========================
+   OFFERS & TRADES
+========================= */
 
 export interface Offer {
   id: string;
@@ -58,12 +65,68 @@ export interface Trade {
   resolvedAt?: string;
 }
 
+/* =========================
+   PRODUCTS
+========================= */
+
 export interface Product {
   id: string;
   name: string;
-  ean?: string;
-  category?: string;
+  description?: string;
   brand?: string;
+  ean?: string;
+  priceTokens?: number;
+  category?: string;
+  imageUrl?: string;
 }
 
-expor
+/* =========================
+   LEADS
+========================= */
+
+export type LeadStatus = "new" | "contacted" | "qualified" | "closed";
+
+export interface Lead {
+  id: string;
+  name: string;
+  email: string;
+  source: string;
+  message?: string;
+  status: LeadStatus;
+  createdAt: string;
+}
+
+/* =========================
+   CONTRACTS
+========================= */
+
+export type ContractApp = "trueqia" | "allwain";
+export type ContractType = "trade" | "purchase";
+export type ContractStatus = "draft" | "active" | "closed" | "conflict";
+
+export interface Contract {
+  id: string;
+  title: string;
+  app?: ContractApp;
+  type?: ContractType;
+  status: ContractStatus;
+  counterparties?: string[];
+  valueTokens?: number;
+  basePdfId?: string;
+  generatedText?: string;
+  createdAt: string;
+  updatedAt?: string;
+  notes?: string;
+}
+
+/* =========================
+   DEMO
+========================= */
+
+export interface DemoContractInput {
+  offerTitle: string;
+  requesterName: string;
+  providerName: string;
+  tokens: number;
+}
+
