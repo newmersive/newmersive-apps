@@ -11,6 +11,7 @@ import SponsorQRScreen from "../screens/Auth/SponsorQRScreen";
 
 import MainTabs from "./MainTabs";
 import AdminDashboardScreen from "../screens/Admin/AdminDashboardScreen";
+import SponsorsScreen from "../screens/Sponsors/SponsorsScreen";
 import { colors } from "../theme/colors";
 
 export type RootStackParamList = {
@@ -25,6 +26,7 @@ export type RootStackParamList = {
   DemoScanResult: undefined;
   MainTabs: undefined;
   AdminDashboard: undefined;
+  Sponsors: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -57,6 +59,7 @@ export default function RootNavigator() {
       {user ? (
         <>
           <Stack.Screen name="MainTabs" component={MainTabs} />
+          <Stack.Screen name="Sponsors" component={SponsorsScreen} />
           {isAdmin && (
             <Stack.Screen
               name="AdminDashboard"

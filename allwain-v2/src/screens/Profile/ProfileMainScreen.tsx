@@ -30,6 +30,14 @@ export default function ProfileMainScreen({ navigation }: any) {
 
         <TouchableOpacity
           style={styles.button}
+          onPress={() => navigation.navigate("Sponsors")}
+          activeOpacity={0.9}
+        >
+          <Text style={styles.buttonText}>Patrocinadores</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.button}
           onPress={handleLogout}
           activeOpacity={0.9}
         >
@@ -49,7 +57,12 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.cardBorder,
   },
-  title: { fontSize: 24, marginBottom: 12, color: colors.text, fontWeight: "700" },
+  title: {
+    fontSize: 24,
+    marginBottom: 12,
+    color: colors.text,
+    fontWeight: "700",
+  },
   detail: { color: colors.text, marginBottom: 6 },
   button: {
     marginTop: 12,
@@ -58,5 +71,9 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     alignItems: "center",
   },
+  buttonText: {
+    color: colors.buttonText,
+    f
+
   buttonText: { color: colors.buttonText, fontWeight: "700" },
 });
