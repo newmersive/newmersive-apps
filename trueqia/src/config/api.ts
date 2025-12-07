@@ -8,6 +8,19 @@ export interface AuthResponse {
     name: string;
     email: string;
     role: string;
+    sponsorCode?: string;
+    referredByCode?: string;
+    avatarUrl?: string;
+    tokens?: number;
+    tokensFromInvites?: number;
+    invitedUsers?: Array<{
+      id: string;
+      name: string;
+      email?: string;
+      avatarUrl?: string;
+      tokensEarned?: number;
+      tokensAwarded?: number;
+    }>;
   };
 }
 
