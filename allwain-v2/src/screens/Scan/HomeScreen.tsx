@@ -22,7 +22,7 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 24, backgroundColor: colors.primary },
+  container: { flex: 1, padding: 24, backgroundColor: colors.background },
   card: {
     backgroundColor: colors.card,
     padding: 20,

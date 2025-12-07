@@ -1,15 +1,14 @@
-import React from "react";
+import React, { useCallback, useState } from "react";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { useAuthStore } from "../store/auth.store";
 
-import DemoLandingScreen from "../screens/Demo/DemoLandingScreen";
-import DemoScanResultScreen from "../screens/Demo/DemoScanResultScreen";
-
 import LoginScreen from "../screens/Auth/LoginScreen";
 import RegisterScreen from "../screens/Auth/RegisterScreen";
+import SplashScreen from "../screens/Auth/SplashScreen";
 
 import MainTabs from "./MainTabs";
 import AdminDashboardScreen from "../screens/Admin/AdminDashboardScreen";
+import ScanResultScreen from "../screens/Scan/ScanResultScreen";
 
 const Stack = createNativeStackNavigator();
 
@@ -17,15 +16,22 @@ export default function RootNavigator() {
   const user = useAuthStore((s) => s.user);
   const isLogged = Boolean(user);
   const isAdmin = user?.role === "admin";
+  const [showSplash, setShowSplash] = useState(true);
+
+  const handleSplashDone = useCallback(() => setShowSplash(false), []);
 
   return (
     <Stack.Navigator
-      key={isLogged ? "app" : "auth"}
       screenOptions={{ headerShown: false }}
     >
-      {isLogged ? (
+      {showSplash ? (
+        <Stack.Screen name="Splash">
+          {() => <SplashScreen onReady={handleSplashDone} />}
+        </Stack.Screen>
+      ) : isLogged ? (
         <>
           <Stack.Screen name="MainTabs" component={MainTabs} />
+          <Stack.Screen name="ScanResult" component={ScanResultScreen} />
           {isAdmin && (
             <Stack.Screen
               name="AdminDashboard"
@@ -35,8 +41,6 @@ export default function RootNavigator() {
         </>
       ) : (
         <>
-          <Stack.Screen name="DemoLanding" component={DemoLandingScreen} />
-          <Stack.Screen name="DemoScanResult" component={DemoScanResultScreen} />
           <Stack.Screen name="Login" component={LoginScreen} />
           <Stack.Screen name="Register" component={RegisterScreen} />
         </>
