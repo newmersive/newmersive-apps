@@ -398,6 +398,20 @@ export function setUsers(users: User[]) {
 
 /**
  * =========================
+ * PRODUCTS
+ * =========================
+ */
+
+export function getProducts(): Product[] {
+  return getDatabase().products;
+}
+
+export function getProductById(id: string): Product | undefined {
+  return getDatabase().products.find((p) => p.id === id);
+}
+
+/**
+ * =========================
  * OFFERS & TRADES
  * =========================
  */

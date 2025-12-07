@@ -1,15 +1,17 @@
 import { Router } from "express";
 import { authRequired, AuthRequest } from "../middleware/auth.middleware";
 import { listOffers } from "../services/market.service";
+import { buildAllwainScanDemo } from "../services/allwain-demo.service";
 
 const router = Router();
 
-router.get("/scan-demo", authRequired, (req: AuthRequest, res) => {
+router.get("/scan-demo", authRequired, (_req: AuthRequest, res) => {
+  const scanDemo = buildAllwainScanDemo();
+
   res.json({
-    result: "Etiqueta leída",
-    productName: "Café molido",
-    suggestions: ["Tienda A", "Tienda B"],
-    user: req.user?.email,
+    product: scanDemo.product,
+    offers: scanDemo.offers,
+    message: scanDemo.message,
   });
 });
 
