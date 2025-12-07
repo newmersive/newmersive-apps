@@ -5,6 +5,7 @@ import {
   Contract,
   ContractStatus,
   Lead,
+  OrderGroup,
   Offer,
   Product,
   Trade,
@@ -19,6 +20,7 @@ interface Database {
   products: Product[];
   leads: Lead[];
   contracts: Contract[];
+  orderGroups: OrderGroup[];
 }
 
 interface PasswordResetToken {
@@ -269,6 +271,7 @@ const defaultTrades: Trade[] = [
 // OJO: Lead y Contract usan los tipos "nuevos" de shared/types
 const defaultLeads: Lead[] = [];
 const defaultContracts: Contract[] = [];
+const defaultOrderGroups: OrderGroup[] = [];
 
 const defaultDatabase: Database = {
   users: defaultUsers,
@@ -277,6 +280,7 @@ const defaultDatabase: Database = {
   products: defaultProducts,
   leads: defaultLeads,
   contracts: defaultContracts,
+  orderGroups: defaultOrderGroups,
 };
 
 /**
@@ -439,5 +443,70 @@ export function getTradeById(id: string): Trade | undefined {
   return getDatabase().trades.find((t) => t.id === id);
 }
 
-ex
+/**
+ * =========================
+ * PRODUCTS
+ * =========================
+ */
+
+export function getProducts(): Product[] {
+  return getDatabase().products;
+}
+
+export function getProductById(id: string): Product | undefined {
+  return getDatabase().products.find((p) => p.id === id);
+}
+
+export function getProductByEan(ean: string): Product | undefined {
+  return getDatabase().products.find((p) => p.ean === ean);
+}
+
+/**
+ * =========================
+ * LEADS
+ * =========================
+ */
+
+export function addLead(lead: Lead): Lead {
+  const db = getDatabase();
+  db.leads.push(lead);
+  persistDatabase(db);
+  return lead;
+}
+
+export function getLeads(): Lead[] {
+  return getDatabase().leads;
+}
+
+/**
+ * =========================
+ * ORDER GROUPS
+ * =========================
+ */
+
+export function getOrderGroups(): OrderGroup[] {
+  return getDatabase().orderGroups;
+}
+
+export function getOrderGroupById(id: string): OrderGroup | undefined {
+  return getDatabase().orderGroups.find((og) => og.id === id);
+}
+
+export function addOrderGroup(orderGroup: OrderGroup): OrderGroup {
+  const db = getDatabase();
+  db.orderGroups.push(orderGroup);
+  persistDatabase(db);
+  return orderGroup;
+}
+
+export function updateOrderGroup(orderGroup: OrderGroup): OrderGroup {
+  const db = getDatabase();
+  const index = db.orderGroups.findIndex((og) => og.id === orderGroup.id);
+  if (index === -1) {
+    throw new Error("ORDER_GROUP_NOT_FOUND");
+  }
+  db.orderGroups[index] = orderGroup;
+  persistDatabase(db);
+  return orderGroup;
+}
 
