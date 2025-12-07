@@ -1,8 +1,15 @@
 import bcrypt from "bcryptjs";
+import crypto from "crypto";
 import jwt from "jsonwebtoken";
 import { ENV } from "../config/env";
 import { AuthTokenResponse, AuthUser, User, UserRole } from "../shared/types";
-import { getDatabase, upsertUser } from "./data.store";
+import {
+  deletePasswordResetToken,
+  getDatabase,
+  getPasswordResetToken,
+  savePasswordResetToken,
+  upsertUser,
+} from "./data.store";
 
 let userIdCounter = 1;
 
@@ -19,6 +26,9 @@ let userIdCounter = 1;
       passwordHash,
       role: "admin",
       createdAt: new Date().toISOString(),
+      tokens: 0,
+      allwainBalance: 0,
+      sponsorCode: generateSponsorCode(),
     };
     upsertUser(adminUser);
   } else {
@@ -30,7 +40,8 @@ export async function registerUser(
   name: string,
   email: string,
   password: string,
-  role: UserRole = "user"
+  role: UserRole = "user",
+  sponsorCode?: string
 ): Promise<AuthTokenResponse> {
   const db = getDatabase();
   const normalizedEmail = email.toLowerCase();
@@ -38,6 +49,8 @@ export async function registerUser(
   if (existing) throw new Error("EMAIL_ALREADY_EXISTS");
 
   const passwordHash = await bcrypt.hash(password, 10);
+  const newSponsorCode = generateSponsorCode();
+  const referredByCode = validateSponsorCode(sponsorCode);
   const user: User = {
     id: String(++userIdCounter),
     name,
@@ -45,6 +58,10 @@ export async function registerUser(
     passwordHash,
     role,
     createdAt: new Date().toISOString(),
+    tokens: 0,
+    allwainBalance: 0,
+    sponsorCode: newSponsorCode,
+    referredByCode,
   };
 
   upsertUser(user);
@@ -91,5 +108,51 @@ function mapUser(user: User): AuthUser {
     name: user.name,
     email: user.email,
     role: user.role,
+    createdAt: user.createdAt,
+    tokens: user.tokens ?? 0,
+    allwainBalance: user.allwainBalance ?? 0,
+    sponsorCode: user.sponsorCode || `SPN-${user.id}`,
+    referredByCode: user.referredByCode,
   };
+}
+
+function generateSponsorCode(): string {
+  const db = getDatabase();
+  let code = "";
+  do {
+    code = `SPN-${crypto.randomBytes(4).toString("hex").toUpperCase()}`;
+  } while (db.users.some((u) => u.sponsorCode === code));
+  return code;
+}
+
+function validateSponsorCode(code?: string): string | undefined {
+  if (!code) return undefined;
+  const db = getDatabase();
+  const exists = db.users.find((user) => user.sponsorCode === code);
+  return exists ? code : undefined;
+}
+
+export async function requestPasswordReset(email: string) {
+  const db = getDatabase();
+  const normalizedEmail = email.toLowerCase();
+  const user = db.users.find((u) => u.email === normalizedEmail);
+  if (!user) return;
+
+  const token = crypto.randomBytes(16).toString("hex");
+  const expiresAt = Date.now() + 60 * 60 * 1000;
+  savePasswordResetToken(token, user.id, expiresAt);
+  return token;
+}
+
+export async function resetPassword(token: string, newPassword: string) {
+  const record = getPasswordResetToken(token);
+  if (!record) throw new Error("INVALID_TOKEN");
+
+  const db = getDatabase();
+  const user = db.users.find((u) => u.id === record.userId);
+  if (!user) throw new Error("INVALID_TOKEN");
+
+  const passwordHash = await bcrypt.hash(newPassword, 10);
+  upsertUser({ ...user, passwordHash });
+  deletePasswordResetToken(token);
 }

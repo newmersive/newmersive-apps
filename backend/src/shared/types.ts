@@ -7,6 +7,10 @@ export interface User {
   passwordHash: string;
   role: UserRole;
   createdAt: string;
+  tokens: number;
+  allwainBalance: number;
+  sponsorCode: string;
+  referredByCode?: string;
 }
 
 export interface AuthTokenResponse {
@@ -19,6 +23,11 @@ export interface AuthUser {
   name: string;
   email: string;
   role: UserRole;
+  createdAt: string;
+  tokens: number;
+  allwainBalance: number;
+  sponsorCode: string;
+  referredByCode?: string;
 }
 
 export interface Offer {

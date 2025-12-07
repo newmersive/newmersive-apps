@@ -8,10 +8,17 @@ interface Database {
   trades: Trade[];
 }
 
+interface PasswordResetToken {
+  token: string;
+  userId: string;
+  expiresAt: number;
+}
+
 const DATA_FILE =
   process.env.DATA_FILE || path.join(__dirname, "../../data/database.json");
 
 let cache: Database | null = null;
+const passwordResetTokens: PasswordResetToken[] = [];
 
 const defaultData: Database = {
   users: [
@@ -22,6 +29,9 @@ const defaultData: Database = {
       passwordHash: "$2a$10$Ljb/uUGMma.UWeFZ1lok6ubGIi2wZoa8dhTAZur6gvVuLMHAuEkTW",
       role: "admin",
       createdAt: "2024-01-01T00:00:00.000Z",
+      tokens: 0,
+      allwainBalance: 0,
+      sponsorCode: "SPN-ADMIN",
     },
   ],
   offers: [
@@ -99,6 +109,15 @@ function mergeDefaultOffers(offers: Offer[]): Offer[] {
   return [...offers, ...missingDefaults];
 }
 
+function applyUserDefaults(users: User[]): User[] {
+  return users.map((user) => ({
+    ...user,
+    tokens: user.tokens ?? 0,
+    allwainBalance: user.allwainBalance ?? 0,
+    sponsorCode: user.sponsorCode || `SPN-${user.id}`,
+  }));
+}
+
 function loadFromDisk(): Database {
   ensureDataDir();
   if (!fs.existsSync(DATA_FILE)) {
@@ -111,7 +130,7 @@ function loadFromDisk(): Database {
 
   const parsed = JSON.parse(raw) as Database;
   return {
-    users: ensureDefaultAdmin(parsed.users || []),
+    users: ensureDefaultAdmin(applyUserDefaults(parsed.users || [])),
     offers: mergeDefaultOffers(parsed.offers || defaultData.offers),
     trades: parsed.trades || defaultData.trades,
   };
@@ -136,7 +155,7 @@ export function persistDatabase() {
 
 export function resetDatabase(data: Partial<Database>) {
   cache = {
-    users: ensureDefaultAdmin(data.users ?? []),
+    users: ensureDefaultAdmin(applyUserDefaults(data.users ?? [])),
     offers: mergeDefaultOffers(data.offers ?? defaultData.offers),
     trades: data.trades ?? defaultData.trades,
   };
@@ -156,7 +175,7 @@ export function upsertUser(user: User) {
 
 export function setUsers(users: User[]) {
   const db = getDatabase();
-  db.users = users;
+  db.users = applyUserDefaults(users);
   persistDatabase();
 }
 
@@ -166,4 +185,32 @@ export function getOffersForOwner(owner: "trueqia" | "allwain") {
 
 export function getTrades() {
   return getDatabase().trades;
+}
+
+export function savePasswordResetToken(token: string, userId: string, expiresAt: number) {
+  const now = Date.now();
+  for (let i = passwordResetTokens.length - 1; i >= 0; i--) {
+    if (passwordResetTokens[i].expiresAt <= now || passwordResetTokens[i].userId === userId) {
+      passwordResetTokens.splice(i, 1);
+    }
+  }
+  passwordResetTokens.push({ token, userId, expiresAt });
+}
+
+export function getPasswordResetToken(token: string): PasswordResetToken | undefined {
+  const now = Date.now();
+  const record = passwordResetTokens.find((entry) => entry.token === token);
+  if (!record) return undefined;
+  if (record.expiresAt <= now) {
+    deletePasswordResetToken(token);
+    return undefined;
+  }
+  return record;
+}
+
+export function deletePasswordResetToken(token: string) {
+  const index = passwordResetTokens.findIndex((entry) => entry.token === token);
+  if (index >= 0) {
+    passwordResetTokens.splice(index, 1);
+  }
 }
