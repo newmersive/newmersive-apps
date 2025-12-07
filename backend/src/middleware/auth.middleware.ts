@@ -7,6 +7,12 @@ export interface AuthRequest extends Request {
   user?: { id: string; email: string; role: UserRole };
 }
 
+interface JwtAuthPayload extends jwt.JwtPayload {
+  sub: string;
+  email: string;
+  role: UserRole;
+}
+
 export function authRequired(req: AuthRequest, res: Response, next: NextFunction) {
   const header = req.headers.authorization;
   if (!header || !header.startsWith("Bearer "))
@@ -18,7 +24,7 @@ export function authRequired(req: AuthRequest, res: Response, next: NextFunction
 
   const token = header.slice(7);
   try {
-    const payload = jwt.verify(token, ENV.JWT_SECRET) as any;
+    const payload = jwt.verify(token, ENV.JWT_SECRET) as JwtAuthPayload;
     req.user = { id: payload.sub, email: payload.email, role: payload.role };
     next();
   } catch {
