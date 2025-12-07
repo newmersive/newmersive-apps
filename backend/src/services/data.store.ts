@@ -6,6 +6,7 @@ import {
   Contract,
   ContractStatus,
   Lead,
+  LeadGlobal,
   OrderGroup,
   Offer,
   Product,
@@ -21,6 +22,7 @@ interface Database {
   trades: Trade[];
   products: Product[];
   leads: Lead[];
+  leadGlobals: LeadGlobal[];
   contracts: Contract[];
   referralStats: ReferralStat[];
   allwainSavings: AllwainSavingTransaction[];
@@ -274,6 +276,7 @@ const defaultTrades: Trade[] = [
 ];
 
 const defaultLeads: Lead[] = [];
+const defaultLeadGlobals: LeadGlobal[] = [];
 const defaultContracts: Contract[] = [];
 const defaultReferralStats: ReferralStat[] = [];
 const defaultAllwainSavings: AllwainSavingTransaction[] = [];
@@ -285,6 +288,7 @@ const defaultDatabase: Database = {
   trades: defaultTrades,
   products: defaultProducts,
   leads: defaultLeads,
+  leadGlobals: defaultLeadGlobals,
   contracts: defaultContracts,
   referralStats: defaultReferralStats,
   allwainSavings: defaultAllwainSavings,
@@ -336,6 +340,7 @@ function loadDatabase(): Database {
     trades: mergeById(defaultTrades, data.trades ?? []),
     products: mergeById(defaultProducts, data.products ?? []),
     leads: mergeById(defaultLeads, data.leads ?? []),
+    leadGlobals: mergeById(defaultLeadGlobals, data.leadGlobals ?? []),
     contracts: mergeById(defaultContracts, data.contracts ?? []),
     referralStats: mergeById(defaultReferralStats, data.referralStats ?? []),
     allwainSavings: mergeById(
@@ -528,6 +533,17 @@ export function addLead(lead: Lead): Lead {
 
 export function getLeads(): Lead[] {
   return getDatabase().leads;
+}
+
+export function addGlobalLead(lead: LeadGlobal): LeadGlobal {
+  const db = getDatabase();
+  db.leadGlobals.push(lead);
+  persistDatabase(db);
+  return lead;
+}
+
+export function getGlobalLeads(): LeadGlobal[] {
+  return getDatabase().leadGlobals;
 }
 
 /**
