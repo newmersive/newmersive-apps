@@ -309,7 +309,10 @@ export function getSponsorSummary(userId: string) {
       if (a.year === b.year) return a.month - b.month;
       return a.year - b.year;
     }),
-    referrals: stats,
+    referrals: stats.map((stat) => ({
+      ...stat,
+      invitedName: getUserById(stat.invitedUserId)?.name,
+    })),
   };
 }
 
