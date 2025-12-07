@@ -1,59 +1,84 @@
 # Arquitectura del Backend
 
-## Resumen general
-- **Stack**: Node.js + Express + TypeScript. Persistencia en archivo JSON (`data/database.json`) mediante utilidades en `src/services/data.store.ts`. JWT para autenticación; bcrypt para hashes.
-- **Estructura**:
-  - `src/server.ts`: arranque de Express, montaje de `/api`.
-  - `src/routes`: definición de rutas agrupadas (`auth`, `trueqia`, `allwain`, `admin`, `health`).
-  - `src/controllers`: lógica HTTP para auth.
-  - `src/services`: servicios de dominio (auth, market, data store).
-  - `src/ia`: helpers demo (contratos, moderación).
-  - `src/middleware`: autenticación/roles.
-  - `data/`: archivo JSON con datos semilla.
+## Propósito
+- API unificada para TrueQIA y Allwain con autenticación JWT, ofertas, contratos demo y panel admin.
+- Servir datos semilla desde `data/database.json` para pruebas sin depender de una base externa.
+
+## Componentes principales
+- **Stack**: Node.js + Express + TypeScript.
+- **Entrada**: `src/server.ts` monta Express, CORS y router `/api`.
+- **Rutas** (`src/routes`):
+  - `auth.routes`: registro/login/me.
+  - `trueqia.routes`: ofertas y contratos demo.
+  - `allwain.routes`: escaneo demo, productos, ofertas, grupos de pedido y referidos.
+  - `admin.routes`: dashboard, usuarios, actividad IA, resumen de sponsors.
+  - `health.routes`: ping.
+- **Controladores/servicios**:
+  - `services/auth.service.ts`: gestión de usuarios, generación de tokens, validación de sponsor codes.
+  - `services/data.store.ts`: lectura/escritura de `data/database.json`, seed de usuarios/ofertas.
+  - `services/trueqia.service.ts` y `services/allwain.service.ts`: lógica de dominio.
+  - `ia/moderation.service.ts` y `ia/contracts.service.ts`: respuestas demo IA.
+- **Middleware** (`middleware/auth.middleware.ts`): validación de JWT y rol admin.
+- **Tipos compartidos** (`src/shared/types.ts`): User, Offer, Trade, etc.
 
 ## Modelo de datos
-- Definido en `src/shared/types.ts`:
-  - **User**: `id`, `name`, `email`, `passwordHash`, `role` (`user|buyer|company|admin`), `createdAt`.
-  - **AuthUser/AuthTokenResponse**: versión pública sin `passwordHash` + token.
-  - **Offer**: `id`, `title`, `description`, `tokens`, `owner` (`trueqia|allwain`), `category`.
-  - **Trade**: `id`, `title`, `status`, `participants`, `tokens`.
-- **Almacenamiento** (`data.store.ts`):
-  - Lee/escribe JSON, inicializa ofertas y trades demo y asegura que siempre exista el usuario admin + 4 ofertas base (si faltan en el JSON se reinyectan).
-  - Operaciones: `getDatabase`, `persistDatabase`, `resetDatabase`, `upsertUser`, `setUsers`, `getOffersForOwner`, `getTrades`.
+- Persistencia en archivo JSON (`data/database.json`) con carga en memoria.
+- Seed automático en `data.store.ts` garantiza:
+  - Usuario admin `admin@newmersive.local` (rol `admin`).
+  - Cuatro ofertas base (2 TrueQIA, 2 Allwain) y trades demo.
+- Campos clave de `User`: `id`, `name`, `email`, `passwordHash`, `role`, `sponsorCode`, `referredByCode`, saldos y métricas Allwain.
 
-## Tabla de endpoints (prefijo `/api`)
+## Endpoints (prefijo `/api`)
 | Método | Ruta | Descripción | Auth |
 | --- | --- | --- | --- |
 | GET | /health | Ping con `env`. | Público |
-| POST | /auth/register | Registra usuario (roles whitelist) y devuelve token. | Público |
-| POST | /auth/login | Autentica y devuelve token. | Público |
+| POST | /auth/register | Alta de usuario y token (roles whitelist). | Público |
+| POST | /auth/login | Login y token. | Público |
 | GET | /auth/me | Perfil del usuario autenticado. | Bearer |
-| GET | /trueqia/offers | Ofertas filtradas por owner `trueqia`. | Bearer |
-| GET | /trueqia/trades | Lista de trades demo. | Bearer |
-| POST | /trueqia/contracts/preview | Devuelve texto de contrato demo generado en backend IA. | Bearer |
-| GET | /allwain/scan-demo | Respuesta mock de escaneo QR/etiqueta. | Bearer |
-| GET | /allwain/offers | Ofertas con owner `allwain`. | Bearer |
-| GET | /admin/dashboard | Ping protegido para admin. | Bearer (admin) |
-| GET | /admin/users | Lista pública de usuarios (sin password). | Bearer (admin) |
-| GET | /admin/ai/activity | Lista de eventos demo de moderación. | Bearer (admin) |
+| GET | /trueqia/offers | Ofertas de owner `trueqia`. | Bearer |
+| GET | /trueqia/trades | Trades demo. | Bearer |
+| POST | /trueqia/contracts/preview | Texto de contrato demo (IA). | Bearer |
+| GET | /allwain/scan-demo | Respuesta mock de escaneo QR/EAN. | Bearer |
+| GET | /allwain/products/:id | Producto por ID. | Bearer |
+| GET | /allwain/products?ean= | Producto por EAN. | Bearer |
+| GET | /allwain/offers | Ofertas (filtros opcionales `lat`,`lng`,`location`). | Bearer |
+| POST | /allwain/offers | Crear oferta (owner usuario). | Bearer |
+| POST | /allwain/offers/:id/interest | Registrar lead. | Bearer |
+| GET | /allwain/order-groups | Grupos de compra. | Bearer |
+| POST | /allwain/order-groups | Crear grupo de compra. | Bearer |
+| POST | /allwain/order-groups/:id/join | Unirse a grupo. | Bearer |
+| POST | /allwain/savings | Registrar ahorro y comisión sponsor. | Bearer |
+| GET | /allwain/sponsors/summary | Resumen de referidos Allwain. | Admin |
+| GET | /admin/dashboard | Ping protegido admin. | Admin |
+| GET | /admin/users | Lista pública de usuarios. | Admin |
+| GET | /admin/ai/activity | Eventos demo de moderación. | Admin |
 
 ### Autenticación y roles
-- `authRequired`: valida `Authorization: Bearer <token>`, usa `jwt.verify` con `ENV.JWT_SECRET`; adjunta `{id,email,role}` en `req.user`. Errores consistentes: `{ code: "UNAUTHORIZED" }` o `{ code: "INVALID_TOKEN" }`.
-- `adminOnly`: requiere `req.user.role === "admin"`; responde `{ code: "FORBIDDEN" }`.
-- Tokens se firman a 7 días y contienen `sub`, `email`, `role`.
-- Roles permitidos en registro: `user`, `company`, `admin`, `buyer` (fallback a `user`).
-- Seed automático: `auth.service` crea admin `admin@newmersive.local` con `admin123` si no existe.
+- `authRequired` exige `Authorization: Bearer <token>` firmado con `ENV.JWT_SECRET`; adjunta `{ id, email, role }` en `req.user`.
+- `adminOnly` valida `req.user.role === "admin"`.
+- Tokens se firman a 7 días (`sub`, `email`, `role`).
+- Registro limitado a roles `user`, `company`, `admin`, `buyer`; fallback `user`.
 
-### Consumo por apps
-- **TrueQIA**: `/auth/register`, `/auth/login`, `/trueqia/offers`, `/trueqia/contracts/preview`, `/trueqia/trades`, `/auth/me`.
-- **Allwain**: `/auth/register`, `/auth/login`, `/allwain/scan-demo`, `/allwain/offers`.
+## Cómo se despliega
+1. Variables de entorno (`.env`): `PORT=4000`, `JWT_SECRET=<cadena>`, `DATA_FILE` opcional para usar un JSON alternativo.
+2. Instalar dependencias: `cd backend && npm install` (Node >= 18).
+3. Compilar: `npm run build` (genera `dist/`).
+4. Arrancar: `npm run start` (o `npm run dev` para hot reload). Exponer puerto 4000 y apuntar apps móviles a `http://<host>:<PORT>/api`.
+5. Producción recomendable con `pm2`/`systemd` para reinicios y logs; montar backup del `data/database.json` o setear `DATA_FILE` en ruta persistente.
+
+## Cómo se repara (errores típicos)
+- **401/INVALID_TOKEN**: token expirado o `JWT_SECRET` distinto entre instancias; regenerar `.env` consistente y reloguear.
+- **Archivo JSON corrupto**: si `data/database.json` se rompe, ejecutar `npm run dev` para que `data.store.ts` regenere seed o restaurar backup indicado por `DATA_FILE`.
+- **MISSING_FIELDS/INVALID_* en `/allwain`**: revisar payload numérico (`units`, `price`, `tokens`) y tipos; logs en consola muestran validaciones.
+- **CORS o JSON parse errors**: asegúrate de enviar `Content-Type: application/json`; CORS está abierto por defecto pero proxies pueden añadir cabeceras restrictivas.
+- **Puerto en uso**: ajustar `PORT` o liberar servicio previo (`lsof -i :4000`).
 
 ## Tests
-- `tests/auth.spec.ts`: cubre registro/login y middleware (token ausente, inválido, rol no admin, acceso admin). Usa helper `TestClient` que arranca el servidor en puerto efímero.
-- `tests/offers.spec.ts`: valida que `/trueqia/offers` y `/allwain/offers` requieren token y filtran por `owner`.
-- **Estado de ejecución**: no se ejecutaron en esta auditoría por falta de Node/npm; requieren `npm test` con Node ≥ 18.
+- `tests/auth.spec.ts`: registro/login y middleware (token ausente/rol admin). Usa `TestClient` con servidor efímero.
+- `tests/offers.spec.ts`: `/trueqia/offers` y `/allwain/offers` con validación de owner y auth.
+- Ejecutar con `npm test` (Node >= 18). No se ejecutaron en esta sesión.
 
-## Ejecución local
+## Ejecución local rápida
 1. `npm install`
-2. `npm run dev` (puerto `4000` por defecto) o `npm test` para la suite.
-3. Ajusta `EXPO_PUBLIC_API_BASE_URL` en apps móviles apuntando a `http://<tu-ip>:<PORT>/api`.
+2. `npm run dev` (puerto 4000).
+3. Ajustar `EXPO_PUBLIC_API_BASE_URL` en apps a `http://<tu-ip>:4000/api`.
