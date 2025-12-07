@@ -7,8 +7,8 @@ const navigationTheme = {
   ...DefaultTheme,
   colors: {
     ...DefaultTheme.colors,
-    background: colors.salmon,
-    card: colors.salmon,
+    background: colors.background,
+    card: colors.background,
     text: colors.dark,
     border: colors.line,
   },
