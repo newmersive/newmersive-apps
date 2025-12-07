@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { colors } from "../../config/theme";
+import { radii, spacing } from "../../config/layout";
 import { useAuthStore } from "../../store/auth.store";
 
 export default function RegisterScreen({ navigation }: any) {
@@ -43,84 +44,114 @@ export default function RegisterScreen({ navigation }: any) {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Crear cuenta</Text>
+      <View style={styles.header}>
+        <Text style={styles.title}>Crear cuenta</Text>
+        <Text style={styles.subtitle}>
+          Configura tu perfil para empezar a conectar y negociar con claridad.
+        </Text>
+      </View>
 
-      <TextInput
-        style={styles.input}
-        placeholder="Nombre"
-        placeholderTextColor={colors.muted}
-        value={name}
-        onChangeText={setName}
-      />
+      <View style={styles.card}>
+        <TextInput
+          style={styles.input}
+          placeholder="Nombre"
+          placeholderTextColor={colors.muted}
+          value={name}
+          onChangeText={setName}
+        />
 
-      <TextInput
-        style={styles.input}
-        placeholder="Email"
-        placeholderTextColor={colors.muted}
-        autoCapitalize="none"
-        keyboardType="email-address"
-        value={email}
-        onChangeText={setEmail}
-      />
+        <TextInput
+          style={styles.input}
+          placeholder="Email"
+          placeholderTextColor={colors.muted}
+          autoCapitalize="none"
+          keyboardType="email-address"
+          value={email}
+          onChangeText={setEmail}
+        />
 
-      <TextInput
-        style={styles.input}
-        placeholder="Contraseña"
-        placeholderTextColor={colors.muted}
-        secureTextEntry
-        value={password}
-        onChangeText={setPassword}
-      />
+        <TextInput
+          style={styles.input}
+          placeholder="Contraseña"
+          placeholderTextColor={colors.muted}
+          secureTextEntry
+          value={password}
+          onChangeText={setPassword}
+        />
 
-      {error && <Text style={styles.error}>{error}</Text>}
+        {error && <Text style={styles.error}>{error}</Text>}
 
-      <TouchableOpacity
-        style={[styles.primaryButton, loading && styles.buttonDisabled]}
-        onPress={handleRegister}
-        disabled={loading}
-      >
-        {loading ? (
-          <ActivityIndicator color="#FFFFFF" />
-        ) : (
-          <Text style={styles.primaryButtonText}>Registrar y entrar</Text>
-        )}
-      </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.primaryButton, loading && styles.buttonDisabled]}
+          onPress={handleRegister}
+          disabled={loading}
+        >
+          {loading ? (
+            <ActivityIndicator color="#FFFFFF" />
+          ) : (
+            <Text style={styles.primaryButtonText}>Registrar y entrar</Text>
+          )}
+        </TouchableOpacity>
 
-      <TouchableOpacity
-        style={styles.secondaryButton}
-        onPress={() => navigation.navigate("Login")}
-      >
-        <Text style={styles.secondaryText}>Ya tengo cuenta</Text>
-      </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.secondaryButton}
+          onPress={() => navigation.navigate("Login")}
+        >
+          <Text style={styles.secondaryText}>Ya tengo cuenta</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: "center", padding: 24, backgroundColor: colors.background },
-  title: { fontSize: 24, fontWeight: "bold", marginBottom: 16, color: colors.text },
+  container: {
+    flex: 1,
+    justifyContent: "center",
+    padding: spacing.l,
+    backgroundColor: colors.background,
+  },
+  header: {
+    marginBottom: spacing.l,
+  },
+  title: { fontSize: 28, fontWeight: "800", marginBottom: spacing.s, color: colors.text },
+  subtitle: {
+    color: colors.muted,
+    fontSize: 15,
+    lineHeight: 22,
+  },
+  card: {
+    backgroundColor: colors.surface,
+    borderRadius: radii.l,
+    padding: spacing.l,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
   input: {
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 10,
-    padding: 12,
-    marginBottom: 12,
+    borderRadius: radii.m,
+    paddingVertical: spacing.m,
+    paddingHorizontal: spacing.m,
+    marginBottom: spacing.m,
     color: colors.text,
     backgroundColor: "#FFFFFF",
+    fontSize: 16,
   },
-  error: { color: "#B3261E", marginBottom: 12 },
+  error: { color: "#B3261E", marginBottom: spacing.m },
   primaryButton: {
     backgroundColor: colors.primary,
-    paddingVertical: 14,
-    borderRadius: 12,
+    paddingVertical: spacing.m,
+    borderRadius: radii.l,
     alignItems: "center",
   },
-  primaryButtonText: { color: "#FFFFFF", fontWeight: "700" },
+  primaryButtonText: { color: "#FFFFFF", fontWeight: "700", fontSize: 16 },
   buttonDisabled: { opacity: 0.7 },
   secondaryButton: {
-    marginTop: 12,
-    paddingVertical: 12,
+    marginTop: spacing.m,
+    paddingVertical: spacing.m,
     alignItems: "center",
+    borderRadius: radii.m,
   },
   secondaryText: { color: colors.primary, fontWeight: "700" },
 });
