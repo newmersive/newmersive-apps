@@ -30,7 +30,8 @@ const defaultUsers: User[] = [
     id: "1",
     name: "Admin Demo",
     email: "admin@newmersive.local",
-    passwordHash: "$2a$10$Ljb/uUGMma.UWeFZ1lok6ubGIi2wZoa8dhTAZur6gvVuLMHAuEkTW",
+    passwordHash:
+      "$2a$10$Ljb/uUGMma.UWeFZ1lok6ubGIi2wZoa8dhTAZur6gvVuLMHAuEkTW",
     role: "admin",
     createdAt: "2024-01-01T00:00:00.000Z",
     tokens: 0,
@@ -41,7 +42,8 @@ const defaultUsers: User[] = [
     id: "2",
     name: "TrueQIA Demo",
     email: "trueqia-demo@newmersive.app",
-    passwordHash: "$2a$10$Ljb/uUGMma.UWeFZ1lok6ubGIi2wZoa8dhTAZur6gvVuLMHAuEkTW",
+    passwordHash:
+      "$2a$10$Ljb/uUGMma.UWeFZ1lok6ubGIi2wZoa8dhTAZur6gvVuLMHAuEkTW",
     role: "user",
     createdAt: "2024-01-02T00:00:00.000Z",
     avatarUrl: "https://api.dicebear.com/8.x/shapes/svg?seed=trueqia-demo",
@@ -53,7 +55,8 @@ const defaultUsers: User[] = [
     id: "3",
     name: "Allwain Ops",
     email: "ops@allwain.app",
-    passwordHash: "$2a$10$Ljb/uUGMma.UWeFZ1lok6ubGIi2wZoa8dhTAZur6gvVuLMHAuEkTW",
+    passwordHash:
+      "$2a$10$Ljb/uUGMma.UWeFZ1lok6ubGIi2wZoa8dhTAZur6gvVuLMHAuEkTW",
     role: "company",
     createdAt: "2024-01-03T00:00:00.000Z",
     avatarUrl: "https://api.dicebear.com/8.x/shapes/svg?seed=allwain",
@@ -118,5 +121,146 @@ const defaultOffers: Offer[] = [
     owner: "allwain",
     ownerUserId: "3",
     price: 45,
-    meta: { category: "análisis
+    meta: { category: "análisis" },
+  },
+];
 
+const defaultTrades: Trade[] = [
+  {
+    id: "trade-1",
+    offerId: "offer-trueqia-1",
+    fromUserId: "1",
+    toUserId: "2",
+    tokens: 150,
+    status: "pending",
+    createdAt: "2024-02-01T12:00:00.000Z",
+  },
+  {
+    id: "trade-2",
+    offerId: "offer-allwain-1",
+    fromUserId: "3",
+    toUserId: "2",
+    tokens: 90,
+    status: "accepted",
+    createdAt: "2024-02-10T15:30:00.000Z",
+    resolvedAt: "2024-02-11T10:00:00.000Z",
+  },
+];
+
+const defaultLeads: Lead[] = [];
+const defaultContracts: Contract[] = [];
+
+function mergeSeed<T extends { id: string }>(current: T[], seed: T[]): T[] {
+  const existingIds = new Set(current.map((item) => item.id));
+  const merged = [...current];
+
+  for (const item of seed) {
+    if (!existingIds.has(item.id)) {
+      merged.push(item);
+    }
+  }
+
+  return merged;
+}
+
+function loadDatabase(): Database {
+  if (cache) return cache;
+
+  let fileData: Partial<Database> = {};
+  if (fs.existsSync(DATA_FILE)) {
+    try {
+      const raw = fs.readFileSync(DATA_FILE, "utf-8");
+      fileData = JSON.parse(raw) as Partial<Database>;
+    } catch {
+      fileData = {};
+    }
+  }
+
+  const db: Database = {
+    users: mergeSeed(fileData.users ?? [], defaultUsers),
+    offers: mergeSeed(fileData.offers ?? [], defaultOffers),
+    trades: mergeSeed(fileData.trades ?? [], defaultTrades),
+    products: mergeSeed(fileData.products ?? [], defaultProducts),
+    leads: fileData.leads ?? defaultLeads,
+    contracts: fileData.contracts ?? defaultContracts,
+  };
+
+  cache = db;
+  return db;
+}
+
+export function persistDatabase(db: Database) {
+  cache = db;
+  fs.writeFileSync(DATA_FILE, JSON.stringify(db, null, 2));
+}
+
+export function resetDatabase() {
+  cache = null;
+  persistDatabase(loadDatabase());
+}
+
+export function getDatabase(): Database {
+  return loadDatabase();
+}
+
+export function getUserByEmail(email: string): User | undefined {
+  return getDatabase().users.find((u) => u.email === email);
+}
+
+export function getUserById(userId: string): User | undefined {
+  return getDatabase().users.find((u) => u.id === userId);
+}
+
+export function upsertUser(user: User): void {
+  const db = getDatabase();
+  const index = db.users.findIndex((u) => u.id === user.id);
+  if (index >= 0) {
+    db.users[index] = user;
+  } else {
+    db.users.push(user);
+  }
+  persistDatabase(db);
+}
+
+export function setUsers(users: User[]): void {
+  const db = getDatabase();
+  db.users = users;
+  persistDatabase(db);
+}
+
+export function getOffersByOwner(owner: "trueqia" | "allwain"): Offer[] {
+  return getDatabase().offers.filter((offer) => offer.owner === owner);
+}
+
+export function addOffer(offer: Offer): Offer {
+  const db = getDatabase();
+  db.offers.push(offer);
+  persistDatabase(db);
+  return offer;
+}
+
+export function getTrades(): Trade[] {
+  return getDatabase().trades;
+}
+
+export function getTradeById(tradeId: string): Trade | undefined {
+  return getDatabase().trades.find((trade) => trade.id === tradeId);
+}
+
+export function addTrade(trade: Trade): Trade {
+  const db = getDatabase();
+  db.trades.push(trade);
+  persistDatabase(db);
+  return trade;
+}
+
+export function updateTrade(trade: Trade): Trade {
+  const db = getDatabase();
+  const index = db.trades.findIndex((t) => t.id === trade.id);
+  if (index === -1) {
+    throw new Error("TRADE_NOT_FOUND");
+  }
+  db.trades[index] = trade;
+  persistDatabase(db);
+  return trade;
+}
