@@ -7,6 +7,7 @@ import {
   getAllwainProductByEan,
   getAllwainProductById,
   joinOrderGroup,
+  listOrderGroups,
   listAllwainOffers,
   getSponsorSummary,
   registerAllwainSaving,
@@ -102,13 +103,16 @@ router.post("/offers/:id/interest", authRequired, (req: AuthRequest, res) => {
   try {
     const lead = createOfferInterest(
       req.params.id,
-      req.user!,
+      req.user!.id,
       (req.body as any)?.message
     );
     res.status(201).json({ lead });
   } catch (err: unknown) {
     if (err instanceof Error && err.message === "OFFER_NOT_FOUND") {
       return res.status(404).json({ error: "OFFER_NOT_FOUND" });
+    }
+    if (err instanceof Error && err.message === "USER_NOT_FOUND") {
+      return res.status(404).json({ error: "USER_NOT_FOUND" });
     }
     return res.status(500).json({ error: "INTERNAL_ERROR" });
   }

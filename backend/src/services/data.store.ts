@@ -575,8 +575,8 @@ export function createContract(
   const newContract: Contract = {
     id: contract.id ?? `contract-${Date.now()}`,
     createdAt: contract.createdAt ?? new Date().toISOString(),
-    status: contract.status ?? ("draft" as ContractStatus),
     ...contract,
+    status: contract.status ?? ("draft" as ContractStatus),
   };
   db.contracts.push(newContract);
   persistDatabase(db);
