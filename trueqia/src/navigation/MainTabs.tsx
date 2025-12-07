@@ -3,6 +3,7 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import TradesScreen from "../screens/Trades/TradesScreen";
 import ChatScreen from "../screens/Chat/ChatScreen";
 import ProfileScreen from "../screens/Profile/ProfileScreen";
+import HomeScreen from "../screens/Home/HomeScreen";
 import { colors } from "../config/theme";
 
 const Tab = createBottomTabNavigator();
@@ -13,17 +14,19 @@ export default function MainTabs() {
       screenOptions={{
         headerStyle: { backgroundColor: colors.background },
         headerTitleStyle: { color: colors.text },
+        headerShadowVisible: false,
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.muted,
         tabBarStyle: { backgroundColor: colors.background, borderTopColor: colors.border },
       }}
     >
+      <Tab.Screen name="Home" component={HomeScreen} options={{ title: "Inicio" }} />
       <Tab.Screen
         name="Trades"
         component={TradesScreen}
         options={{ title: "Trueques" }}
       />
-      <Tab.Screen name="Chat" component={ChatScreen} />
+      <Tab.Screen name="Chat" component={ChatScreen} options={{ title: "Chat" }} />
       <Tab.Screen name="Profile" component={ProfileScreen} options={{ title: "Perfil" }} />
     </Tab.Navigator>
   );
