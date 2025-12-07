@@ -1,67 +1,45 @@
 # Newmersive Backend
 
-Backend en Node.js/TypeScript para las experiencias de **TRUEQIA** y **ALLWAIN**. Expone las rutas en `/api` y utiliza un almacenamiento JSON sencillo para usuarios, ofertas y transacciones demo.
+API en Node.js/TypeScript para TRUEQIA y ALLWAIN. Expone rutas bajo `/api` con autenticación JWT, ofertas demo y utilidades de IA simuladas.
 
-> 📄 Consulta el resumen de arquitectura en [docs/backend-architecture.md](../docs/backend-architecture.md).
+Consulta la descripción detallada de rutas y lógica en [../docs/backend-architecture.md](../docs/backend-architecture.md).
 
 ## Requisitos
-- Node.js **20.x** (probado con la serie LTS actual)
-- npm **10.x**
+- Node.js 20.x (LTS recomendado) y npm 10.x.
+- Acceso a red para instalar dependencias.
+- Permisos de escritura en `data/database.json` (se crea automáticamente con semillas).
 
-## Configuración
-1. Instala dependencias (se utiliza `--legacy-peer-deps` para evitar conflictos de peer dependencies en entornos antiguos):
-   ```bash
-   npm install --legacy-peer-deps
-   ```
-2. Crea un archivo `.env` en la raíz del backend (puedes partir de `.env.example`).
-
-### Variables de entorno
-El backend lee las siguientes variables (no incluyas valores sensibles en el repositorio):
-
-| Variable      | Descripción                                                                 | Ejemplo                    |
-| ------------- | --------------------------------------------------------------------------- | -------------------------- |
-| `PORT`        | Puerto de escucha del servidor Express.                                     | `4000`                     |
-| `JWT_SECRET`  | Clave usada para firmar tokens JWT.                                         | `cambia-esta-clave`        |
-| `NODE_ENV`    | Entorno de ejecución (`development`, `production`, `test`).                 | `development`              |
-| `DEMO_MODE`   | Activa comportamientos demo cuando vale `true`.                             | `false`                    |
-| `DATA_FILE`   | Ruta del archivo JSON con los datos persistidos (usuarios/ofertas/demo).    | `./data/database.json`     |
-
-## Cómo arrancar
-1. **Desarrollo:**
-   ```bash
-   npm run dev
-   ```
-   Levanta el servidor con recarga automática en `http://localhost:4000` (o el puerto definido en `PORT`).
-2. **Compilar para producción:**
-   ```bash
-   npm run build
-   ```
-3. **Arrancar build compilado:**
-   ```bash
-   npm start
-   ```
-
-## Rutas principales (todas bajo `/api`)
-- `GET /health` — Comprobación rápida del estado y del `NODE_ENV`.
-- `POST /auth/register` — Registro de usuario (roles permitidos: `user`, `company`, `admin`, `buyer`).
-- `POST /auth/login` — Inicio de sesión; devuelve token JWT.
-- `GET /auth/me` — Perfil del usuario autenticado.
-- **TRUEQIA**
-  - `GET /trueqia/offers` — Ofertas disponibles para TRUEQIA.
-  - `GET /trueqia/trades` — Intercambios demo.
-  - `POST /trueqia/contracts/preview` — Genera texto de contrato demo (no modifica firma de ruta usada por TRUEQIA).
-- **ALLWAIN**
-  - `GET /allwain/scan-demo` — Respuesta de ejemplo para lectura de etiqueta.
-  - `GET /allwain/offers` — Ofertas disponibles para ALLWAIN.
-- **Administración** (requiere token de usuario con rol `admin`)
-  - `GET /admin/dashboard` — Ping protegido para panel.
-  - `GET /admin/users` — Lista pública de usuarios demo.
-  - `GET /admin/ai/activity` — Eventos demo de moderación.
-
-## Pruebas
-Las pruebas viven en `tests/` y cubren autenticación y protecciones de rutas.
-
-Ejecuta toda la suite con:
+## Instalación
 ```bash
-npm test
+cd backend
+npm install
 ```
+Si tu entorno bloquea la instalación de Node/npm (como en este auditoría), instala Node manualmente o con `nvm` antes de ejecutar los comandos.
+
+## Variables de entorno
+Crea `.env` (opcional) en `backend/` con:
+
+| Variable | Descripción | Valor por defecto |
+| --- | --- | --- |
+| `PORT` | Puerto de Express | `4000` |
+| `JWT_SECRET` | Clave para firmar tokens | `dev-secret-change-me` |
+| `NODE_ENV` | `development` \| `production` \| `test` | `development` |
+| `DEMO_MODE` | Habilita comportamientos demo | `false` |
+| `DATA_FILE` | Ruta del archivo JSON persistente | `./data/database.json` |
+
+## Scripts
+- **Desarrollo:** `npm run dev` (usa `ts-node-dev`, recarga automática).
+- **Build:** `npm run build` (compila a `dist`).
+- **Producción:** `npm start` (ejecuta `dist/server.js`).
+- **Pruebas:** `npm test` (usa `node:test` + `ts-node/register`).
+
+## Problemas conocidos
+- En entornos sin Node/npm, `npm install` y los scripts fallan (`bash: command not found: npm`). Instala Node (v20 LTS) o ejecuta en una imagen que ya lo incluya.
+- Asegura que `JWT_SECRET` no sea el valor por defecto en entornos productivos.
+
+## Endpoints principales
+- `GET /api/health` — estado del servicio.
+- `POST /api/auth/register`, `POST /api/auth/login`, `GET /api/auth/me` — autenticación y perfil.
+- `GET /api/trueqia/offers`, `GET /api/trueqia/trades`, `POST /api/trueqia/contracts/preview` — flujo TrueQIA.
+- `GET /api/allwain/scan-demo`, `GET /api/allwain/offers` — flujo Allwain.
+- `GET /api/admin/dashboard`, `/api/admin/users`, `/api/admin/ai/activity` — endpoints protegidos para admin.
