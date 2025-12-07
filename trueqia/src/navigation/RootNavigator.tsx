@@ -5,8 +5,15 @@ import { ActivityIndicator, View } from "react-native";
 import AuthScreen from "../screens/Auth/AuthScreen";
 import MainTabs from "./MainTabs";
 import { useAuthStore } from "../store/auth.store";
+import SponsorQRScreen from "../screens/Auth/SponsorQRScreen";
 
-const Stack = createNativeStackNavigator();
+export type RootStackParamList = {
+  Auth: { sponsorCode?: string } | undefined;
+  SponsorQR: { code?: string } | undefined;
+  MainTabs: undefined;
+};
+
+const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export default function RootNavigator() {
   const user = useAuthStore((s) => s.user);
@@ -35,7 +42,14 @@ export default function RootNavigator() {
         {user ? (
           <Stack.Screen name="MainTabs" component={MainTabs} />
         ) : (
-          <Stack.Screen name="Auth" component={AuthScreen} />
+          <>
+            <Stack.Screen name="Auth" component={AuthScreen} />
+            <Stack.Screen
+              name="SponsorQR"
+              component={SponsorQRScreen}
+              options={{ headerShown: true, title: "Invitación" }}
+            />
+          </>
         )}
       </Stack.Navigator>
     </GestureHandlerRootView>
