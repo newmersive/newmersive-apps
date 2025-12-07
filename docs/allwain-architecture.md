@@ -1,45 +1,36 @@
 # Arquitectura de Allwain (mobile)
 
 ## Resumen funcional
-- **Qué es**: app móvil Expo/React Native enfocada en escaneo y búsqueda de productos/servicios con ofertas comisionadas. Comparte backend con TrueQIA pero con temática y UI propia en paleta salmón.
-- **Diferencias clave**: flujo centrado en búsqueda y escaneo demo (lector conectado a `/allwain/scan-demo`), invitados/compras con resultados sugeridos y consumo de ofertas reales vía `/allwain/offers`; no comparte estilos ni componentes de TrueQIA.
+- App Expo/React Native enfocada en búsqueda, ofertas y escaneo demo. Comparte autenticación JWT con TRUEQIA y usa endpoints específicos de Allwain.
 
-## Flujo principal de usuario
-1. Onboarding/Login en `AuthScreen` usando `/auth/register` o `/auth/login`.
-2. Pestañas principales (`MainTabs`):
-   - **Buscar**: entrada de texto y resultados sugeridos estáticos + accesos a escaneo y demo.
-   - **Ofertas**: listado conectado a `/allwain/offers` con loader, error y estado vacío.
-   - **Perfil**: datos del usuario y cierre de sesión.
-3. Flujo de escaneo conectado al backend: `ScanScreen` llama a `/allwain/scan-demo` y navega a `ScanResultScreen`; este último puede reutilizar el resultado recibido o recargarlo desde el backend.
-4. Flujos de invitados y demo AI pricing siguen siendo mocks pero mantienen la misma temática visual.
+## Flujo principal
+1. `App.tsx` monta `RootNavigator` con stack: si no hay sesión, muestra `AuthScreen`; con usuario carga `MainTabs`.
+2. Tabs activas: **Buscar** (`SearchScreen` con CTA a escaneo/demo), **Ofertas** (`DealsScreen` consume `/allwain/offers`), **Perfil** (`ProfileScreen` con logout).
+3. Flujos adicionales: `ScanScreen` llama a `/allwain/scan-demo` y navega a `ScanResultScreen`; pantallas de invitados y demos muestran datos mock.
 
 ## Mapa de pantallas
-| Pantalla | Propósito | Navegación | Stores/Hooks |
+| Pantalla | Propósito | Navegación | Integración |
 | --- | --- | --- | --- |
-| Auth/AuthScreen | Formulario de login/registro unificado. | Stack raíz decide `MainTabs` tras autenticación. | `useAuthStore.login`, `useAuthStore.register` |
-| Search/SearchScreen | Búsqueda con resultados mock y CTA hacia escaneo y demo. | Navega a `Scan`, `DemoLanding`. | Estado local |
-| Deals/DealsScreen | Lista ofertas reales de `/allwain/offers` con loader/error y CTA a escaneo/invitados. | Navega a `Scan`, `Guests`. | `getAllwainOffers` |
-| Scan/ScanScreen | Dispara `/allwain/scan-demo` y envía resultado al detalle. | `ScanResultScreen` | `getAllwainScanDemo` |
-| Scan/ScanResultScreen | Muestra resultado del backend; puede recargar demo y gestiona expiración de token. | N/A | `getAllwainScanDemo` |
-| Guests/GuestsScreen | Gestión de invitados/comisiones demo. | N/A | N/A |
-| Profile/ProfileScreen | Perfil del usuario y logout. | N/A | `useAuthStore.logout` |
-| Demo/DemoLandingScreen / DemoScanResultScreen | Flujos demo de AI pricing/escaneo (mock). | N/A | Estado local |
-| Admin/AdminDashboardScreen | Placeholder no enlazado. | N/A | N/A |
-
-## Navegación
-- **Árbol**: `RootNavigator` (stack) muestra `AuthScreen` si no hay `user`; tras login carga `MainTabs` con pestañas `Buscar`, `Ofertas`, `Perfil` y habilita stack secundario para `Scan`, `ScanResult`, `Guests`, `DemoLanding`, `DemoScanResult`.
-- **Flujo**: abrir app → autenticarse → navegar entre pestañas; escaneo y demo se lanzan desde botones en `Search` o `Deals`.
-
-## Estado global / stores
-- **`auth.store.ts`**: gestiona `token`, `user`, `login`, `register`, `logout` usando `apiPost` hacia `/auth/login` y `/auth/register`.
-- No hay otros stores: resultados de búsqueda, escaneo, invitados y ofertas se mantienen en estado local con llamadas directas a `getAllwainOffers`/`getAllwainScanDemo`.
+| Auth/AuthScreen | Login/registro unificado. | Redirige a tabs tras autenticar. | `/auth/login`, `/auth/register` |
+| Search/SearchScreen | Buscador mock con accesos a escaneo y demo. | `Scan`, `DemoLanding`. | – |
+| Deals/DealsScreen | Lista ofertas de `/allwain/offers` con loaders/errores. | `Scan`, `Guests`. | `apiAuthGet` |
+| Scan/ScanScreen | Dispara `/allwain/scan-demo` y pasa resultado. | `ScanResultScreen`. | `apiAuthGet` |
+| Scan/ScanResultScreen | Muestra resultado del backend y permite recargar. | – | `apiAuthGet` |
+| Guests/GuestsScreen | Gestión demo de invitados/comisiones. | – | mock |
+| Profile/ProfileScreen | Datos y logout. | – | `useAuthStore.logout` |
+| Demo/DemoLandingScreen, DemoScanResultScreen, AdminDashboardScreen | Pantallas demo/placeholder. | – | mock |
 
 ## Integración con el backend
-- **Autenticación**: `POST /auth/register`, `POST /auth/login`.
-- **Rutas específicas**: `GET /allwain/scan-demo` (Scan y ScanResult) y `GET /allwain/offers` (Deals).
-- **Manejo de errores/expiración**: `apiAuthGet` invalida token ante 401 (`AUTH_EXPIRED`) y los `screen` muestran mensajes de error o estado vacío según corresponda.
+- Base URL: `EXPO_PUBLIC_API_BASE_URL` (default `http://localhost:4000/api`).
+- Endpoints usados: `/auth/login`, `/auth/register`, `/allwain/offers`, `/allwain/scan-demo`.
+- Manejo de auth: helpers `apiAuthGet`/`apiPost` agregan token si existe y ejecutan `logout` ante 401.
 
-## Inconsistencias / riesgos
-- Varias pantallas siguen siendo placeholder (Admin, Offers antiguos) o mocks (Guests, demo AI pricing).
-- Búsqueda y flujos de invitados/comisiones no consumen backend.
-- No hay almacenamiento persistente del token; depende del estado en memoria para mantener la sesión.
+## Estado global
+- `auth.store.ts`: token y usuario en memoria; acciones `login`, `register`, `logout`.
+- Resto de pantallas manejan estado local (no hay store para ofertas/escaneo).
+
+## TODO principales
+- Persistir token con AsyncStorage para mantener sesión entre reinicios.
+- Añadir store para ofertas/escaneo que evite llamadas duplicadas y normalice errores.
+- Conectar pantallas mock (Guests, Demo, Admin) o eliminarlas del flujo principal.
+- Ejecutar `npm run lint`/`npm run typecheck` al disponer de Node/npm para validar tipado.
