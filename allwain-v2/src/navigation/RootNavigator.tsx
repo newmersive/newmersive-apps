@@ -14,7 +14,12 @@ import AdminDashboardScreen from "../screens/Admin/AdminDashboardScreen";
 import { colors } from "../theme/colors";
 
 export type RootStackParamList = {
-  Auth: { sponsorCode?: string; mode?: "login" | "register" } | undefined;
+  Auth:
+    | {
+        sponsorCode?: string;
+        mode?: "login" | "register";
+      }
+    | undefined;
   SponsorQR: { code?: string } | undefined;
   DemoLanding: undefined;
   DemoScanResult: undefined;
@@ -64,9 +69,13 @@ export default function RootNavigator() {
           <Stack.Screen name="Auth" component={AuthScreen} />
           <Stack.Screen name="SponsorQR" component={SponsorQRScreen} />
           <Stack.Screen name="DemoLanding" component={DemoLandingScreen} />
-          <Stack.Screen name="DemoScanResult" component={DemoScanResultScreen} />
+          <Stack.Screen
+            name="DemoScanResult"
+            component={DemoScanResultScreen}
+          />
         </>
       )}
     </Stack.Navigator>
   );
 }
+

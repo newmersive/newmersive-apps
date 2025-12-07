@@ -127,7 +127,7 @@ export default function ScanResultScreen({ navigation, route }: ScanResultScreen
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 24, backgroundColor: colors.primary },
+  container: { flex: 1, padding: 24, backgroundColor: colors.background },
   card: {
     backgroundColor: colors.card,
     padding: 20,
@@ -142,7 +142,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     color: colors.text,
   },
-  error: { color: "red", marginTop: 8 },
+  error: { color: colors.danger, marginTop: 8 },
   resultBox: {
     marginTop: 16,
     padding: 12,
