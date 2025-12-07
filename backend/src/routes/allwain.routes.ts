@@ -61,13 +61,35 @@ router.get("/products", authRequired, (req: AuthRequest, res) => {
  * Ofertas Allwain (filtro por localización opcional)
  */
 router.get("/offers", authRequired, (req: AuthRequest, res) => {
-  const hasLocation = req.query.lat && req.query.lng;
-  const location = hasLocation
-    ? {
-        lat: Number(req.query.lat),
-        lng: Number(req.query.lng),
-      }
-    : undefined;
+  const hasLatLng = req.query.lat !== undefined || req.query.lng !== undefined;
+  const rawLocation = (req.query.location as string | undefined)?.split(",");
+
+  let location: { lat: number; lng: number } | undefined;
+
+  if (hasLatLng) {
+    if (req.query.lat === undefined || req.query.lng === undefined) {
+      return res.status(400).json({ error: "INVALID_LOCATION" });
+    }
+
+    const lat = Number(req.query.lat);
+    const lng = Number(req.query.lng);
+
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+      return res.status(400).json({ error: "INVALID_LOCATION" });
+    }
+
+    location = { lat, lng };
+  } else if (rawLocation?.length === 2) {
+    const [latStr, lngStr] = rawLocation;
+    const lat = Number(latStr);
+    const lng = Number(lngStr);
+
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+      return res.status(400).json({ error: "INVALID_LOCATION" });
+    }
+
+    location = { lat, lng };
+  }
 
   const items = listAllwainOffers(location);
   res.json({ items });
