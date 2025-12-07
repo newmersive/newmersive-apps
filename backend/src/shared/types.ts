@@ -7,6 +7,7 @@ export interface User {
   passwordHash: string;
   role: UserRole;
   createdAt: string;
+  // Sistema de referidos / balances
   sponsorCode?: string;
   referredByCode?: string;
   avatarUrl?: string;
@@ -24,7 +25,12 @@ export interface AuthUser {
   name: string;
   email: string;
   role: UserRole;
+  createdAt: string;
+  sponsorCode?: string;
+  referredByCode?: string;
   avatarUrl?: string;
+  tokens?: number;
+  allwainBalance?: number;
 }
 
 export interface Offer {
@@ -60,34 +66,4 @@ export interface Product {
   brand?: string;
 }
 
-export type LeadStatus = "new" | "contacted" | "closed";
-
-export interface Lead {
-  id: string;
-  userId: string;
-  offerId: string;
-  createdAt: string;
-  status: LeadStatus;
-}
-
-export type ContractApp = "trueqia" | "allwain";
-export type ContractType = "trade" | "purchase";
-export type ContractStatus = "draft" | "active" | "closed" | "conflict";
-
-export interface Contract {
-  id: string;
-  app: ContractApp;
-  type: ContractType;
-  status: ContractStatus;
-  basePdfId?: string;
-  generatedText?: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface DemoContractInput {
-  offerTitle: string;
-  requesterName: string;
-  providerName: string;
-  tokens: number;
-}
+expor

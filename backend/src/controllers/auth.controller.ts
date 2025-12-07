@@ -1,5 +1,11 @@
 import { Request, Response } from "express";
-import { loginUser, registerUser, getUserProfile } from "../services/auth.service";
+import {
+  loginUser,
+  registerUser,
+  getUserProfile,
+  requestPasswordReset,
+  resetPassword,
+} from "../services/auth.service";
 import { AuthRequest } from "../middleware/auth.middleware";
 import { UserRole } from "../shared/types";
 
@@ -8,7 +14,7 @@ const allowedRoles: UserRole[] = ["user", "company", "admin", "buyer"];
 type RegisterRequest = Request<
   Record<string, never>,
   unknown,
-  { name?: string; email?: string; password?: string; role?: UserRole }
+  { name?: string; email?: string; password?: string; role?: UserRole; sponsorCode?: string }
 >;
 
 type LoginRequest = Request<
@@ -19,16 +25,23 @@ type LoginRequest = Request<
 
 export async function postRegister(req: RegisterRequest, res: Response) {
   try {
-    const { name, email, password, role } = req.body;
+    const { name, email, password, role, sponsorCode } = req.body as any;
+
     if (!name || !email || !password) {
       return res.status(400).json({ error: "MISSING_FIELDS" });
     }
 
-    const normalizedRole: UserRole = role && allowedRoles.includes(role)
-      ? role
-      : "user";
+    const normalizedRole: UserRole =
+      role && allowedRoles.includes(role) ? role : "user";
 
-    const result = await registerUser(name, email, password, normalizedRole);
+    const result = await registerUser(
+      name,
+      email,
+      password,
+      normalizedRole,
+      sponsorCode
+    );
+
     return res.status(201).json(result);
   } catch (err: unknown) {
     if (err instanceof Error && err.message === "EMAIL_ALREADY_EXISTS") {
@@ -41,9 +54,11 @@ export async function postRegister(req: RegisterRequest, res: Response) {
 export async function postLogin(req: LoginRequest, res: Response) {
   try {
     const { email, password } = req.body;
+
     if (!email || !password) {
       return res.status(400).json({ error: "MISSING_FIELDS" });
     }
+
     const result = await loginUser(email, password);
     return res.status(200).json(result);
   } catch (err: unknown) {
@@ -56,7 +71,19 @@ export async function postLogin(req: LoginRequest, res: Response) {
 
 export function getProfile(req: AuthRequest, res: Response) {
   if (!req.user) return res.status(401).json({ error: "UNAUTHORIZED" });
+
   const profile = getUserProfile(req.user.id);
   if (!profile) return res.status(404).json({ error: "NOT_FOUND" });
+
   return res.json({ user: profile });
 }
+
+export async function postForgotPassword(req: Request, res: Response) {
+  const { email } = req.body as any;
+
+  try {
+    if (email) {
+      await requestPasswordReset(email);
+    }
+    return res.status(200).json({ ok: true });
+  } cat
