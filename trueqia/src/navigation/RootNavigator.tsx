@@ -5,6 +5,8 @@ import { ActivityIndicator, View } from "react-native";
 import AuthScreen from "../screens/Auth/AuthScreen";
 import MainTabs from "./MainTabs";
 import { useAuthStore } from "../store/auth.store";
+import ContractPreviewScreen from "../screens/Contracts/ContractPreviewScreen";
+import CreateOfferScreen from "../screens/Offers/CreateOfferScreen";
 
 const Stack = createNativeStackNavigator();
 
@@ -33,7 +35,11 @@ export default function RootNavigator() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         {user ? (
-          <Stack.Screen name="MainTabs" component={MainTabs} />
+          <>
+            <Stack.Screen name="MainTabs" component={MainTabs} />
+            <Stack.Screen name="ContractPreview" component={ContractPreviewScreen} />
+            <Stack.Screen name="CreateOffer" component={CreateOfferScreen} />
+          </>
         ) : (
           <Stack.Screen name="Auth" component={AuthScreen} />
         )}

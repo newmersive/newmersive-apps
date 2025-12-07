@@ -1,12 +1,14 @@
 import { create } from "zustand";
-import { apiAuthGet } from "../config/api";
+import { apiAuthGet, apiAuthPost } from "../config/api";
 
-type Trade = {
+export type Trade = {
   id: string;
   title: string;
   status?: string;
   participants?: string[];
   tokens?: number;
+  offerId?: string;
+  ownerId?: string;
 };
 
 interface TradesState {
@@ -14,6 +16,7 @@ interface TradesState {
   loading: boolean;
   error: string | null;
   loadTrades: () => Promise<void>;
+  proposeTrade: (payload: { offerId: string; toUserId: string }) => Promise<Trade | null>;
 }
 
 export const useTradesStore = create<TradesState>((set) => ({
@@ -30,6 +33,16 @@ export const useTradesStore = create<TradesState>((set) => ({
         error: err?.message || "ERROR_LOADING_TRADES",
         loading: false,
       });
+    }
+  },
+  proposeTrade: async (payload) => {
+    try {
+      const res = await apiAuthPost<Trade>("/trueqia/trades", payload);
+      set((state) => ({ items: [res, ...state.items] }));
+      return res;
+    } catch (err: any) {
+      set({ error: err?.message || "ERROR_CREATING_TRADE" });
+      return null;
     }
   },
 }));

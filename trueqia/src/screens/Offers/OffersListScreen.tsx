@@ -1,4 +1,4 @@
-import React, { useCallback } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import {
   View,
   Text,
@@ -6,15 +6,19 @@ import {
   ActivityIndicator,
   FlatList,
   StyleSheet,
+  Image,
 } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { useOffersStore } from "../../store/offers.store";
+import { useTradesStore } from "../../store/trades.store";
 
 export default function OffersListScreen({ navigation }: any) {
   const items = useOffersStore((s) => s.items);
   const loading = useOffersStore((s) => s.loading);
   const error = useOffersStore((s) => s.error);
   const loadOffers = useOffersStore((s) => s.loadOffers);
+  const proposeTrade = useTradesStore((s) => s.proposeTrade);
+  const [proposalStatus, setProposalStatus] = useState<Record<string, string | null>>({});
 
   useFocusEffect(
     useCallback(() => {
@@ -22,9 +26,35 @@ export default function OffersListScreen({ navigation }: any) {
     }, [loadOffers])
   );
 
+  const sortedItems = useMemo(
+    () => [...items].sort((a, b) => a.title.localeCompare(b.title)),
+    [items]
+  );
+
+  async function handlePropose(offerId: string, ownerId?: string) {
+    if (!ownerId) {
+      setProposalStatus((prev) => ({ ...prev, [offerId]: "Falta dueño" }));
+      return;
+    }
+    setProposalStatus((prev) => ({ ...prev, [offerId]: "Enviando" }));
+    const res = await proposeTrade({ offerId, toUserId: ownerId });
+    if (res) {
+      setProposalStatus((prev) => ({ ...prev, [offerId]: res.status || "pending" }));
+    } else {
+      setProposalStatus((prev) => ({ ...prev, [offerId]: "Error" }));
+    }
+  }
+
   return (
     <View style={{ flex: 1, padding: 24 }}>
-      <Text style={{ fontSize: 24, marginBottom: 12 }}>Ofertas</Text>
+      <View style={styles.headerRow}>
+        <Text style={{ fontSize: 24, marginBottom: 12 }}>Ofertas</Text>
+        <Button
+          title="Crear"
+          onPress={() => navigation.navigate("CreateOffer")}
+          color="#0F6CBD"
+        />
+      </View>
       <Button title="Recargar" onPress={loadOffers} />
 
       {loading && (
@@ -46,11 +76,21 @@ export default function OffersListScreen({ navigation }: any) {
 
       <FlatList
         style={{ marginTop: 12 }}
-        data={items}
+        data={sortedItems}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
           <View style={styles.card}>
-            <Text style={styles.title}>{item.title}</Text>
+            <View style={styles.titleRow}>
+              {item.owner?.avatar && (
+                <Image source={{ uri: item.owner.avatar }} style={styles.avatar} />
+              )}
+              <View style={{ flex: 1 }}>
+                <Text style={styles.title}>{item.title}</Text>
+                {item.owner?.name && (
+                  <Text style={styles.owner}>Por {item.owner.name}</Text>
+                )}
+              </View>
+            </View>
             {item.description && (
               <Text style={styles.description}>{item.description}</Text>
             )}
@@ -58,13 +98,14 @@ export default function OffersListScreen({ navigation }: any) {
               <Text style={styles.tokens}>{item.tokens} tokens</Text>
             )}
             <Button
-              title="Previsualizar contrato IA"
-              onPress={() =>
-                navigation.navigate("ContractPreview", {
-                  offer: item,
-                })
-              }
+              title="Proponer intercambio"
+              onPress={() => handlePropose(item.id, item.owner?.id)}
             />
+            {proposalStatus[item.id] && (
+              <Text style={styles.statusText}>
+                Estado: {proposalStatus[item.id]}
+              </Text>
+            )}
           </View>
         )}
         ListEmptyComponent={
@@ -78,6 +119,21 @@ export default function OffersListScreen({ navigation }: any) {
 }
 
 const styles = StyleSheet.create({
+  headerRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  titleRow: {
+    flexDirection: "row",
+    gap: 8,
+    alignItems: "center",
+  },
+  avatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+  },
   card: {
     padding: 12,
     marginBottom: 8,
@@ -86,6 +142,7 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   title: { fontWeight: "600", marginBottom: 4 },
+  owner: { color: "#666" },
   description: { color: "#555" },
   tokens: { color: "#0F6CBD", marginTop: 4, fontWeight: "700" },
   statusBox: { marginTop: 12 },
