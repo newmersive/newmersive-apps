@@ -59,7 +59,7 @@ export default function LoginScreen({ navigation }: any) {
         <TextInput
           style={styles.input}
           placeholder="Email"
-          placeholderTextColor="rgba(64, 64, 65, 0.6)"
+          placeholderTextColor={colors.mutedText}
           autoCapitalize="none"
           keyboardType="email-address"
           value={email}
@@ -69,7 +69,7 @@ export default function LoginScreen({ navigation }: any) {
         <TextInput
           style={styles.input}
           placeholder="Contraseña"
-          placeholderTextColor="rgba(64, 64, 65, 0.6)"
+          placeholderTextColor={colors.mutedText}
           secureTextEntry
           value={password}
           onChangeText={setPassword}
@@ -101,7 +101,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     padding: 24,
-    backgroundColor: colors.primary,
+    backgroundColor: colors.background,
   },
   card: {
     backgroundColor: colors.card,
@@ -125,7 +125,7 @@ const styles = StyleSheet.create({
     color: colors.text,
     backgroundColor: colors.card,
   },
-  error: { color: "red", marginBottom: 12 },
+  error: { color: colors.danger, marginBottom: 12 },
   button: {
     backgroundColor: colors.button,
     paddingVertical: 12,

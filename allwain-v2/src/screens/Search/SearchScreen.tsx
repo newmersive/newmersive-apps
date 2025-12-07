@@ -36,7 +36,7 @@ export default function SearchScreen() {
         <TextInput
           style={styles.input}
           placeholder="Buscar productos o servicios"
-          placeholderTextColor="#8c8c8c"
+          placeholderTextColor={colors.mutedText}
           value={query}
           onChangeText={setQuery}
         />
@@ -59,7 +59,7 @@ export default function SearchScreen() {
 
         <TouchableOpacity
           style={styles.actionCard}
-          onPress={() => navigation.navigate("Resultado")}
+          onPress={() => navigation.navigate("ScanResult")}
           activeOpacity={0.9}
         >
           <Text style={styles.actionTitle}>Ver último resultado</Text>
@@ -84,7 +84,7 @@ export default function SearchScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.primary,
+    backgroundColor: colors.background,
   },
   content: {
     paddingHorizontal: 20,
@@ -148,10 +148,10 @@ const styles = StyleSheet.create({
   highlighted: {
     borderColor: colors.button,
     borderWidth: 1.2,
-    backgroundColor: "#fff7f3",
+    backgroundColor: colors.highlight,
   },
   actionTitle: { color: colors.text, fontWeight: "800", marginBottom: 4 },
-  actionBody: { color: "#6c6c6c", fontWeight: "700" },
+  actionBody: { color: colors.mutedText, fontWeight: "700" },
   resultCard: {
     backgroundColor: colors.card,
     borderRadius: 14,
@@ -175,8 +175,5 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontWeight: "800",
   },
-  resultCompany: {
-    color: "#6c6c6c",
-    fontWeight: "600",
-  },
+  resultCompany: { color: colors.mutedText, fontWeight: "600" },
 });

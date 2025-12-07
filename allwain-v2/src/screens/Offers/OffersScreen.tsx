@@ -100,7 +100,7 @@ export default function OffersScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 24, backgroundColor: colors.primary },
+  container: { flex: 1, padding: 24, backgroundColor: colors.background },
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -108,7 +108,7 @@ const styles = StyleSheet.create({
   },
   title: { fontSize: 24, fontWeight: "bold", color: colors.text },
   subtitle: { marginTop: 4, color: colors.text },
-  error: { color: "red", marginTop: 12 },
+  error: { color: colors.danger, marginTop: 12 },
   empty: { marginTop: 16, color: colors.text },
   offerCard: {
     marginTop: 16,
