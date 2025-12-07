@@ -5,37 +5,49 @@ import { UserRole } from "../shared/types";
 
 const allowedRoles: UserRole[] = ["user", "company", "admin", "buyer"];
 
-export async function postRegister(req: Request, res: Response) {
+type RegisterRequest = Request<
+  Record<string, never>,
+  unknown,
+  { name?: string; email?: string; password?: string; role?: UserRole }
+>;
+
+type LoginRequest = Request<
+  Record<string, never>,
+  unknown,
+  { email?: string; password?: string }
+>;
+
+export async function postRegister(req: RegisterRequest, res: Response) {
   try {
-    const { name, email, password, role } = req.body as any;
+    const { name, email, password, role } = req.body;
     if (!name || !email || !password) {
       return res.status(400).json({ error: "MISSING_FIELDS" });
     }
 
-    const normalizedRole: UserRole = allowedRoles.includes(role)
+    const normalizedRole: UserRole = role && allowedRoles.includes(role)
       ? role
       : "user";
 
     const result = await registerUser(name, email, password, normalizedRole);
     return res.status(201).json(result);
-  } catch (err: any) {
-    if (err.message === "EMAIL_ALREADY_EXISTS") {
+  } catch (err: unknown) {
+    if (err instanceof Error && err.message === "EMAIL_ALREADY_EXISTS") {
       return res.status(409).json({ error: "EMAIL_ALREADY_EXISTS" });
     }
     return res.status(500).json({ error: "INTERNAL_ERROR" });
   }
 }
 
-export async function postLogin(req: Request, res: Response) {
+export async function postLogin(req: LoginRequest, res: Response) {
   try {
-    const { email, password } = req.body as any;
+    const { email, password } = req.body;
     if (!email || !password) {
       return res.status(400).json({ error: "MISSING_FIELDS" });
     }
     const result = await loginUser(email, password);
     return res.status(200).json(result);
-  } catch (err: any) {
-    if (err.message === "INVALID_CREDENTIALS") {
+  } catch (err: unknown) {
+    if (err instanceof Error && err.message === "INVALID_CREDENTIALS") {
       return res.status(401).json({ error: "INVALID_CREDENTIALS" });
     }
     return res.status(500).json({ error: "INTERNAL_ERROR" });
