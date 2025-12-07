@@ -5,6 +5,7 @@ import ChatScreen from "../screens/Chat/ChatScreen";
 import ProfileScreen from "../screens/Profile/ProfileScreen";
 import HomeScreen from "../screens/Home/HomeScreen";
 import { colors } from "../config/theme";
+import OffersListScreen from "../screens/Offers/OffersListScreen";
 
 const Tab = createBottomTabNavigator();
 
@@ -21,6 +22,11 @@ export default function MainTabs() {
       }}
     >
       <Tab.Screen name="Home" component={HomeScreen} options={{ title: "Inicio" }} />
+      <Tab.Screen
+        name="Offers"
+        component={OffersListScreen}
+        options={{ title: "Ofertas" }}
+      />
       <Tab.Screen
         name="Trades"
         component={TradesScreen}

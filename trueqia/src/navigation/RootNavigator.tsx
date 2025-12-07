@@ -2,12 +2,15 @@ import React, { useEffect } from "react";
 import { ActivityIndicator, View } from "react-native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+
 import AuthScreen from "../screens/Auth/AuthScreen";
 import SponsorQRScreen from "../screens/Auth/SponsorQRScreen";
 import MainTabs from "./MainTabs";
 import OffersListScreen from "../screens/Offers/OffersListScreen";
-import ContractPreviewScreen from "../screens/Contracts/ContractPreviewScreen";
 import TradeDetailScreen from "../screens/Trades/TradeDetailScreen";
+import ContractPreviewScreen from "../screens/Contracts/ContractPreviewScreen";
+import CreateOfferScreen from "../screens/Offers/CreateOfferScreen";
+
 import { useAuthStore } from "../store/auth.store";
 import { colors } from "../config/theme";
 
@@ -18,6 +21,7 @@ export type RootStackParamList = {
   OffersList: undefined;
   TradeDetail: { [key: string]: any } | undefined;
   ContractPreview: { [key: string]: any } | undefined;
+  CreateOffer: { [key: string]: any } | undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -73,6 +77,11 @@ export default function RootNavigator() {
               component={ContractPreviewScreen}
               options={{ title: "Contrato IA" }}
             />
+            <Stack.Screen
+              name="CreateOffer"
+              component={CreateOfferScreen}
+              options={{ title: "Crear oferta" }}
+            />
           </>
         ) : (
           <>
@@ -92,6 +101,7 @@ export default function RootNavigator() {
     </GestureHandlerRootView>
   );
 }
+
 
   );
 }

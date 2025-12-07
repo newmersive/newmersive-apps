@@ -3,7 +3,7 @@ import { View, Text, FlatList, StyleSheet, TouchableOpacity, ActivityIndicator }
 import { colors } from "../../config/theme";
 import { useTradesStore } from "../../store/trades.store";
 
-export default function TradesScreen() {
+export default function TradesScreen({ navigation }: any) {
   const items = useTradesStore((s) => s.items);
   const loading = useTradesStore((s) => s.loading);
   const error = useTradesStore((s) => s.error);
@@ -16,6 +16,9 @@ export default function TradesScreen() {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Trueques activos</Text>
+      <TouchableOpacity onPress={loadTrades} style={styles.reloadButton}>
+        <Text style={styles.reloadText}>Actualizar</Text>
+      </TouchableOpacity>
 
       {loading && (
         <View style={styles.statusBox}>
@@ -53,6 +56,14 @@ export default function TradesScreen() {
             {typeof item.tokens === "number" && (
               <Text style={styles.tokens}>{`~${item.tokens} tokens`}</Text>
             )}
+            {item.status === "accepted" && (
+              <TouchableOpacity
+                style={styles.contractButton}
+                onPress={() => navigation.navigate("ContractPreview", { trade: item })}
+              >
+                <Text style={styles.contractText}>Ver contrato</Text>
+              </TouchableOpacity>
+            )}
           </View>
         )}
         ListEmptyComponent={
@@ -75,6 +86,18 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: "700",
     color: colors.text,
+  },
+  reloadButton: {
+    alignSelf: "flex-start",
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 10,
+    backgroundColor: colors.primary,
+    marginTop: 8,
+  },
+  reloadText: {
+    color: "#FFF",
+    fontWeight: "700",
   },
   card: {
     backgroundColor: "#FFFFFF",
@@ -100,6 +123,18 @@ const styles = StyleSheet.create({
   },
   tokens: {
     color: colors.primary,
+    fontWeight: "700",
+  },
+  contractButton: {
+    marginTop: 10,
+    alignSelf: "flex-start",
+    backgroundColor: colors.primary,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 10,
+  },
+  contractText: {
+    color: "#FFF",
     fontWeight: "700",
   },
   statusBox: {
