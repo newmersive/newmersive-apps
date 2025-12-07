@@ -7,15 +7,203 @@ import {
   getUserById,
   upsertReferralStat,
   upsertUser,
+  addLead,
+  addOffer,
+  addOrderGroup,
+  getOfferById,
+  getOffersByOwner,
+  getOrderGroupById,
+  getOrderGroups,
+  getProductByEan,
+  getProductById,
+  updateOrderGroup,
 } from "./data.store";
+
 import {
   AllwainSavingTransaction,
   ReferralMonthlyHistory,
   ReferralStat,
+  Lead,
+  Offer,
+  OrderGroup,
+  OrderGroupParticipant,
+  Product,
+  User,
 } from "../shared/types";
 
-const ALLWAIN_FEE_PERCENTAGE = 0.1;
-const SPONSOR_SHARE_OF_FEE = 0.5;
+interface LocationInput {
+  lat: number;
+  lng: number;
+}
+
+interface CreateAllwainOfferInput {
+  title: string;
+  description: string;
+  price?: number;
+  tokens?: number;
+  productId?: string;
+  meta?: Record<string, unknown>;
+  ownerUserId: string;
+}
+
+interface CreateOrderGroupInput {
+  productId: string;
+  totalUnits: number;
+  minUnitsPerClient: number;
+}
+
+/**
+ * =========================
+ *  BLOQUE: PRODUCTOS / OFERTAS / GRUPOS DE PEDIDO
+ * =========================
+ */
+
+export function getAllwainProductById(id: string): Product | undefined {
+  return getProductById(id);
+}
+
+export function getAllwainProductByEan(ean: string): Product | undefined {
+  return getProductByEan(ean);
+}
+
+export function listAllwainOffers(location?: LocationInput): Offer[] {
+  const offers = getOffersByOwner("allwain");
+
+  if (!location) return offers;
+
+  // Mock de distancia determinista para demo
+  const withDistance = offers.map((offer, index) => {
+    const distanceKm = ((offer.id.length + index * 7) % 80) + 5;
+    return {
+      ...offer,
+      meta: { ...(offer.meta || {}), distanceKm },
+    } as Offer;
+  });
+
+  // Solo devolvemos hasta 60 km para simular cercanía
+  return withDistance.filter(
+    (offer) => (offer.meta?.["distanceKm"] as number) <= 60
+  );
+}
+
+export function createAllwainOffer(input: CreateAllwainOfferInput): Offer {
+  const id = `offer-allwain-${Date.now()}`;
+  const offer: Offer = {
+    id,
+    title: input.title,
+    description: input.description,
+    owner: "allwain",
+    ownerUserId: input.ownerUserId,
+    price: input.price,
+    tokens: input.tokens,
+    productId: input.productId,
+    meta: input.meta,
+  };
+
+  return addOffer(offer);
+}
+
+export function createOfferInterest(
+  offerId: string,
+  user: User,
+  message?: string
+): Lead {
+  const offer = getOfferById(offerId);
+  if (!offer) {
+    throw new Error("OFFER_NOT_FOUND");
+  }
+
+  const lead: Lead = {
+    id: `lead-${Date.now()}`,
+    name: user.name,
+    email: user.email,
+    source: "allwain-offer-interest",
+    message,
+    offerId: offer.id,
+    userId: user.id,
+    status: "new",
+    createdAt: new Date().toISOString(),
+  };
+
+  return addLead(lead);
+}
+
+export function listOrderGroups(): OrderGroup[] {
+  return getOrderGroups();
+}
+
+export function createOrderGroup(input: CreateOrderGroupInput): OrderGroup {
+  const product = getProductById(input.productId);
+  if (!product) {
+    throw new Error("PRODUCT_NOT_FOUND");
+  }
+
+  const orderGroup: OrderGroup = {
+    id: `order-group-${Date.now()}`,
+    productId: input.productId,
+    totalUnits: input.totalUnits,
+    minUnitsPerClient: input.minUnitsPerClient,
+    status: "open",
+    participants: [],
+  };
+
+  return addOrderGroup(orderGroup);
+}
+
+export function joinOrderGroup(
+  id: string,
+  participant: OrderGroupParticipant
+): OrderGroup {
+  const orderGroup = getOrderGroupById(id);
+  if (!orderGroup) {
+    throw new Error("ORDER_GROUP_NOT_FOUND");
+  }
+
+  if (orderGroup.status === "closed") {
+    throw new Error("ORDER_GROUP_CLOSED");
+  }
+
+  if (participant.units < orderGroup.minUnitsPerClient) {
+    throw new Error("MIN_UNITS_NOT_MET");
+  }
+
+  const currentUnits = orderGroup.participants.reduce(
+    (sum, p) => sum + p.units,
+    0
+  );
+  if (currentUnits + participant.units > orderGroup.totalUnits) {
+    throw new Error("ORDER_GROUP_FULL");
+  }
+
+  const existing = orderGroup.participants.find(
+    (p) => p.userId === participant.userId
+  );
+  if (existing) {
+    existing.units += participant.units;
+  } else {
+    orderGroup.participants.push(participant);
+  }
+
+  const updatedUnits = orderGroup.participants.reduce(
+    (sum, p) => sum + p.units,
+    0
+  );
+
+  if (updatedUnits >= orderGroup.totalUnits) {
+    orderGroup.status = "closing";
+  }
+
+  return updateOrderGroup(orderGroup);
+}
+
+/**
+ * =========================
+ *  BLOQUE: SPONSORS / AHORROS / COMISIONES
+ * =========================
+ */
+
+const ALLWAIN_FEE_PERCENTAGE = 0.1; // 10% de fee de Allwain sobre el ahorro
+const SPONSOR_SHARE_OF_FEE = 0.5;   // 50% de esa fee va al sponsor
 
 function generateId(prefix: string) {
   return `${prefix}-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
@@ -42,10 +230,12 @@ export function registerAllwainSaving(
     createdAt: now.toISOString(),
   };
 
+  // Guardamos la transacción de ahorro
   addAllwainSavingTransaction(transaction);
 
   const user = getUserById(userId);
   if (!user || !user.referredByCode) {
+    // No tiene sponsor -> solo registramos ahorro
     return { transaction };
   }
 
@@ -80,7 +270,10 @@ export function registerAllwainSaving(
 export function getSponsorSummary(userId: string) {
   const stats = getReferralStatsBySponsor(userId);
   const invitedCount = stats.length;
-  const totalSaved = stats.reduce((acc, stat) => acc + stat.totalSavedByInvited, 0);
+  const totalSaved = stats.reduce(
+    (acc, stat) => acc + stat.totalSavedByInvited,
+    0
+  );
   const totalCommission = stats.reduce(
     (acc, stat) => acc + stat.commissionEarned,
     0

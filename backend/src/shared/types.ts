@@ -122,8 +122,30 @@ export interface Lead {
   email: string;
   source: string;
   message?: string;
+  offerId?: string;
+  userId?: string;
   status: LeadStatus;
   createdAt: string;
+}
+
+/* =========================
+   ORDER GROUPS
+========================= */
+
+export type OrderGroupStatus = "open" | "closing" | "closed";
+
+export interface OrderGroupParticipant {
+  userId: string;
+  units: number;
+}
+
+export interface OrderGroup {
+  id: string;
+  productId: string;
+  totalUnits: number;
+  minUnitsPerClient: number;
+  status: OrderGroupStatus;
+  participants: OrderGroupParticipant[];
 }
 
 /* =========================
