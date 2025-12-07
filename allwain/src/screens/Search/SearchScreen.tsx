@@ -7,8 +7,11 @@ import {
   StyleSheet,
   ScrollView,
 } from "react-native";
-import { useNavigation } from "@react-navigation/native";
+import { CompositeNavigationProp, useNavigation } from "@react-navigation/native";
+import { BottomTabNavigationProp } from "@react-navigation/bottom-tabs";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { colors } from "../../theme/colors";
+import { AppStackParamList, AppTabParamList } from "../../navigation/types";
 
 type SearchItem = {
   id: string;
@@ -24,9 +27,14 @@ const mockResults: SearchItem[] = [
   { id: "4", name: "Transporte marítimo", price: "1.120 €", company: "Empresa B" },
 ];
 
+type SearchNavigationProp = CompositeNavigationProp<
+  BottomTabNavigationProp<AppTabParamList, "Buscar">,
+  NativeStackNavigationProp<AppStackParamList>
+>;
+
 export default function SearchScreen() {
   const [query, setQuery] = useState("");
-  const navigation = useNavigation<any>();
+  const navigation = useNavigation<SearchNavigationProp>();
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>

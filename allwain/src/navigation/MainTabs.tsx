@@ -4,8 +4,9 @@ import SearchScreen from "../screens/Search/SearchScreen";
 import DealsScreen from "../screens/Deals/DealsScreen";
 import ProfileScreen from "../screens/Profile/ProfileScreen";
 import { colors } from "../theme/colors";
+import { AppTabParamList } from "./types";
 
-const Tab = createBottomTabNavigator();
+const Tab = createBottomTabNavigator<AppTabParamList>();
 
 export default function MainTabs() {
   return (

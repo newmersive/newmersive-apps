@@ -7,12 +7,14 @@ import {
   StyleSheet,
   ActivityIndicator,
 } from "react-native";
+import { NavigationProp, ParamListBase } from "@react-navigation/native";
 import { useAuthStore } from "../../store/auth.store";
 import { colors } from "../../theme/colors";
 
 type Role = "buyer" | "company" | "";
+type RegisterScreenProps = { navigation: NavigationProp<ParamListBase> };
 
-export default function RegisterScreen({ navigation }: any) {
+export default function RegisterScreen({ navigation }: RegisterScreenProps) {
   const [name, setName] = useState("");
   const [role, setRole] = useState<Role>("");
   const [email, setEmail] = useState("");
@@ -35,8 +37,8 @@ export default function RegisterScreen({ navigation }: any) {
 
       await register(name, email, password);
       navigation.replace("MainTabs");
-    } catch (err: any) {
-      if (err?.message === "EMAIL_ALREADY_EXISTS") {
+    } catch (err: unknown) {
+      if (err instanceof Error && err.message === "EMAIL_ALREADY_EXISTS") {
         setError("Ese email ya está registrado");
       } else {
         setError("Error al crear la cuenta");

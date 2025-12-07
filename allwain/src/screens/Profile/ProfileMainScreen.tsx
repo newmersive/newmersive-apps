@@ -1,9 +1,12 @@
 import React from "react";
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
+import { NavigationProp, ParamListBase } from "@react-navigation/native";
 import { useAuthStore } from "../../store/auth.store";
 import { colors } from "../../theme/colors";
 
-export default function ProfileMainScreen({ navigation }: any) {
+type ProfileMainProps = { navigation: NavigationProp<ParamListBase> };
+
+export default function ProfileMainScreen({ navigation }: ProfileMainProps) {
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
 

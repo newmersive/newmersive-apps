@@ -1,13 +1,22 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { ScrollView, Text, StyleSheet, TouchableOpacity, ActivityIndicator, View } from "react-native";
+import { CompositeNavigationProp, useFocusEffect, useNavigation } from "@react-navigation/native";
+import { BottomTabNavigationProp } from "@react-navigation/bottom-tabs";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { getAllwainOffers, Offer } from "../../api/allwain.api";
 import { colors } from "../../theme/colors";
-import { useFocusEffect } from "@react-navigation/native";
+import { AppStackParamList, AppTabParamList } from "../../navigation/types";
 
-export default function DealsScreen({ navigation }: any) {
+type DealsNavigationProp = CompositeNavigationProp<
+  BottomTabNavigationProp<AppTabParamList, "Ofertas">,
+  NativeStackNavigationProp<AppStackParamList>
+>;
+
+export default function DealsScreen() {
   const [offers, setOffers] = useState<Offer[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const navigation = useNavigation<DealsNavigationProp>();
 
   async function loadOffers() {
     try {
@@ -15,8 +24,8 @@ export default function DealsScreen({ navigation }: any) {
       setError(null);
       const data = await getAllwainOffers();
       setOffers(data);
-    } catch (err: any) {
-      if (err?.message === "SESSION_EXPIRED") {
+    } catch (err: unknown) {
+      if (err instanceof Error && err.message === "SESSION_EXPIRED") {
         setError("Sesión expirada. Vuelve a iniciar sesión.");
       } else {
         setError("No se pudieron cargar las ofertas.");

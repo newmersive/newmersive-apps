@@ -1,8 +1,12 @@
 import React from "react";
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
+import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { colors } from "../../theme/colors";
+import { AppStackParamList } from "../../navigation/types";
 
-export default function DemoLandingScreen({ navigation }: any) {
+type DemoLandingProps = NativeStackScreenProps<AppStackParamList, "DemoLanding">;
+
+export default function DemoLandingScreen({ navigation }: DemoLandingProps) {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Bienvenido a Allwain (Demo)</Text>
