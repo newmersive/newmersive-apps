@@ -83,3 +83,32 @@ export async function apiAuthGet<T>(path: string): Promise<T> {
 
   return data as T;
 }
+
+export async function apiAuthPost<T>(path: string, body?: unknown): Promise<T> {
+  const url = buildUrl(path);
+  try {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...authHeaders(),
+      },
+      body: body ? JSON.stringify(body) : undefined,
+    });
+
+    const data = await parseJson(res);
+
+    if (!res.ok) {
+      if (res.status === 401) {
+        useAuthStore.getState().clearAuth();
+      }
+      console.error(`POST ${url} fallo`, res.status, data);
+      throw buildApiError(res, data);
+    }
+
+    return data as T;
+  } catch (err) {
+    console.error(`POST ${url} error`, err);
+    throw err;
+  }
+}
