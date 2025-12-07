@@ -45,14 +45,14 @@ export default function AuthScreen() {
       } else {
         await register(name, email, password);
       }
-    } catch (err: any) {
-      if (err?.message === "INVALID_CREDENTIALS") {
+    } catch (err: unknown) {
+      if (err instanceof Error && err.message === "INVALID_CREDENTIALS") {
         setError("Credenciales incorrectas");
-      } else if (err?.message === "EMAIL_ALREADY_EXISTS") {
+      } else if (err instanceof Error && err.message === "EMAIL_ALREADY_EXISTS") {
         setError("El email ya está registrado");
-      } else if (err?.message === "MISSING_FIELDS") {
+      } else if (err instanceof Error && err.message === "MISSING_FIELDS") {
         setError("Faltan datos para continuar");
-      } else if (err?.message === "SESSION_EXPIRED") {
+      } else if (err instanceof Error && err.message === "SESSION_EXPIRED") {
         setError("Sesión expirada, vuelve a entrar");
       } else {
         setError("No se pudo procesar la solicitud");

@@ -1,12 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity } from "react-native";
+import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { getAllwainScanDemo, ScanDemoResponse } from "../../api/allwain.api";
 import { colors } from "../../theme/colors";
+import { AppStackParamList } from "../../navigation/types";
 
-interface ScanResultProps {
-  navigation: any;
-  route: { params?: { result?: ScanDemoResponse } };
-}
+type ScanResultProps = NativeStackScreenProps<AppStackParamList, "ScanResult">;
 
 export default function ScanResultScreen({ navigation, route }: ScanResultProps) {
   const [data, setData] = useState<ScanDemoResponse | null>(route.params?.result || null);
@@ -20,8 +19,8 @@ export default function ScanResultScreen({ navigation, route }: ScanResultProps)
 
       const res = await getAllwainScanDemo();
       setData(res);
-    } catch (err: any) {
-      if (err?.message === "SESSION_EXPIRED") {
+    } catch (err: unknown) {
+      if (err instanceof Error && err.message === "SESSION_EXPIRED") {
         setError("Sesión expirada. Inicia sesión de nuevo.");
       } else {
         setError("No se ha podido completar el escaneo.");

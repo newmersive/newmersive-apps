@@ -1,13 +1,21 @@
 import React, { useState } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView, ActivityIndicator } from "react-native";
-import { useNavigation } from "@react-navigation/native";
+import { CompositeNavigationProp, useNavigation } from "@react-navigation/native";
+import { BottomTabNavigationProp } from "@react-navigation/bottom-tabs";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useAuthStore } from "../../store/auth.store";
 import { colors } from "../../theme/colors";
+import { AppStackParamList, AppTabParamList } from "../../navigation/types";
+
+type ProfileNavigationProp = CompositeNavigationProp<
+  BottomTabNavigationProp<AppTabParamList, "Perfil">,
+  NativeStackNavigationProp<AppStackParamList>
+>;
 
 export default function ProfileScreen() {
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
-  const navigation = useNavigation<any>();
+  const navigation = useNavigation<ProfileNavigationProp>();
   const [loading, setLoading] = useState(false);
 
   const displayUser =
