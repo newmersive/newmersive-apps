@@ -3,6 +3,7 @@ import { authRequired, adminOnly } from "../middleware/auth.middleware";
 import { getPublicUsers } from "../services/auth.service";
 import { listAllSponsorStats } from "../services/allwain.service";
 import { getDemoModerationEvents } from "../ia/moderation.service";
+import { getGlobalLeads } from "../services/leads.service";
 
 const router=Router();
 
@@ -15,5 +16,9 @@ router.get(
   adminOnly,
   (_req, res) => res.json({ stats: listAllSponsorStats() })
 );
+
+router.get("/leads", authRequired, adminOnly, (_req, res) => {
+  res.json({ items: getGlobalLeads() });
+});
 
 export default router;

@@ -42,4 +42,5 @@ Crea `.env` (opcional) en `backend/` con:
 - `POST /api/auth/register`, `POST /api/auth/login`, `GET /api/auth/me` — autenticación y perfil.
 - `GET /api/trueqia/offers`, `GET /api/trueqia/trades`, `POST /api/trueqia/contracts/preview` — flujo TrueQIA.
 - `GET /api/allwain/scan-demo`, `GET /api/allwain/offers` — flujo Allwain.
+- `POST /api/leads/whatsapp` — registra un lead capturado por el bot de WhatsApp y lo almacena para el panel admin.
 - `GET /api/admin/dashboard`, `/api/admin/users`, `/api/admin/ai/activity` — endpoints protegidos para admin.

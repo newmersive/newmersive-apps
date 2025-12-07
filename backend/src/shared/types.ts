@@ -128,6 +128,22 @@ export interface Lead {
   createdAt: string;
 }
 
+export type LeadGlobalChannel = "whatsapp" | "web" | "app";
+export type LeadGlobalStatus = "new" | "contacted" | "closed";
+export type LeadGlobalSourceApp = "trueqia" | "allwain";
+
+export interface LeadGlobal {
+  id: string;
+  channel: LeadGlobalChannel;
+  name?: string;
+  phone?: string;
+  email?: string;
+  sourceApp: LeadGlobalSourceApp;
+  message: string;
+  createdAt: string;
+  status: LeadGlobalStatus;
+}
+
 /* =========================
    ORDER GROUPS
 ========================= */

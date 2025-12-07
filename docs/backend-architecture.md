@@ -17,6 +17,7 @@
   - **AuthUser/AuthTokenResponse**: versión pública sin `passwordHash` + token.
   - **Offer**: `id`, `title`, `description`, `tokens`, `owner` (`trueqia|allwain`), `category`.
   - **Trade**: `id`, `title`, `status`, `participants`, `tokens`.
+  - **LeadGlobal**: `id`, `channel` (`whatsapp|web|app`), `name?`, `phone?`, `email?`, `sourceApp` (`trueqia|allwain`), `message`, `createdAt`, `status` (`new|contacted|closed`).
 - **Almacenamiento** (`data.store.ts`):
   - Lee/escribe JSON, inicializa ofertas y trades demo y asegura que siempre exista el usuario admin + 4 ofertas base (si faltan en el JSON se reinyectan).
   - Operaciones: `getDatabase`, `persistDatabase`, `resetDatabase`, `upsertUser`, `setUsers`, `getOffersForOwner`, `getTrades`.
@@ -33,9 +34,11 @@
 | POST | /trueqia/contracts/preview | Devuelve texto de contrato demo generado en backend IA. | Bearer |
 | GET | /allwain/scan-demo | Respuesta mock de escaneo QR/etiqueta. | Bearer |
 | GET | /allwain/offers | Ofertas con owner `allwain`. | Bearer |
+| POST | /leads/whatsapp | Punto de entrada para leads capturados por bot de WhatsApp. | Público |
 | GET | /admin/dashboard | Ping protegido para admin. | Bearer (admin) |
 | GET | /admin/users | Lista pública de usuarios (sin password). | Bearer (admin) |
 | GET | /admin/ai/activity | Lista de eventos demo de moderación. | Bearer (admin) |
+| GET | /admin/leads | Lista global de leads capturados. | Bearer (admin) |
 
 ### Autenticación y roles
 - `authRequired`: valida `Authorization: Bearer <token>`, usa `jwt.verify` con `ENV.JWT_SECRET`; adjunta `{id,email,role}` en `req.user`. Errores consistentes: `{ code: "UNAUTHORIZED" }` o `{ code: "INVALID_TOKEN" }`.
@@ -47,6 +50,16 @@
 ### Consumo por apps
 - **TrueQIA**: `/auth/register`, `/auth/login`, `/trueqia/offers`, `/trueqia/contracts/preview`, `/trueqia/trades`, `/auth/me`.
 - **Allwain**: `/auth/register`, `/auth/login`, `/allwain/scan-demo`, `/allwain/offers`.
+
+## Integración del bot de WhatsApp
+- **Endpoint de entrada**: `POST /api/leads/whatsapp` (sin auth) acepta el payload capturado por la IA. Responde `201` con `{ lead }`.
+- **Campos requeridos**:
+  - `message` (string): texto enviado por la persona interesada.
+  - `sourceApp` (`"trueqia"|"allwain"`): a cuál app se debe enrutar el lead.
+  - Al menos uno entre `phone` o `email` para poder contactar.
+- **Campos opcionales**: `name`, `status` (`new|contacted|closed`, por defecto `new`). `channel` se fija automáticamente a `"whatsapp"`.
+- **Almacenamiento**: los leads quedan en `data.database.json` bajo `leadGlobals` con sello de tiempo `createdAt` y estado inicial `new` si no se indica otro.
+- **Lectura desde panel**: `GET /api/admin/leads` (admin + JWT) devuelve `{ items: LeadGlobal[] }` para que el panel de administración los liste.
 
 ## Tests
 - `tests/auth.spec.ts`: cubre registro/login y middleware (token ausente, inválido, rol no admin, acceso admin). Usa helper `TestClient` que arranca el servidor en puerto efímero.
