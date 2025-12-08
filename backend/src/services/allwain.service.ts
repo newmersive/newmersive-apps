@@ -1,377 +1,209 @@
+import { v4 as uuidv4 } from "uuid";
 import {
-  addAllwainSavingTransaction,
-  findUserBySponsorCode,
-  getReferralStat,
-  getReferralStats,
-  getReferralStatsBySponsor,
-  getUserById,
-  upsertReferralStat,
-  upsertUser,
-  addLead,
-  addOffer,
-  addOrderGroup,
-  getOfferById,
+  Offer,
+  Product,
+  OrderGroup,
+  AllwainSavingTransaction,
+  ReferralStat,
+} from "../shared/types";
+import {
   getOffersByOwner,
-  getOrderGroupById,
-  getOrderGroups,
-  getProductByEan,
+  addOffer,
+  getProducts,
   getProductById,
-  updateOrderGroup,
+  getProductByEAN,
+  getOrderGroups,
+  addOrderGroup,
+  addSaving,
+  addReferralStat,
+  getReferralStatsByUser,
+  getUserById,
+  upsertUser,
 } from "./data.store";
 
-import {
-  AllwainSavingTransaction,
-  ReferralMonthlyHistory,
-  ReferralStat,
-  Lead,
-  Offer,
-  OrderGroup,
-  OrderGroupParticipant,
-  Product,
-  User,
-} from "../shared/types";
+/* =========================
+   SCAN DEMO
+========================= */
 
-interface LocationInput {
-  lat: number;
-  lng: number;
-}
+export function scanDemoProduct(ean?: string) {
+  let product: Product | undefined;
 
-interface CreateAllwainOfferInput {
-  title: string;
-  description: string;
-  price?: number;
-  tokens?: number;
-  productId?: string;
-  meta?: Record<string, unknown>;
-  ownerUserId: string;
-}
+  if (ean) {
+    product = getProductByEAN(ean);
+  }
 
-interface CreateOrderGroupInput {
-  productId: string;
-  totalUnits: number;
-  minUnitsPerClient: number;
-}
+  if (!product) {
+    const products = getProducts();
+    product = products[Math.floor(Math.random() * products.length)];
+  }
 
-/**
- * =========================
- *  BLOQUE: PRODUCTOS / OFERTAS / GRUPOS DE PEDIDO
- * =========================
- */
-
-export function getAllwainProductById(id: string): Product | undefined {
-  return getProductById(id);
-}
-
-export function getAllwainProductByEan(ean: string): Product | undefined {
-  return getProductByEan(ean);
-}
-
-export function listAllwainOffers(location?: LocationInput): Offer[] {
-  const offers = getOffersByOwner("allwain");
-
-  if (!location) return offers;
-
-  // Mock de distancia determinista para demo
-  const withDistance = offers.map((offer, index) => {
-    const distanceKm = ((offer.id.length + index * 7) % 80) + 5;
+  if (!product)
     return {
-      ...offer,
-      meta: { ...(offer.meta || {}), distanceKm },
-    } as Offer;
-  });
+      product: null,
+      offers: [],
+    };
 
-  // Solo devolvemos hasta 60 km para simular cercanía
-  return withDistance.filter(
-    (offer) => (offer.meta?.["distanceKm"] as number) <= 60
+  const offers = getOffersByOwner("allwain").filter(
+    o => o.productId === product!.id
   );
+
+  return {
+    product,
+    offers,
+  };
 }
 
-export function createAllwainOffer(input: CreateAllwainOfferInput): Offer {
-  const id = `offer-allwain-${Date.now()}`;
+/* =========================
+   OFFERS (ALLWAIN)
+========================= */
+
+export function listAllwainOffers() {
+  return getOffersByOwner("allwain");
+}
+
+export function createAllwainOffer(
+  userId: string,
+  title: string,
+  description: string,
+  price: number,
+  productId?: string,
+  meta?: Record<string, unknown>
+): Offer {
   const offer: Offer = {
-    id,
-    title: input.title,
-    description: input.description,
+    id: uuidv4(),
+    title,
+    description,
     owner: "allwain",
-    ownerUserId: input.ownerUserId,
-    price: input.price,
-    tokens: input.tokens,
-    productId: input.productId,
-    meta: input.meta,
+    ownerUserId: userId,
+    price,
+    productId,
+    meta,
   };
 
   return addOffer(offer);
 }
 
-export function createOfferInterest(
-  offerId: string,
-  userId: string,
-  message?: string
-): Lead {
-  const offer = getOfferById(offerId);
-  if (!offer) {
-    throw new Error("OFFER_NOT_FOUND");
-  }
+/* =========================
+   ORDER GROUPS
+========================= */
 
-  const user = getUserById(userId);
-  if (!user) {
-    throw new Error("USER_NOT_FOUND");
-  }
-
-  const lead: Lead = {
-    id: `lead-${Date.now()}`,
-    name: user.name,
-    email: user.email,
-    source: "allwain-offer-interest",
-    message,
-    offerId: offer.id,
-    userId: user.id,
-    status: "new",
-    createdAt: new Date().toISOString(),
-  };
-
-  return addLead(lead);
-}
-
-export function listOrderGroups(): OrderGroup[] {
+export function listOrderGroups() {
   return getOrderGroups();
 }
 
-export function createOrderGroup(input: CreateOrderGroupInput): OrderGroup {
-  const product = getProductById(input.productId);
-  if (!product) {
-    throw new Error("PRODUCT_NOT_FOUND");
-  }
-
-  const orderGroup: OrderGroup = {
-    id: `order-group-${Date.now()}`,
-    productId: input.productId,
-    totalUnits: input.totalUnits,
-    minUnitsPerClient: input.minUnitsPerClient,
+export function createOrderGroup(
+  productId: string,
+  minUnitsPerClient: number
+): OrderGroup {
+  const group: OrderGroup = {
+    id: uuidv4(),
+    productId,
+    totalUnits: 0,
+    minUnitsPerClient,
     status: "open",
     participants: [],
   };
 
-  return addOrderGroup(orderGroup);
+  return addOrderGroup(group);
 }
 
 export function joinOrderGroup(
-  id: string,
-  participant: OrderGroupParticipant
-): OrderGroup {
-  const orderGroup = getOrderGroupById(id);
-  if (!orderGroup) {
-    throw new Error("ORDER_GROUP_NOT_FOUND");
-  }
+  groupId: string,
+  userId: string,
+  units: number
+) {
+  const groups = getOrderGroups();
+  const group = groups.find(g => g.id === groupId);
+  if (!group) throw new Error("GROUP_NOT_FOUND");
 
-  if (orderGroup.status === "closed") {
-    throw new Error("ORDER_GROUP_CLOSED");
-  }
-
-  if (participant.units < orderGroup.minUnitsPerClient) {
-    throw new Error("MIN_UNITS_NOT_MET");
-  }
-
-  const currentUnits = orderGroup.participants.reduce(
-    (sum, p) => sum + p.units,
-    0
-  );
-  if (currentUnits + participant.units > orderGroup.totalUnits) {
-    throw new Error("ORDER_GROUP_FULL");
-  }
-
-  const existing = orderGroup.participants.find(
-    (p) => p.userId === participant.userId
-  );
-  if (existing) {
-    existing.units += participant.units;
+  const participant = group.participants.find(p => p.userId === userId);
+  if (participant) {
+    participant.units += units;
   } else {
-    orderGroup.participants.push(participant);
+    group.participants.push({ userId, units });
   }
 
-  const updatedUnits = orderGroup.participants.reduce(
-    (sum, p) => sum + p.units,
-    0
-  );
-
-  if (updatedUnits >= orderGroup.totalUnits) {
-    orderGroup.status = "closing";
-  }
-
-  return updateOrderGroup(orderGroup);
+  group.totalUnits += units;
+  return group;
 }
 
-/**
- * =========================
- *  BLOQUE: SPONSORS / AHORROS / COMISIONES
- * =========================
- */
+/* =========================
+   SAVINGS + REFERRALS
+========================= */
 
-const ALLWAIN_FEE_PERCENTAGE = 0.1; // 10% de fee de Allwain sobre el ahorro
-const SPONSOR_SHARE_OF_FEE = 0.5;   // 50% de esa fee va al sponsor
-
-function generateId(prefix: string) {
-  return `${prefix}-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-}
-
-export function registerAllwainSaving(
+export function registerSaving(
   userId: string,
   amount: number
 ): {
-  transaction: AllwainSavingTransaction;
-  sponsorCommission?: number;
-  sponsorId?: string;
-  referralStat?: ReferralStat;
+  saving: AllwainSavingTransaction;
+  referral?: ReferralStat;
 } {
-  if (amount <= 0) {
-    throw new Error("INVALID_AMOUNT");
-  }
+  const user = getUserById(userId);
+  if (!user) throw new Error("USER_NOT_FOUND");
 
-  const now = new Date();
-  const transaction: AllwainSavingTransaction = {
-    id: generateId("saving"),
+  const saving: AllwainSavingTransaction = {
+    id: uuidv4(),
     userId,
     amount,
-    createdAt: now.toISOString(),
+    createdAt: new Date().toISOString(),
   };
 
-  // Guardamos la transacción de ahorro
-  addAllwainSavingTransaction(transaction);
+  addSaving(saving);
 
-  const user = getUserById(userId);
-  if (!user || !user.referredByCode) {
-    // No tiene sponsor -> solo registramos ahorro
-    return { transaction };
+  user.allwainBalance = (user.allwainBalance || 0) + amount;
+  upsertUser(user);
+
+  let referralStat: ReferralStat | undefined;
+
+  if (user.referredByCode) {
+    const sponsor = getUserById(
+      getReferralStatsByUser(user.referredByCode)?.[0]?.userId || ""
+    );
+
+    if (sponsor) {
+      const commission = amount * 0.1;
+
+      sponsor.allwainBalance =
+        (sponsor.allwainBalance || 0) + commission;
+      upsertUser(sponsor);
+
+      referralStat = {
+        id: uuidv4(),
+        userId: sponsor.id,
+        invitedUserId: user.id,
+        totalSavedByInvited: amount,
+        commissionEarned: commission,
+        monthlyHistory: [],
+      };
+
+      addReferralStat(referralStat);
+    }
   }
 
-  const sponsor = findUserBySponsorCode(user.referredByCode);
-  if (!sponsor) {
-    return { transaction };
-  }
-
-  const allwainFee = amount * ALLWAIN_FEE_PERCENTAGE;
-  const sponsorCommission = allwainFee * SPONSOR_SHARE_OF_FEE;
-
-  const stat = updateReferralStat({
-    sponsorId: sponsor.id,
-    invitedUserId: user.id,
-    saved: amount,
-    commission: sponsorCommission,
-    month: now.getMonth() + 1,
-    year: now.getFullYear(),
-  });
-
-  sponsor.allwainBalance = (sponsor.allwainBalance ?? 0) + sponsorCommission;
-  upsertUser(sponsor);
-
-  return {
-    transaction,
-    sponsorCommission,
-    sponsorId: sponsor.id,
-    referralStat: stat,
-  };
+  return { saving, referral: referralStat };
 }
 
+/* =========================
+   SPONSORS SUMMARY
+========================= */
+
 export function getSponsorSummary(userId: string) {
-  const stats = getReferralStatsBySponsor(userId);
-  const invitedCount = stats.length;
+  const stats = getReferralStatsByUser(userId);
+
+  const totalInvited = stats.length;
   const totalSaved = stats.reduce(
-    (acc, stat) => acc + stat.totalSavedByInvited,
+    (sum, r) => sum + r.totalSavedByInvited,
     0
   );
   const totalCommission = stats.reduce(
-    (acc, stat) => acc + stat.commissionEarned,
+    (sum, r) => sum + r.commissionEarned,
     0
   );
 
-  const monthlyHistoryMap = new Map<string, ReferralMonthlyHistory>();
-  stats.forEach((stat) => {
-    stat.monthlyHistory.forEach((item) => {
-      const key = `${item.year}-${item.month}`;
-      const existing = monthlyHistoryMap.get(key);
-      if (!existing) {
-        monthlyHistoryMap.set(key, { ...item });
-      } else {
-        existing.saved += item.saved;
-        existing.commission += item.commission;
-      }
-    });
-  });
-
-  const user = getUserById(userId);
-
   return {
-    invitedCount,
+    totalInvited,
     totalSaved,
     totalCommission,
-    balance: user?.allwainBalance ?? 0,
-    monthlyHistory: Array.from(monthlyHistoryMap.values()).sort((a, b) => {
-      if (a.year === b.year) return a.month - b.month;
-      return a.year - b.year;
-    }),
-    referrals: stats.map((stat) => ({
-      ...stat,
-      invitedName: getUserById(stat.invitedUserId)?.name,
-    })),
-  };
-}
-
-export function listAllSponsorStats() {
-  return getReferralStats().map((stat) => {
-    const sponsor = getUserById(stat.userId);
-    const invited = getUserById(stat.invitedUserId);
-    return {
-      ...stat,
-      sponsorName: sponsor?.name,
-      invitedName: invited?.name,
-    };
-  });
-}
-
-function updateReferralStat(params: {
-  sponsorId: string;
-  invitedUserId: string;
-  saved: number;
-  commission: number;
-  month: number;
-  year: number;
-}): ReferralStat {
-  const existing =
-    getReferralStat(params.sponsorId, params.invitedUserId) ||
-    createEmptyReferralStat(params.sponsorId, params.invitedUserId);
-
-  existing.totalSavedByInvited += params.saved;
-  existing.commissionEarned += params.commission;
-
-  const monthlyEntry = existing.monthlyHistory.find(
-    (m) => m.month === params.month && m.year === params.year
-  );
-
-  if (monthlyEntry) {
-    monthlyEntry.saved += params.saved;
-    monthlyEntry.commission += params.commission;
-  } else {
-    existing.monthlyHistory.push({
-      month: params.month,
-      year: params.year,
-      saved: params.saved,
-      commission: params.commission,
-    });
-  }
-
-  return upsertReferralStat(existing);
-}
-
-function createEmptyReferralStat(
-  sponsorId: string,
-  invitedUserId: string
-): ReferralStat {
-  return {
-    id: generateId("referral"),
-    userId: sponsorId,
-    invitedUserId,
-    totalSavedByInvited: 0,
-    commissionEarned: 0,
-    monthlyHistory: [],
+    referrals: stats,
   };
 }

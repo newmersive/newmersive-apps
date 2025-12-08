@@ -11,17 +11,23 @@ export interface User {
   passwordHash: string;
   role: UserRole;
   createdAt: string;
+  /**
+   * Código propio único que el usuario puede compartir como sponsor.
+   */
   sponsorCode?: string;
+  /**
+   * Código de sponsor que lo invitó, si existe.
+   */
   referredByCode?: string;
   avatarUrl?: string;
-  appMode?: string[];
+  /**
+   * Saldo de tokens internos para TrueQIA.
+   */
   tokens?: number;
+  /**
+   * Saldo/comisiones acumuladas para Allwain.
+   */
   allwainBalance?: number;
-}
-
-export interface AuthTokenResponse {
-  token: string;
-  user: AuthUser;
 }
 
 export interface AuthUser {
@@ -33,55 +39,50 @@ export interface AuthUser {
   sponsorCode?: string;
   referredByCode?: string;
   avatarUrl?: string;
-  appMode?: string[];
   tokens?: number;
   allwainBalance?: number;
 }
 
-/* =========================
-   ALLWAIN SPONSORS
-========================= */
-
-export interface ReferralMonthlyHistory {
-  month: number;
-  year: number;
-  saved: number;
-  commission: number;
-}
-
-export interface ReferralStat {
-  id: string;
-  userId: string;
-  invitedUserId: string;
-  totalSavedByInvited: number;
-  commissionEarned: number;
-  monthlyHistory: ReferralMonthlyHistory[];
-}
-
-export interface AllwainSavingTransaction {
-  id: string;
-  userId: string;
-  amount: number;
-  createdAt: string;
+export interface AuthTokenResponse {
+  token: string;
+  user: AuthUser;
 }
 
 /* =========================
    OFFERS & TRADES
 ========================= */
 
+export type OfferOwner = "trueqia" | "allwain";
+
 export interface Offer {
   id: string;
   title: string;
   description: string;
-  owner: "trueqia" | "allwain";
+  owner: OfferOwner;
   ownerUserId: string;
+  /**
+   * Precio en tokens (TrueQIA).
+   */
   tokens?: number;
+  /**
+   * Precio en dinero (Allwain).
+   */
   price?: number;
+  /**
+   * Relación con un producto de catálogo (Allwain).
+   */
   productId?: string;
+  /**
+   * Campos extra (distancia, imágenes, tags, etc.).
+   */
   meta?: Record<string, unknown>;
 }
 
-export type TradeStatus = "pending" | "accepted" | "rejected" | "cancelled";
+export type TradeStatus =
+  | "pending"
+  | "accepted"
+  | "rejected"
+  | "cancelled";
 
 export interface Trade {
   id: string;
@@ -92,7 +93,6 @@ export interface Trade {
   status: TradeStatus;
   createdAt: string;
   resolvedAt?: string;
-  contractId?: string;
 }
 
 /* =========================
@@ -102,50 +102,82 @@ export interface Trade {
 export interface Product {
   id: string;
   name: string;
-  description?: string;
-  brand?: string;
+  /**
+   * Código de barras / EAN (opcional).
+   */
   ean?: string;
-  priceTokens?: number;
   category?: string;
+  brand?: string;
+  /**
+   * Texto descriptivo para fichas y demos.
+   */
+  description?: string;
+  /**
+   * URL de imagen para demos.
+   */
   imageUrl?: string;
+  /**
+   * Algunos seeds usan este campo sólo para demo.
+   */
+  priceTokens?: number;
 }
 
 /* =========================
-   LEADS
+   LEADS LOCALES (APP)
 ========================= */
 
-export type LeadStatus = "new" | "contacted" | "qualified" | "closed";
+export type LeadStatus = "new" | "contacted" | "closed";
 
 export interface Lead {
   id: string;
-  name: string;
-  email: string;
+  name?: string;
+  email?: string;
+  phone?: string;
+  /**
+   * Origen interno del lead, por ejemplo:
+   * - "allwain-offer-interest"
+   * - "trueqia-trade-interest"
+   */
   source: string;
   message?: string;
+  /**
+   * Relación opcional con oferta / usuario.
+   */
   offerId?: string;
   userId?: string;
   status: LeadStatus;
   createdAt: string;
-}
-
-export type LeadGlobalChannel = "whatsapp" | "web" | "app";
-export type LeadGlobalStatus = "new" | "contacted" | "closed";
-export type LeadGlobalSourceApp = "trueqia" | "allwain";
-
-export interface LeadGlobal {
-  id: string;
-  channel: LeadGlobalChannel;
-  name?: string;
-  phone?: string;
-  email?: string;
-  sourceApp: LeadGlobalSourceApp;
-  message: string;
-  createdAt: string;
-  status: LeadGlobalStatus;
+  notes?: string;
 }
 
 /* =========================
-   ORDER GROUPS
+   LEADS GLOBALES (WHATSAPP / WEB)
+========================= */
+
+export type LeadGlobalChannel = "whatsapp" | "app" | "web";
+
+export type LeadGlobalSourceApp = "trueqia" | "allwain";
+
+export type LeadGlobalStatus = "new" | "contacted" | "closed";
+
+export interface LeadGlobal {
+  id: string;
+  createdAt: string;
+  channel: LeadGlobalChannel;
+  sourceApp: LeadGlobalSourceApp;
+  name?: string;
+  phone?: string;
+  email?: string;
+  message: string;
+  status: LeadGlobalStatus;
+  /**
+   * Campos abiertos para ampliar tracking sin romper el tipo.
+   */
+  meta?: Record<string, unknown>;
+}
+
+/* =========================
+   ORDER GROUPS (ALLWAIN)
 ========================= */
 
 export type OrderGroupStatus = "open" | "closing" | "closed";
@@ -165,30 +197,87 @@ export interface OrderGroup {
 }
 
 /* =========================
+   REFERRALS & SAVINGS (ALLWAIN)
+========================= */
+
+export interface ReferralMonthlyHistory {
+  month: number; // 1-12
+  year: number;
+  /**
+   * Ahorro generado por este invitado en el mes.
+   */
+  saved: number;
+  /**
+   * Comisión para el sponsor en el mes.
+   */
+  commission: number;
+}
+
+export interface ReferralStat {
+  id: string;
+  /**
+   * Usuario sponsor (quien invita).
+   */
+  userId: string;
+  /**
+   * Usuario invitado.
+   */
+  invitedUserId: string;
+  /**
+   * Total acumulado ahorrado por el invitado.
+   */
+  totalSavedByInvited: number;
+  /**
+   * Comisión total acumulada para el sponsor.
+   */
+  commissionEarned: number;
+  /**
+   * Historial mensual agregado.
+   */
+  monthlyHistory: ReferralMonthlyHistory[];
+}
+
+export interface AllwainSavingTransaction {
+  id: string;
+  userId: string;
+  /**
+   * Importe de ahorro registrado para el usuario.
+   */
+  amount: number;
+  createdAt: string;
+}
+
+/* =========================
    CONTRACTS
 ========================= */
 
 export type ContractApp = "trueqia" | "allwain";
 export type ContractType = "trade" | "purchase";
-export type ContractStatus = "draft" | "active" | "closed" | "conflict";
+export type ContractStatus =
+  | "draft"
+  | "active"
+  | "closed"
+  | "conflict";
 
 export interface Contract {
   id: string;
-  title: string;
-  app?: ContractApp;
-  type?: ContractType;
+  app: ContractApp;
+  type: ContractType;
   status: ContractStatus;
-  counterparties?: string[];
-  valueTokens?: number;
+  /**
+   * Referencia opcional a la plantilla base (PDF).
+   */
   basePdfId?: string;
+  /**
+   * Texto generado (IA) para el contrato.
+   */
   generatedText?: string;
   createdAt: string;
-  updatedAt?: string;
-  notes?: string;
+  updatedAt: string;
 }
 
 /* =========================
-   DEMO
+   DEMO INPUTS
 ========================= */
 
 export interface DemoContractInput {
@@ -197,4 +286,3 @@ export interface DemoContractInput {
   providerName: string;
   tokens: number;
 }
-

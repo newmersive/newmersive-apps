@@ -1,18 +1,48 @@
 import { Router } from "express";
-import healthRoutes from "./health.routes";
+
 import authRoutes from "./auth.routes";
 import trueqiaRoutes from "./trueqia.routes";
 import allwainRoutes from "./allwain.routes";
-import adminRoutes from "./admin.routes";
 import leadsRoutes from "./leads.routes";
+import adminRoutes from "./admin.routes";
+import healthRoutes from "./health.routes";
 
 const router = Router();
 
-router.use("/", healthRoutes);
+/* =========================
+   PUBLIC / SYSTEM
+========================= */
+
+router.use("/health", healthRoutes);
+
+/* =========================
+   AUTH
+========================= */
+
 router.use("/auth", authRoutes);
+
+/* =========================
+   TRUEQIA
+========================= */
+
 router.use("/trueqia", trueqiaRoutes);
+
+/* =========================
+   ALLWAIN
+========================= */
+
 router.use("/allwain", allwainRoutes);
+
+/* =========================
+   LEADS (WHATSAPP / WEB / APP)
+========================= */
+
 router.use("/leads", leadsRoutes);
+
+/* =========================
+   ADMIN
+========================= */
+
 router.use("/admin", adminRoutes);
 
 export default router;

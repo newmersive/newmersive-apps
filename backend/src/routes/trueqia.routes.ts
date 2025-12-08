@@ -1,134 +1,221 @@
-import { Router } from "express";
-import { authRequired, AuthRequest } from "../middleware/auth.middleware";
-import { generateDemoContract } from "../ia/contracts.service";
+import { Router, Request, Response } from "express";
 import {
-  acceptTrade,
-  createTrade,
-  createTrueqiaOffer,
   listTrueqiaOffers,
+  createTrueqiaOffer,
+  createTrade,
+  acceptTrade,
   rejectTrade,
+  generateContractPreview,
 } from "../services/trueqia.service";
-import { listTrades } from "../services/market.service";
+import { authRequired } from "../middleware/auth.middleware";
 
 const router = Router();
 
-/**
- * Listado de ofertas TrueQIA
- * GET /api/trueqia/offers?excludeMine=true|false
- */
-router.get("/offers", authRequired, (req: AuthRequest, res) => {
-  const excludeMine = req.query.excludeMine === "true";
-  const items = listTrueqiaOffers({
-    excludeUserId: excludeMine ? req.user?.id : undefined,
-  });
+/* =========================
+   GET /trueqia/offers
+========================= */
 
-  res.json({ items, user: req.user });
-});
+router.get(
+  "/offers",
+  authRequired,
+  (req: Request, res: Response): void => {
+    try {
+      const excludeMine =
+        req.query.excludeMine === "true" ||
+        req.query.excludeMine === "1";
 
-/**
- * Listado de trueques (trades)
- */
-router.get("/trades", authRequired, (_req, res) => {
-  res.json({ items: listTrades() });
-});
+      const userId = (req as any).user?.id as string | undefined;
 
-/**
- * Crear oferta TrueQIA
- */
-router.post("/offers", authRequired, (req: AuthRequest, res) => {
-  const { title, description, tokens, meta } = req.body as any;
+      const offers = listTrueqiaOffers(
+        excludeMine ? userId : undefined
+      );
 
-  if (!title || !description || typeof tokens !== "number") {
-    return res.status(400).json({ error: "MISSING_FIELDS" });
-  }
-
-  const offer = createTrueqiaOffer({
-    title,
-    description,
-    tokens,
-    meta,
-    ownerUserId: req.user!.id,
-  });
-
-  res.status(201).json({ offer });
-});
-
-/**
- * Crear trade
- */
-router.post("/trades", authRequired, (req: AuthRequest, res) => {
-  const { offerId, toUserId, tokens } = req.body as any;
-  const fromUserId = req.user!.id;
-
-  if (!offerId || !toUserId || typeof tokens !== "number") {
-    return res.status(400).json({ error: "MISSING_FIELDS" });
-  }
-
-  try {
-    const trade = createTrade({ offerId, fromUserId, toUserId, tokens });
-    res.status(201).json({ trade });
-  } catch (err: unknown) {
-    if (err instanceof Error && err.message === "INVALID_TOKENS") {
-      return res.status(400).json({ error: "INVALID_TOKENS" });
+      res.json({ items: offers });
+    } catch (err) {
+      console.error("Error in GET /trueqia/offers:", err);
+      res.status(500).json({ error: "INTERNAL_ERROR" });
     }
-    return res.status(500).json({ error: "INTERNAL_ERROR" });
   }
-});
+);
 
-/**
- * Aceptar trade
- */
-router.post("/trades/:id/accept", authRequired, (req: AuthRequest, res) => {
-  try {
-    const trade = acceptTrade(req.params.id, req.user!.id);
-    res.json({ trade });
-  } catch (err: unknown) {
-    return handleTradeError(err, res);
+/* =========================
+   POST /trueqia/offers
+========================= */
+
+router.post(
+  "/offers",
+  authRequired,
+  async (req: Request, res: Response): Promise<void> => {
+    try {
+      const userId = (req as any).user?.id as string | undefined;
+      const { title, description, tokens, meta } = req.body as {
+        title?: string;
+        description?: string;
+        tokens?: number;
+        meta?: Record<string, unknown>;
+      };
+
+      if (!userId || !title || !description || typeof tokens !== "number") {
+        res.status(400).json({ error: "MISSING_FIELDS" });
+        return;
+      }
+
+      const offer = createTrueqiaOffer(
+        userId,
+        title,
+        description,
+        tokens,
+        meta
+      );
+
+      res.status(201).json(offer);
+    } catch (err) {
+      console.error("Error in POST /trueqia/offers:", err);
+      res.status(500).json({ error: "INTERNAL_ERROR" });
+    }
   }
-});
+);
 
-/**
- * Rechazar trade
- */
-router.post("/trades/:id/reject", authRequired, (req: AuthRequest, res) => {
-  try {
-    const trade = rejectTrade(req.params.id, req.user!.id);
-    res.json({ trade });
-  } catch (err: unknown) {
-    return handleTradeError(err, res);
+/* =========================
+   POST /trueqia/trades
+========================= */
+
+router.post(
+  "/trades",
+  authRequired,
+  (req: Request, res: Response): void => {
+    try {
+      const fromUserId = (req as any).user?.id as string | undefined;
+      const { toUserId, offerId, tokens } = req.body as {
+        toUserId?: string;
+        offerId?: string;
+        tokens?: number;
+      };
+
+      if (
+        !fromUserId ||
+        !toUserId ||
+        !offerId ||
+        typeof tokens !== "number"
+      ) {
+        res.status(400).json({ error: "MISSING_FIELDS" });
+        return;
+      }
+
+      const trade = createTrade(
+        fromUserId,
+        toUserId,
+        offerId,
+        tokens
+      );
+
+      res.status(201).json(trade);
+    } catch (err: any) {
+      if (err instanceof Error && err.message === "INVALID_TOKEN_AMOUNT") {
+        res.status(400).json({ error: "INVALID_TOKEN_AMOUNT" });
+        return;
+      }
+
+      console.error("Error in POST /trueqia/trades:", err);
+      res.status(500).json({ error: "INTERNAL_ERROR" });
+    }
   }
-});
+);
 
-/**
- * Preview contrato IA (solo texto, sin guardar contrato)
- */
-router.post("/contracts/preview", authRequired, (req: AuthRequest, res) => {
-  const text = generateDemoContract(req.body);
-  res.json({ contractText: text });
-});
+/* =========================
+   POST /trueqia/trades/:id/accept
+========================= */
 
-function handleTradeError(err: unknown, res: any) {
-  if (!(err instanceof Error)) {
-    return res.status(500).json({ error: "INTERNAL_ERROR" });
+router.post(
+  "/trades/:id/accept",
+  authRequired,
+  (req: Request, res: Response): void => {
+    try {
+      const tradeId = req.params.id;
+      const trade = acceptTrade(tradeId);
+      res.json(trade);
+    } catch (err: any) {
+      if (err instanceof Error) {
+        if (err.message === "TRADE_NOT_FOUND") {
+          res.status(404).json({ error: "TRADE_NOT_FOUND" });
+          return;
+        }
+        if (err.message === "INSUFFICIENT_TOKENS") {
+          res.status(400).json({ error: "INSUFFICIENT_TOKENS" });
+          return;
+        }
+      }
+
+      console.error("Error in accept trade:", err);
+      res.status(500).json({ error: "INTERNAL_ERROR" });
+    }
   }
+);
 
-  if (err.message === "TRADE_NOT_FOUND") {
-    return res.status(404).json({ error: "TRADE_NOT_FOUND" });
+/* =========================
+   POST /trueqia/trades/:id/reject
+========================= */
+
+router.post(
+  "/trades/:id/reject",
+  authRequired,
+  (req: Request, res: Response): void => {
+    try {
+      const tradeId = req.params.id;
+      const trade = rejectTrade(tradeId);
+      res.json(trade);
+    } catch (err: any) {
+      if (err instanceof Error && err.message === "TRADE_NOT_FOUND") {
+        res.status(404).json({ error: "TRADE_NOT_FOUND" });
+        return;
+      }
+
+      console.error("Error in reject trade:", err);
+      res.status(500).json({ error: "INTERNAL_ERROR" });
+    }
   }
+);
 
-  if (err.message === "TRADE_NOT_PENDING") {
-    return res.status(400).json({ error: "TRADE_NOT_PENDING" });
+/* =========================
+   POST /trueqia/contracts/preview
+========================= */
+
+router.post(
+  "/contracts/preview",
+  authRequired,
+  (req: Request, res: Response): void => {
+    try {
+      const { offerTitle, requesterName, providerName, tokens } =
+        req.body as {
+          offerTitle?: string;
+          requesterName?: string;
+          providerName?: string;
+          tokens?: number;
+        };
+
+      if (
+        !offerTitle ||
+        !requesterName ||
+        !providerName ||
+        typeof tokens !== "number"
+      ) {
+        res.status(400).json({ error: "MISSING_FIELDS" });
+        return;
+      }
+
+      const contract = generateContractPreview({
+        offerTitle,
+        requesterName,
+        providerName,
+        tokens,
+      });
+
+      res.status(201).json(contract);
+    } catch (err) {
+      console.error("Error in preview contract:", err);
+      res.status(500).json({ error: "INTERNAL_ERROR" });
+    }
   }
-
-  if (err.message === "NOT_PARTICIPANT") {
-    return res.status(403).json({ error: "NOT_PARTICIPANT" });
-  }
-
-  if (err.message === "INSUFFICIENT_TOKENS") {
-    return res.status(400).json({ error: "INSUFFICIENT_TOKENS" });
-  }
-
-  return res.status(500).json({ error: "INTERNAL_ERROR" });
-}
+);
 
 export default router;

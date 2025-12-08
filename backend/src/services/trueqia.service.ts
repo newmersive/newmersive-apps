@@ -1,52 +1,69 @@
+import { v4 as uuidv4 } from "uuid";
 import {
-  addOffer,
-  addTrade,
-  getTradeById,
-  getUserById,
+  Offer,
+  Trade,
+  Contract,
+  DemoContractInput,
+} from "../shared/types";
+import {
   getOffersByOwner,
-  updateTrade,
+  addOffer,
+  getTradeById,
+  addTrade,
+  updateTradeStatus,
+  getUserById,
   upsertUser,
+  createContract,
 } from "./data.store";
-import { Offer, Trade } from "../shared/types";
 
-function generateId(prefix: string): string {
-  return `${prefix}-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-}
+/* =========================
+   OFFERS (TRUEQIA)
+========================= */
 
-export function listTrueqiaOffers(options?: {
-  excludeUserId?: string;
-}): Offer[] {
+export function listTrueqiaOffers(excludeUserId?: string) {
   const offers = getOffersByOwner("trueqia");
-  if (!options?.excludeUserId) return offers;
-  return offers.filter((offer) => offer.ownerUserId !== options.excludeUserId);
+  if (!excludeUserId) return offers;
+  return offers.filter(o => o.ownerUserId !== excludeUserId);
 }
 
 export function createTrueqiaOffer(
-  input: Omit<Offer, "id" | "owner">
+  userId: string,
+  title: string,
+  description: string,
+  tokens: number,
+  meta?: Record<string, unknown>
 ): Offer {
   const offer: Offer = {
-    ...input,
-    id: generateId("offer-trueqia"),
+    id: uuidv4(),
+    title,
+    description,
     owner: "trueqia",
+    ownerUserId: userId,
+    tokens,
+    meta,
   };
 
   return addOffer(offer);
 }
 
-export function createTrade(params: {
-  offerId: string;
-  fromUserId: string;
-  toUserId: string;
-  tokens: number;
-}): Trade {
-  if (params.tokens <= 0) throw new Error("INVALID_TOKENS");
+/* =========================
+   TRADES (TRUEQIA)
+========================= */
+
+export function createTrade(
+  fromUserId: string,
+  toUserId: string,
+  offerId: string,
+  tokens: number
+): Trade {
+  if (tokens <= 0) throw new Error("INVALID_TOKEN_AMOUNT");
 
   const trade: Trade = {
-    id: generateId("trade"),
-    offerId: params.offerId,
-    fromUserId: params.fromUserId,
-    toUserId: params.toUserId,
-    tokens: params.tokens,
+    id: uuidv4(),
+    offerId,
+    fromUserId,
+    toUserId,
+    tokens,
     status: "pending",
     createdAt: new Date().toISOString(),
   };
@@ -54,43 +71,62 @@ export function createTrade(params: {
   return addTrade(trade);
 }
 
-export function acceptTrade(tradeId: string, actingUserId: string): Trade {
+export function acceptTrade(tradeId: string) {
   const trade = getTradeById(tradeId);
   if (!trade) throw new Error("TRADE_NOT_FOUND");
-  if (trade.status !== "pending") throw new Error("TRADE_NOT_PENDING");
-  if (![trade.fromUserId, trade.toUserId].includes(actingUserId)) {
-    throw new Error("NOT_PARTICIPANT");
-  }
 
   const fromUser = getUserById(trade.fromUserId);
   const toUser = getUserById(trade.toUserId);
+
   if (!fromUser || !toUser) throw new Error("USER_NOT_FOUND");
 
-  const availableTokens = fromUser.tokens ?? 0;
-  if (availableTokens < trade.tokens) throw new Error("INSUFFICIENT_TOKENS");
+  if ((fromUser.tokens || 0) < trade.tokens)
+    throw new Error("INSUFFICIENT_TOKENS");
 
-  fromUser.tokens = availableTokens - trade.tokens;
-  toUser.tokens = (toUser.tokens ?? 0) + trade.tokens;
+  fromUser.tokens = (fromUser.tokens || 0) - trade.tokens;
+  toUser.tokens = (toUser.tokens || 0) + trade.tokens;
 
   upsertUser(fromUser);
   upsertUser(toUser);
 
-  trade.status = "accepted";
-  trade.resolvedAt = new Date().toISOString();
-
-  return updateTrade(trade);
+  return updateTradeStatus(tradeId, "accepted");
 }
 
-export function rejectTrade(tradeId: string, actingUserId: string): Trade {
+export function rejectTrade(tradeId: string) {
   const trade = getTradeById(tradeId);
   if (!trade) throw new Error("TRADE_NOT_FOUND");
-  if (trade.status !== "pending") throw new Error("TRADE_NOT_PENDING");
-  if (![trade.fromUserId, trade.toUserId].includes(actingUserId)) {
-    throw new Error("NOT_PARTICIPANT");
-  }
 
-  trade.status = "rejected";
-  trade.resolvedAt = new Date().toISOString();
+  return updateTradeStatus(tradeId, "rejected");
+}
 
-  return updateTrade(trade);
+/* =========================
+   CONTRACTS (TRUEQIA)
+========================= */
+
+export function generateContractPreview(
+  input: DemoContractInput
+): Contract {
+  const text = `
+  CONTRATO DE TRUEQUE DEMO
+
+  OFERTA: ${input.offerTitle}
+  SOLICITANTE: ${input.requesterName}
+  PROVEEDOR: ${input.providerName}
+
+  TOKENS ACORDADOS: ${input.tokens}
+
+  Este contrato es solo una simulación sin validez legal.
+  `;
+
+  const contract: Contract = {
+    id: uuidv4(),
+    app: "trueqia",
+    type: "trade",
+    status: "draft",
+    generatedText: text.trim(),
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+
+  return createContract(contract);
 }

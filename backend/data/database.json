@@ -70,6 +70,39 @@
       "tokens": 0,
       "allwainBalance": 0,
       "sponsorCode": "SPN-DEMO-STR"
+    },
+    {
+      "id": "7",
+      "name": "Paco Trueqia",
+      "email": "paco.trueqia@example.com",
+      "passwordHash": "$2a$10$G7KnzoFis/FZJ3UkRNZcme8o1Cgbp1h6NSNzV83YLb76EOiiOl2Ia",
+      "role": "user",
+      "createdAt": "2025-12-08T14:48:28.661Z",
+      "sponsorCode": "SPN-075C12",
+      "tokens": 100,
+      "allwainBalance": 10
+    },
+    {
+      "id": "8",
+      "name": "Paco",
+      "email": "paco.leads@example.com",
+      "passwordHash": "$2a$10$DTzuY.EiUBUEGlny7zMMwuZrvqhcOtc0immdZgmMiWVaZ5vmibd6W",
+      "role": "user",
+      "createdAt": "2025-12-08T14:54:33.873Z",
+      "sponsorCode": "SPN-9817E7",
+      "tokens": 0,
+      "allwainBalance": 0
+    },
+    {
+      "id": "9",
+      "name": "Admin",
+      "email": "admin@example.com",
+      "passwordHash": "$2a$10$xbYg0wuOEZZqpFZ2XoaK..WRMlEC1JxPYr3E4RKOhWfpQn2RFzYBm",
+      "role": "admin",
+      "createdAt": "2025-12-08T14:55:31.106Z",
+      "sponsorCode": "SPN-F852B2",
+      "tokens": 0,
+      "allwainBalance": 0
     }
   ],
   "offers": [
@@ -80,7 +113,9 @@
       "owner": "trueqia",
       "ownerUserId": "1",
       "tokens": 80,
-      "meta": { "category": "creativos" }
+      "meta": {
+        "category": "creativos"
+      }
     },
     {
       "id": "offer-trueqia-2",
@@ -89,7 +124,9 @@
       "owner": "trueqia",
       "ownerUserId": "1",
       "tokens": 120,
-      "meta": { "category": "formación" }
+      "meta": {
+        "category": "formación"
+      }
     },
     {
       "id": "offer-trueqia-demo-1",
@@ -98,7 +135,9 @@
       "owner": "trueqia",
       "ownerUserId": "4",
       "tokens": 10,
-      "meta": { "category": "preproducción" }
+      "meta": {
+        "category": "preproducción"
+      }
     },
     {
       "id": "offer-trueqia-demo-2",
@@ -107,7 +146,9 @@
       "owner": "trueqia",
       "ownerUserId": "5",
       "tokens": 20,
-      "meta": { "category": "social" }
+      "meta": {
+        "category": "social"
+      }
     },
     {
       "id": "offer-trueqia-demo-3",
@@ -116,7 +157,9 @@
       "owner": "trueqia",
       "ownerUserId": "6",
       "tokens": 50,
-      "meta": { "category": "growth" }
+      "meta": {
+        "category": "growth"
+      }
     },
     {
       "id": "offer-allwain-1",
@@ -126,7 +169,9 @@
       "ownerUserId": "3",
       "price": 30,
       "productId": "product-1",
-      "meta": { "category": "gourmet" }
+      "meta": {
+        "category": "gourmet"
+      }
     },
     {
       "id": "offer-allwain-2",
@@ -135,17 +180,43 @@
       "owner": "allwain",
       "ownerUserId": "3",
       "price": 45,
-      "meta": { "category": "análisis" }
+      "meta": {
+        "category": "análisis"
+      }
     },
     {
       "id": "offer-allwain-3",
       "title": "Bundle Allwain + TrueQIA",
       "description": "Tokens conjuntos para lanzar campaña conjunta con catálogo Allwain y activaciones TrueQIA.",
-      "tokens": 150,
       "owner": "allwain",
       "ownerUserId": "3",
+      "tokens": 150,
       "price": 45,
-      "meta": { "category": "alianzas" }
+      "meta": {
+        "category": "alianzas"
+      }
+    },
+    {
+      "id": "74c023f8-01e6-47fe-8e6e-2b58790eb99c",
+      "title": "Clases de guitarra",
+      "description": "10 horas de clases online",
+      "owner": "trueqia",
+      "ownerUserId": "7",
+      "tokens": 50,
+      "meta": {
+        "category": "music"
+      }
+    },
+    {
+      "id": "9009b5c1-a84f-42ee-a6e8-86e02fa5486c",
+      "title": "Detergente 2L",
+      "description": "Oferta supermercado local",
+      "owner": "allwain",
+      "ownerUserId": "7",
+      "price": 3.99,
+      "meta": {
+        "distanceKm": 1.2
+      }
     }
   ],
   "trades": [
@@ -218,15 +289,52 @@
       "createdAt": "2024-01-05T00:00:00.000Z"
     }
   ],
+  "leadsGlobal": [
+    {
+      "id": "80754bbf-23e3-44db-b7df-5dc2c15af2d0",
+      "createdAt": "2025-12-08T14:54:45.301Z",
+      "channel": "whatsapp",
+      "sourceApp": "allwain",
+      "name": "Paco",
+      "phone": "+34 600 000 000",
+      "message": "Estoy interesado en Allwain",
+      "status": "new",
+      "meta": {
+        "ip": "::1",
+        "userAgent": "Mozilla/5.0 (Windows NT; Windows NT 10.0; es-ES) WindowsPowerShell/5.1.26100.7019",
+        "rawBody": {
+          "sourceApp": "allwain",
+          "message": "Estoy interesado en Allwain",
+          "name": "Paco",
+          "phone": "+34 600 000 000"
+        }
+      }
+    }
+  ],
   "contracts": [
     {
       "id": "contract-1",
       "title": "Piloto Allwain x tienda local",
       "status": "draft",
-      "counterparties": ["ops@allwain.app", "hola@cafedebarrio.local"],
+      "counterparties": [
+        "ops@allwain.app",
+        "hola@cafedebarrio.local"
+      ],
       "valueTokens": 250,
       "createdAt": "2024-01-06T00:00:00.000Z",
       "notes": "Contrato simulado en memoria hasta migrar a PostgreSQL."
     }
-  ]
+  ],
+  "orderGroups": [],
+  "referralStats": [],
+  "allwainSavings": [
+    {
+      "id": "02c29e17-7765-4c4f-8de7-bd18221fb4bb",
+      "userId": "7",
+      "amount": 10,
+      "createdAt": "2025-12-08T14:50:11.615Z"
+    }
+  ],
+  "passwordResetTokens": [],
+  "leadGlobals": []
 }
