@@ -9,6 +9,7 @@ export const colors = {
   cardBorder: "#FFD6C8",
   highlight: "#FFF0EA",
   danger: "#C73D2E",
+  warning: "#C4902E",
 };
 
 export type ColorKeys = keyof typeof colors;
