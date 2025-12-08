@@ -1,23 +1,14 @@
 import React, { useEffect, useState } from "react";
 import { View, Text, StyleSheet, ActivityIndicator, Button } from "react-native";
-import { apiAuthGet } from "../../config/api";
+import { apiAuthGet, ScanDemoResponse } from "../../config/api";
+import { BottomTabScreenProps } from "@react-navigation/bottom-tabs";
+import { MainTabParamList } from "../../navigation/types";
+import { colors } from "../../theme/colors";
 
-interface ScanDemoResponse {
-  result: string;
-  productName?: string;
-  suggestions?: string[];
-  user?: string;
-  demoMode?: boolean;
-}
+type Props = BottomTabScreenProps<MainTabParamList, "Resultado">;
 
-type ScanResultScreenProps = {
-  navigation: any;
-  route?: { params?: { initialData?: ScanDemoResponse | null } };
-};
-
-export default function ScanResultScreen({ navigation, route }: ScanResultScreenProps) {
-  const initialData = route?.params?.initialData || null;
-  const [data, setData] = useState<ScanDemoResponse | null>(initialData);
+export default function ScanResultScreen({ navigation }: Props) {
+  const [data, setData] = useState<ScanDemoResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -29,29 +20,31 @@ export default function ScanResultScreen({ navigation, route }: ScanResultScreen
       const res = await apiAuthGet<ScanDemoResponse>("/allwain/scan-demo");
       setData(res);
     } catch (err: any) {
-      console.error("Error al obtener demo de escaneo", err);
-      setError(
-        err?.message || "No se pudo obtener el resultado del escaneo"
-      );
-      setData(null);
+      setError("No se pudo obtener el resultado del escaneo");
     } finally {
       setLoading(false);
     }
   }
 
   useEffect(() => {
-    if (!initialData) {
-      loadScanDemo();
-    }
-  }, [initialData]);
+    loadScanDemo();
+  }, []);
 
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Resultado escaneo</Text>
 
-      <Button title="Volver a escanear" onPress={() => navigation.navigate("Escanear")} />
+      <Button
+        title="Volver a escanear"
+        color={colors.button}
+        onPress={() => navigation.navigate("Escanear")}
+      />
       <View style={{ height: 12 }} />
-      <Button title="Recargar resultado demo" onPress={loadScanDemo} />
+      <Button
+        title="Recargar resultado demo"
+        color={colors.button}
+        onPress={loadScanDemo}
+      />
 
       {loading && <ActivityIndicator style={{ marginTop: 16 }} />}
 
@@ -59,36 +52,36 @@ export default function ScanResultScreen({ navigation, route }: ScanResultScreen
 
       {data && !loading && (
         <View style={styles.resultBox}>
-          <Text style={styles.resultTitle}>Respuesta backend:</Text>
-          <Text style={styles.resultText}>{data.result}</Text>
+          <Text style={styles.resultTitle}>Mensaje</Text>
+          <Text style={styles.resultText}>{data.message || "Demo de escaneo"}</Text>
 
-          {data.productName && (
-            <Text style={styles.resultText}>
-              Producto detectado: {data.productName}
-            </Text>
+          {data.product && (
+            <View style={{ marginTop: 10 }}>
+              <Text style={styles.resultTitle}>Producto detectado</Text>
+              <Text style={styles.resultText}>{data.product.name}</Text>
+              {data.product.description && (
+                <Text style={styles.resultText}>{data.product.description}</Text>
+              )}
+            </View>
           )}
 
-          {data.suggestions && data.suggestions.length > 0 && (
-            <>
-              <Text style={[styles.resultTitle, { marginTop: 8 }]}>Sugerencias:</Text>
-              {data.suggestions.map((s, idx) => (
-                <Text key={idx} style={styles.resultText}>
-                  • {s}
-                </Text>
+          {data.offers && data.offers.length > 0 && (
+            <View style={{ marginTop: 12 }}>
+              <Text style={styles.resultTitle}>Ofertas cercanas</Text>
+              {data.offers.map((offer) => (
+                <View key={offer.id} style={{ marginTop: 6 }}>
+                  <Text style={styles.resultText}>{offer.title}</Text>
+                  {offer.price && (
+                    <Text style={styles.resultMuted}>Precio: €{offer.price}</Text>
+                  )}
+                  {offer.meta?.distanceKm && (
+                    <Text style={styles.resultMuted}>
+                      Distancia: {offer.meta["distanceKm"]} km
+                    </Text>
+                  )}
+                </View>
               ))}
-            </>
-          )}
-
-          {data.user && (
-            <Text style={[styles.resultText, { marginTop: 8 }]}>
-              Usuario: {data.user}
-            </Text>
-          )}
-
-          {data.demoMode && (
-            <Text style={[styles.resultText, { marginTop: 4, fontStyle: "italic" }]}> 
-              (Modo demo activo)
-            </Text>
+            </View>
           )}
         </View>
       )}
@@ -102,15 +95,17 @@ export default function ScanResultScreen({ navigation, route }: ScanResultScreen
 
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 24 },
-  title: { fontSize: 24, fontWeight: "bold", marginBottom: 12 },
-  error: { color: "red", marginTop: 8 },
+  title: { fontSize: 24, fontWeight: "bold", marginBottom: 12, color: colors.text },
+  error: { color: colors.danger, marginTop: 8 },
   resultBox: {
     marginTop: 16,
     padding: 12,
     borderWidth: 1,
-    borderColor: "#ddd",
+    borderColor: colors.cardBorder,
     borderRadius: 6,
+    backgroundColor: colors.card,
   },
-  resultTitle: { fontWeight: "600", marginBottom: 4 },
-  resultText: { color: "#333" },
+  resultTitle: { fontWeight: "600", marginBottom: 4, color: colors.text },
+  resultText: { color: colors.text },
+  resultMuted: { color: colors.mutedText },
 });

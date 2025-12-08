@@ -1,0 +1,10 @@
+{
+  "expo": {
+    "name": "Allwain",
+    "slug": "allwain-v2",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "entryPoint": "./node_modules/expo/AppEntry.js",
+    "assetBundlePatterns": ["**/*"]
+  }
+}

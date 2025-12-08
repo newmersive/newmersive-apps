@@ -1,8 +1,18 @@
 import React from "react";
 import { View, Text, Button } from "react-native";
 import { useAuthStore } from "../../store/auth.store";
+import { CompositeScreenProps } from "@react-navigation/native";
+import { BottomTabScreenProps } from "@react-navigation/bottom-tabs";
+import { NativeStackScreenProps } from "@react-navigation/native-stack";
+import { MainTabParamList } from "../../navigation/types";
+import { RootStackParamList } from "../../navigation/types";
 
-export default function ProfileMainScreen({ navigation }: any) {
+type Props = CompositeScreenProps<
+  BottomTabScreenProps<MainTabParamList, "Perfil">,
+  NativeStackScreenProps<RootStackParamList>
+>;
+
+export default function ProfileMainScreen({ navigation }: Props) {
   const user = useAuthStore((s) => s.user);
   const clearAuth = useAuthStore((s) => s.clearAuth);
 

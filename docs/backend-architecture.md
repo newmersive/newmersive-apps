@@ -1,59 +1,267 @@
 # Arquitectura del Backend
 
-## Resumen general
-- **Stack**: Node.js + Express + TypeScript. Persistencia en archivo JSON (`data/database.json`) mediante utilidades en `src/services/data.store.ts`. JWT para autenticación; bcrypt para hashes.
-- **Estructura**:
-  - `src/server.ts`: arranque de Express, montaje de `/api`.
-  - `src/routes`: definición de rutas agrupadas (`auth`, `trueqia`, `allwain`, `admin`, `health`).
-  - `src/controllers`: lógica HTTP para auth.
-  - `src/services`: servicios de dominio (auth, market, data store).
-  - `src/ia`: helpers demo (contratos, moderación).
-  - `src/middleware`: autenticación/roles.
-  - `data/`: archivo JSON con datos semilla.
+## Propósito
+- API unificada para **TrueQIA** y **Allwain** con autenticación JWT, ofertas, contratos demo y panel admin.
+- Servir datos semilla desde `data/database.json` para pruebas sin depender de una base externa.
+- Dejar preparado el terreno para integrar un **bot de WhatsApp** que genere leads hacia TrueQIA/Allwain.
+
+## Componentes principales
+
+- **Stack**: Node.js + Express + TypeScript.
+- **Entrada**: `src/server.ts`
+  - Monta Express.
+  - Configura CORS y JSON body parser.
+  - Enruta todo bajo `/api`.
+- **Rutas** (`src/routes`):
+  - `auth.routes.ts`: registro/login/me, reset password.
+  - `trueqia.routes.ts`: ofertas, trades y contratos demo de TrueQIA.
+  - `allwain.routes.ts`: escaneo demo, productos, ofertas, grupos de pedido, ahorro/comisiones y referidos.
+  - `admin.routes.ts`: dashboard, usuarios, actividad IA, leads globales.
+  - `health.routes.ts`: ping/estado.
+- **Servicios**:
+  - `services/auth.service.ts`:
+    - Registro/login.
+    - Generación de JWT.
+    - Cálculo de `userIdCounter`.
+    - Sistema de referidos (`sponsorCode`, `referredByCode`) y tokens iniciales según app.
+    - Reset de contraseña con tokens temporales.
+  - `services/data.store.ts`:
+    - Capa de acceso a `data/database.json`.
+    - Carga en memoria, merge de datos semilla y persistencia.
+    - Helpers para usuarios, ofertas, trades, contratos, leads y tokens de reset.
+  - `services/trueqia.service.ts`:
+    - Listado de ofertas (con opción de excluir las del propio usuario).
+    - Alta de ofertas TrueQIA.
+    - Creación, aceptación y rechazo de trades con movimiento de tokens internos.
+  - `services/allwain.service.ts` (y/o lógica en `allwain.routes.ts`):
+    - Demo de escaneo (`/scan-demo`).
+    - Ofertas Allwain, grupos de compra, cálculo de ahorro y comisiones por sponsor.
+  - `ia/moderation.service.ts`:
+    - Stub/demo para moderación IA de contenido o actividad.
+  - `ia/contracts.service.ts`:
+    - Generación de texto de contrato demo para TrueQIA.
+- **Middleware**:
+  - `middleware/auth.middleware.ts`:
+    - `authRequired`: valida JWT y rellena `req.user`.
+    - `adminOnly`: restringe rutas a rol `admin`.
+- **Tipos compartidos** (`src/shared/types.ts`):
+  - Modelos TypeScript para todos los recursos compartidos.
+
+---
 
 ## Modelo de datos
-- Definido en `src/shared/types.ts`:
-  - **User**: `id`, `name`, `email`, `passwordHash`, `role` (`user|buyer|company|admin`), `createdAt`.
-  - **AuthUser/AuthTokenResponse**: versión pública sin `passwordHash` + token.
-  - **Offer**: `id`, `title`, `description`, `tokens`, `owner` (`trueqia|allwain`), `category`.
-  - **Trade**: `id`, `title`, `status`, `participants`, `tokens`.
-- **Almacenamiento** (`data.store.ts`):
-  - Lee/escribe JSON, inicializa ofertas y trades demo y asegura que siempre exista el usuario admin + 4 ofertas base (si faltan en el JSON se reinyectan).
-  - Operaciones: `getDatabase`, `persistDatabase`, `resetDatabase`, `upsertUser`, `setUsers`, `getOffersForOwner`, `getTrades`.
 
-## Tabla de endpoints (prefijo `/api`)
+### Entidades principales (en `src/shared/types.ts`)
+
+- **User**
+  - `id: string`
+  - `name: string`
+  - `email: string`
+  - `passwordHash: string`
+  - `role: "user" | "buyer" | "company" | "admin"`
+  - `createdAt: string`
+  - Sistema de referidos y economía interna:
+    - `sponsorCode?: string` — código propio único.
+    - `referredByCode?: string` — código del sponsor que lo trajo (si existe).
+    - `avatarUrl?: string`
+    - `tokens?: number` — saldo de tokens TrueQIA.
+    - `allwainBalance?: number` — saldo/comisiones acumuladas en Allwain.
+
+- **AuthUser / AuthTokenResponse**
+  - `AuthUser` es la versión pública de usuario sin `passwordHash`.
+  - `AuthTokenResponse`:
+    - `token: string` — JWT.
+    - `user: AuthUser`.
+
+- **Offer**
+  - `id: string`
+  - `title: string`
+  - `description: string`
+  - `owner: "trueqia" | "allwain"`
+  - `ownerUserId: string`
+  - `tokens?: number` — precio en tokens (TrueQIA).
+  - `price?: number` — precio en dinero (Allwain).
+  - `productId?: string`
+  - `meta?: Record<string, unknown>` — distancia, imágenes, etc.
+
+- **Trade**
+  - `id: string`
+  - `offerId: string`
+  - `fromUserId: string`
+  - `toUserId: string`
+  - `tokens: number`
+  - `status: "pending" | "accepted" | "rejected" | "cancelled"`
+  - `createdAt: string`
+  - `resolvedAt?: string`
+
+- **Product**
+  - `id: string`
+  - `name: string`
+  - `ean?: string`
+  - `category?: string`
+  - `brand?: string`
+
+- **Lead**
+  - Entidad de lead/contacto de interés (Allwain o TrueQIA).
+  - El backend puede almacenar tanto leads generados desde app/web como futuros leads desde WhatsApp.
+  - Campos mínimos recomendables:
+    - `id: string`
+    - `createdAt: string`
+    - Datos de origen/canal y contacto según se vaya expandiendo (`channel`, `sourceApp`, `phone`, `email`, etc.).
+
+- **Contract**
+  - Soporta contratos demo de trueques/compras.
+  - Campos típicos:
+    - `id: string`
+    - `app: "trueqia" | "allwain"`
+    - `type: "trade" | "purchase"`
+    - `status: "draft" | "active" | "closed" | "conflict"`
+    - `basePdfId?: string`
+    - `generatedText?: string`
+    - `createdAt: string`
+    - `updatedAt: string`
+
+### Persistencia (`data.store.ts`)
+
+- Usa un archivo JSON (`data/database.json` o el definido en `ENV.DATA_FILE`) como almacenamiento simple.
+- Al cargar:
+  - Lee el JSON si existe; si no, inicializa con **datos semilla**.
+  - Hace *merge* de:
+    - Usuarios demo (`admin`, usuarios demo TrueQIA, `Allwain Ops`, etc.).
+    - Ofertas base TrueQIA y Allwain.
+    - Trades demo.
+    - Productos demo.
+- Expone funciones:
+  - `getDatabase`, `persistDatabase`, `resetDatabase`.
+  - `getUsers`, `getUserById`, `getUserByEmail`, `getUserBySponsorCode`, `upsertUser`, `setUsers`.
+  - `getOffersByOwner`, `getOfferById`, `addOffer`.
+  - `getTrades`, `getTradeById`, `addTrade`, `updateTrade`, `updateTradeStatus`.
+  - `createContract`, `getContractById`, `updateContractStatus`.
+  - Gestión de tokens de reset de contraseña en memoria (`savePasswordResetToken`, `getPasswordResetToken`, `deletePasswordResetToken`).
+
+---
+
+## Endpoints (prefijo `/api`)
+
 | Método | Ruta | Descripción | Auth |
 | --- | --- | --- | --- |
-| GET | /health | Ping con `env`. | Público |
-| POST | /auth/register | Registra usuario (roles whitelist) y devuelve token. | Público |
-| POST | /auth/login | Autentica y devuelve token. | Público |
-| GET | /auth/me | Perfil del usuario autenticado. | Bearer |
-| GET | /trueqia/offers | Ofertas filtradas por owner `trueqia`. | Bearer |
-| GET | /trueqia/trades | Lista de trades demo. | Bearer |
-| POST | /trueqia/contracts/preview | Devuelve texto de contrato demo generado en backend IA. | Bearer |
-| GET | /allwain/scan-demo | Respuesta mock de escaneo QR/etiqueta. | Bearer |
-| GET | /allwain/offers | Ofertas con owner `allwain`. | Bearer |
-| GET | /admin/dashboard | Ping protegido para admin. | Bearer (admin) |
-| GET | /admin/users | Lista pública de usuarios (sin password). | Bearer (admin) |
-| GET | /admin/ai/activity | Lista de eventos demo de moderación. | Bearer (admin) |
+| GET | `/health` | Ping con info básica de entorno. | Público |
 
-### Autenticación y roles
-- `authRequired`: valida `Authorization: Bearer <token>`, usa `jwt.verify` con `ENV.JWT_SECRET`; adjunta `{id,email,role}` en `req.user`. Errores consistentes: `{ code: "UNAUTHORIZED" }` o `{ code: "INVALID_TOKEN" }`.
-- `adminOnly`: requiere `req.user.role === "admin"`; responde `{ code: "FORBIDDEN" }`.
-- Tokens se firman a 7 días y contienen `sub`, `email`, `role`.
-- Roles permitidos en registro: `user`, `company`, `admin`, `buyer` (fallback a `user`).
-- Seed automático: `auth.service` crea admin `admin@newmersive.local` con `admin123` si no existe.
+### Auth
 
-### Consumo por apps
-- **TrueQIA**: `/auth/register`, `/auth/login`, `/trueqia/offers`, `/trueqia/contracts/preview`, `/trueqia/trades`, `/auth/me`.
-- **Allwain**: `/auth/register`, `/auth/login`, `/allwain/scan-demo`, `/allwain/offers`.
+| Método | Ruta | Descripción | Auth |
+| --- | --- | --- | --- |
+| POST | `/auth/register` | Alta de usuario, soporte de `sponsorCode` y retorno de token + `AuthUser`. | Público |
+| POST | `/auth/login` | Login por email/password, devuelve `AuthTokenResponse`. | Público |
+| GET | `/auth/me` | Perfil del usuario autenticado. | Bearer |
+| POST | `/auth/forgot-password` | Solicita reset de contraseña (genera token y lo guarda). | Público |
+| POST | `/auth/reset-password` | Cambia contraseña usando token de reset. | Público |
 
-## Tests
-- `tests/auth.spec.ts`: cubre registro/login y middleware (token ausente, inválido, rol no admin, acceso admin). Usa helper `TestClient` que arranca el servidor en puerto efímero.
-- `tests/offers.spec.ts`: valida que `/trueqia/offers` y `/allwain/offers` requieren token y filtran por `owner`.
-- **Estado de ejecución**: no se ejecutaron en esta auditoría por falta de Node/npm; requieren `npm test` con Node ≥ 18.
+### TrueQIA
 
-## Ejecución local
-1. `npm install`
-2. `npm run dev` (puerto `4000` por defecto) o `npm test` para la suite.
-3. Ajusta `EXPO_PUBLIC_API_BASE_URL` en apps móviles apuntando a `http://<tu-ip>:<PORT>/api`.
+| Método | Ruta | Descripción | Auth |
+| --- | --- | --- | --- |
+| GET | `/trueqia/offers` | Lista de ofertas TrueQIA. Soporta `?excludeMine=true` para ocultar las del propio usuario. | Bearer |
+| POST | `/trueqia/offers` | Crear oferta TrueQIA (tokens, meta, etc.) asociada al usuario autenticado. | Bearer |
+| POST | `/trueqia/trades` | Crear trade entre usuarios indicando `offerId`, `toUserId`, `tokens`. Valida tokens positivos. | Bearer |
+| POST | `/trueqia/trades/:id/accept` | Aceptar trade, mover tokens y marcar `accepted`. | Bearer |
+| POST | `/trueqia/trades/:id/reject` | Rechazar trade y marcar `rejected`. | Bearer |
+| POST | `/trueqia/contracts/preview` | Genera texto de contrato demo (IA) y puede crear un contrato con estado `draft`. | Bearer |
+
+### Allwain
+
+| Método | Ruta | Descripción | Auth |
+| --- | --- | --- | --- |
+| GET | `/allwain/scan-demo` | Escaneo demo de producto (simula lector de etiquetas/EAN). Devuelve producto + ofertas. | Bearer |
+| GET | `/allwain/products/:id` | Obtener un producto por ID. | Bearer |
+| GET | `/allwain/products` | Buscar producto por `ean`. | Bearer |
+| GET | `/allwain/offers` | Ofertas Allwain, con posibilidad de filtros (ej. distancia, localización en `meta`). | Bearer |
+| POST | `/allwain/offers` | Crear oferta Allwain (precio, tokens, meta) ligada al usuario autenticado. | Bearer |
+| POST | `/allwain/offers/:id/interest` | Registrar interés en una oferta (crea un lead o similar). | Bearer |
+| GET | `/allwain/order-groups` | Listado de grupos de compra (demo). | Bearer |
+| POST | `/allwain/order-groups` | Crear grupo de compra. | Bearer |
+| POST | `/allwain/order-groups/:id/join` | Unirse a un grupo de compra. | Bearer |
+| POST | `/allwain/savings` | Registrar ahorro del usuario y comisión asociada al sponsor. | Bearer |
+| GET | `/allwain/sponsors/summary` | Resumen de ahorro, comisiones y balance para patrocinadores (según diseño actual, restringible a admin o usuario). | Bearer / Admin (según implementación concreta) |
+
+### Leads / WhatsApp (diseño preparado)
+
+| Método | Ruta | Descripción | Auth |
+| --- | --- | --- | --- |
+| POST | `/leads/whatsapp` | Punto de entrada pensado para leads capturados por el bot de WhatsApp (IA). Canal `whatsapp`, `sourceApp` `trueqia|allwain`, texto del mensaje y datos de contacto. | Público |
+
+> Nota: este endpoint se documenta para que la arquitectura esté preparada; la implementación concreta puede añadirse o adaptarse en `admin.routes.ts` o un router específico de `leads`.
+
+Payload esperado: `{ message: string; sourceApp: "trueqia" | "allwain"; phone?: string; email?: string; name?: string; status?: "new" | "contacted" | "closed" }` donde `message` y `sourceApp` son obligatorios y al menos uno de `phone/email` debe estar presente.
+
+### Admin
+
+| Método | Ruta | Descripción | Auth |
+| --- | --- | --- | --- |
+| GET | `/admin/dashboard` | Ping protegido para panel admin. | Admin |
+| GET | `/admin/users` | Lista de usuarios sin `passwordHash` (sólo datos públicos). | Admin |
+| GET | `/admin/ai/activity` | Lista demo de actividad IA/moderación. | Admin |
+| GET | `/admin/leads` | Listado global de leads (web/app/WhatsApp) para seguimiento desde el panel. | Admin |
+
+---
+
+## Autenticación y roles
+
+- Middleware `authRequired`:
+  - Requiere cabecera `Authorization: Bearer <token>`.
+  - Verifica el token con `ENV.JWT_SECRET`.
+  - Si es válido, inyecta `req.user = { id, email, role }`.
+  - En error:
+    - `401 { error: "UNAUTHORIZED" }` si falta token.
+    - `401 { error: "INVALID_TOKEN" }` si es inválido o expirado.
+
+- Middleware `adminOnly`:
+  - Requiere que `req.user.role === "admin"`.
+  - En caso contrario devuelve `403 { error: "FORBIDDEN" }`.
+
+- Emisión de tokens:
+  - Firmados con `ENV.JWT_SECRET`.
+  - Payload mínimo: `{ sub: user.id, email: user.email, role: user.role }`.
+  - Expiración: `7d`.
+
+- Registro:
+  - Roles permitidos: `["user", "company", "admin", "buyer"]`.
+  - Si no se pasa rol o no está en la whitelist, se fuerza `user`.
+  - Si se pasa `sponsorCode`, se valida contra usuarios existentes:
+    - Si es válido, se guarda en `referredByCode`.
+  - El propio usuario recibe un `sponsorCode` nuevo único.
+
+---
+
+## Consumo desde panel admin / reportes
+
+- `GET /api/admin/users` → `{ users: Array<AuthUser> }` sin `passwordHash`.
+- `GET /api/admin/leads` → `{ items: LeadGlobal[] }` con campos `id`, `channel`, `sourceApp`, `message`, `phone/email`, `status`.
+- `GET /api/admin/ai/activity` → `{ events: Array<{ id, userEmail, reason, severity }> }`.
+- `GET /api/admin/dashboard` → `{ admin: true }` como ping protegido.
+
+Estas rutas usan los middlewares `authRequired` + `adminOnly`; se deben llamar con `Authorization: Bearer <token-admin>`.
+
+## Cómo se despliega
+
+1. **Variables de entorno** (`.env`):
+   - `PORT=4000`
+   - `JWT_SECRET=<cadena-secreta>`
+   - `DATA_FILE=/ruta/persistente/database.json` (opcional, por defecto `data/database.json` en el proyecto).
+   - `NODE_ENV=production` en VPS.
+
+2. **Instalar y compilar**:
+   ```bash
+   cd backend
+   npm install
+   npm run build
+   ```
+
+3. **Ejecutar** (Node o pm2):
+   ```bash
+   npm start                   # usa dist/server.js
+   # o
+   pm2 start dist/server.js --name newmersive-backend
+   ```
+
+4. **Apps móviles**: configura `EXPO_PUBLIC_API_BASE_URL` a `http://<ip-vps>:4000/api` en `trueqia-v2` y `allwain-v2`.

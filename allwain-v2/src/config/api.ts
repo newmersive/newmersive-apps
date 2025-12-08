@@ -1,9 +1,7 @@
 import { useAuthStore } from "../store/auth.store";
 
-const rawBaseUrl = process.env.EXPO_PUBLIC_API_BASE_URL;
-export const API_BASE_URL = rawBaseUrl
-  ? rawBaseUrl.replace(/\/$/, "")
-  : "http://localhost:4000/api";
+export const API_BASE_URL =
+  process.env.EXPO_PUBLIC_API_BASE_URL || "http://localhost:4000/api";
 
 export interface AuthResponse {
   token: string;
@@ -12,84 +10,126 @@ export interface AuthResponse {
     name: string;
     email: string;
     role: string;
+    sponsorCode?: string;
+    referredByCode?: string;
   };
 }
 
-type ApiError = Error & { status?: number; body?: unknown };
-
-function buildUrl(path: string) {
-  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
-  return `${API_BASE_URL}${normalizedPath}`;
+export interface AllwainOffer {
+  id: string;
+  title: string;
+  description: string;
+  owner: "allwain";
+  ownerUserId: string;
+  price?: number;
+  tokens?: number;
+  productId?: string;
+  meta?: Record<string, unknown>;
 }
 
-async function parseJson(res: Response) {
-  try {
-    return await res.json();
-  } catch (err) {
-    console.error("No se pudo parsear la respuesta JSON", err);
-    return null;
+export interface ScanDemoResponse {
+  product?: {
+    id: string;
+    name: string;
+    description?: string;
+    brand?: string;
+  };
+  offers?: AllwainOffer[];
+  message?: string;
+}
+
+export interface SponsorSummaryResponse {
+  invitedCount: number;
+  totalSaved: number;
+  totalCommission: number;
+  balance: number;
+  monthlyHistory: Array<{
+    month: number;
+    year: number;
+    saved: number;
+    commission: number;
+  }>;
+  referrals: Array<{
+    id: string;
+    invitedUserId: string;
+    invitedName?: string;
+    totalSavedByInvited: number;
+    commissionEarned: number;
+  }>;
+}
+
+function handleUnauthorized(status: number, message?: string) {
+  if (status === 401) {
+    useAuthStore.getState().clearAuth();
+    throw new Error(message || "SESSION_EXPIRED");
   }
 }
 
-function buildApiError(res: Response, body: any): ApiError {
-  const message = body?.message || body?.error || `API_ERROR_${res.status}`;
-  const error = new Error(message) as ApiError;
-  error.status = res.status;
-  error.body = body;
-  return error;
-}
-
-function authHeaders() {
-  const token = useAuthStore.getState().token;
-  return token ? { Authorization: `Bearer ${token}` } : {};
+async function parseResponse(res: Response) {
+  let data: any = null;
+  try {
+    data = await res.json();
+  } catch {}
+  return data;
 }
 
 export async function apiPost<T>(path: string, body: unknown): Promise<T> {
-  const url = buildUrl(path);
-  try {
-    const res = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
+  const url = `${API_BASE_URL}${path}`;
 
-    const data = await parseJson(res);
-    if (!res.ok) {
-      console.error(`POST ${url} fallo`, res.status, data);
-      throw buildApiError(res, data);
-    }
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
 
-    return data as T;
-  } catch (err) {
-    console.error(`POST ${url} error`, err);
-    throw err;
+  const data = await parseResponse(res);
+  if (!res.ok) {
+    handleUnauthorized(res.status, data?.message || data?.error);
+    throw new Error(data?.error || `API_ERROR_${res.status}`);
   }
+
+  return data as T;
 }
 
 export async function apiAuthGet<T>(path: string): Promise<T> {
-  const url = buildUrl(path);
-  try {
-    const res = await fetch(url, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        ...authHeaders(),
-      },
-    });
+  const url = `${API_BASE_URL}${path}`;
+  const token = useAuthStore.getState().token;
 
-    const data = await parseJson(res);
+  const res = await fetch(url, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+  });
 
-    if (!res.ok) {
-      if (res.status === 401) {
-        useAuthStore.getState().clearAuth();
-      }
-      console.error(`GET ${url} fallo`, res.status, data);
-      throw buildApiError(res, data);
-    }
-
-    return data as T;
-  } catch (err) {
-    console.error(`GET ${url} error`, err);
-    throw err;
+  const data = await parseResponse(res);
+  if (!res.ok) {
+    handleUnauthorized(res.status, data?.message || data?.error);
+    throw new Error(data?.error || `API_ERROR_${res.status}`);
   }
+
+  return data as T;
+}
+
+export async function apiAuthPost<T>(path: string, body: unknown): Promise<T> {
+  const url = `${API_BASE_URL}${path}`;
+  const token = useAuthStore.getState().token;
+
+  const res = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify(body),
+  });
+
+  const data = await parseResponse(res);
+  if (!res.ok) {
+    handleUnauthorized(res.status, data?.message || data?.error);
+    throw new Error(data?.error || `API_ERROR_${res.status}`);
+  }
+
+  return data as T;
 }

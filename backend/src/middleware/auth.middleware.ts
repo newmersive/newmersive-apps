@@ -7,27 +7,52 @@ export interface AuthRequest extends Request {
   user?: { id: string; email: string; role: UserRole };
 }
 
+interface JwtAuthPayload extends jwt.JwtPayload {
+  sub: string;
+  email: string;
+  role: UserRole;
+}
+
 export function authRequired(req: AuthRequest, res: Response, next: NextFunction) {
   const header = req.headers.authorization;
-  if (!header || !header.startsWith("Bearer "))
-    return res
-      .status(401)
-      .json({ code: "UNAUTHORIZED", message: "Token requerido" });
+
+  if (!header || !header.startsWith("Bearer ")) {
+    return res.status(401).json({
+      error: "UNAUTHORIZED",
+      code: "UNAUTHORIZED",
+      message: "Token requerido",
+    });
+  }
 
   const token = header.slice(7);
+
   try {
-    const payload = jwt.verify(token, ENV.JWT_SECRET) as any;
-    req.user = { id: payload.sub, email: payload.email, role: payload.role };
+    const payload = jwt.verify(token, ENV.JWT_SECRET) as JwtAuthPayload;
+
+    req.user = {
+      id: payload.sub,
+      email: payload.email,
+      role: payload.role,
+    };
+
     next();
   } catch {
-    return res
-      .status(401)
-      .json({ code: "INVALID_TOKEN", message: "Sesión expirada o inválida" });
+    return res.status(401).json({
+      error: "INVALID_TOKEN",
+      code: "INVALID_TOKEN",
+      message: "Sesión expirada o inválida",
+    });
   }
 }
 
 export function adminOnly(req: AuthRequest, res: Response, next: NextFunction) {
-  if (!req.user || req.user.role !== "admin")
-    return res.status(403).json({ code: "FORBIDDEN", message: "Solo admin" });
+  if (!req.user || req.user.role !== "admin") {
+    return res.status(403).json({
+      error: "FORBIDDEN",
+      code: "FORBIDDEN",
+      message: "Solo admin",
+    });
+  }
+
   next();
 }

@@ -9,8 +9,12 @@ import {
 } from "react-native";
 import { apiPost, AuthResponse } from "../../config/api";
 import { useAuthStore } from "../../store/auth.store";
+import { NativeStackScreenProps } from "@react-navigation/native-stack";
+import { RootStackParamList } from "../../navigation/types";
 
-export default function LoginScreen({ navigation }: any) {
+type Props = NativeStackScreenProps<RootStackParamList, "Login">;
+
+export default function LoginScreen({ navigation }: Props) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
@@ -35,15 +39,12 @@ export default function LoginScreen({ navigation }: any) {
       });
 
       setAuth(result);
-      // RootNavigator se encargará de llevarnos al stack de tabs cuando el usuario exista
+      navigation.replace("MainTabs");
     } catch (err: any) {
-      console.error("Error al iniciar sesión", err);
       if (err?.message === "INVALID_CREDENTIALS") {
         setError("Credenciales incorrectas");
-      } else if (err?.message?.includes("Network request failed")) {
-        setError("No se pudo conectar con el servidor. Revisa la URL base o tu red.");
       } else {
-        setError(err?.message || "Error al iniciar sesión");
+        setError("Error al iniciar sesión");
       }
     } finally {
       setLoading(false);

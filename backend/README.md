@@ -33,6 +33,28 @@ Crea `.env` (opcional) en `backend/` con:
 - **Producción:** `npm start` (ejecuta `dist/server.js`).
 - **Pruebas:** `npm test` (usa `node:test` + `ts-node/register`).
 
+## Despliegue rápido en IONOS (Ubuntu + pm2)
+1. Instala dependencias (Node 20+ ya presente):
+   ```bash
+   cd backend
+   npm install
+   npm run build
+   ```
+2. Lanza el servicio con pm2:
+   ```bash
+   pm2 start dist/server.js --name newmersive-backend \
+     --env production \
+     -- --port ${PORT:-4000}
+   ```
+3. Variables de entorno recomendadas:
+   ```bash
+   export PORT=4000
+   export JWT_SECRET="cambia-esta-clave"
+   export NODE_ENV=production
+   export DATA_FILE="/var/newmersive/data/database.json" # opcional, ruta persistente
+   ```
+4. Verifica salud: `curl http://localhost:4000/api/health` debe responder `{ status: "ok" }`.
+
 ## Problemas conocidos
 - En entornos sin Node/npm, `npm install` y los scripts fallan (`bash: command not found: npm`). Instala Node (v20 LTS) o ejecuta en una imagen que ya lo incluya.
 - Asegura que `JWT_SECRET` no sea el valor por defecto en entornos productivos.
@@ -42,4 +64,5 @@ Crea `.env` (opcional) en `backend/` con:
 - `POST /api/auth/register`, `POST /api/auth/login`, `GET /api/auth/me` — autenticación y perfil.
 - `GET /api/trueqia/offers`, `GET /api/trueqia/trades`, `POST /api/trueqia/contracts/preview` — flujo TrueQIA.
 - `GET /api/allwain/scan-demo`, `GET /api/allwain/offers` — flujo Allwain.
+- `POST /api/leads/whatsapp` — registra un lead capturado por el bot de WhatsApp y lo almacena para el panel admin.
 - `GET /api/admin/dashboard`, `/api/admin/users`, `/api/admin/ai/activity` — endpoints protegidos para admin.

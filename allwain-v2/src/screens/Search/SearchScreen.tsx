@@ -8,6 +8,7 @@ import {
   StyleSheet,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
+import { colors } from "../../theme/colors";
 
 type SearchItem = {
   id: string;
@@ -35,7 +36,7 @@ export default function SearchScreen() {
         <TextInput
           style={styles.input}
           placeholder="Buscar productos o servicios"
-          placeholderTextColor="#8c8c8c"
+          placeholderTextColor={colors.mutedText}
           value={query}
           onChangeText={setQuery}
         />
@@ -58,7 +59,7 @@ export default function SearchScreen() {
 
         <TouchableOpacity
           style={styles.actionCard}
-          onPress={() => navigation.navigate("Resultado")}
+          onPress={() => navigation.navigate("ScanResult")}
           activeOpacity={0.9}
         >
           <Text style={styles.actionTitle}>Ver último resultado</Text>
@@ -83,7 +84,7 @@ export default function SearchScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#ffe9e2",
+    backgroundColor: colors.background,
   },
   content: {
     paddingHorizontal: 20,
@@ -91,46 +92,43 @@ const styles = StyleSheet.create({
     paddingBottom: 32,
   },
   heading: {
-    color: "#1b1b1b",
+    color: colors.text,
     fontSize: 24,
     fontWeight: "800",
     marginBottom: 14,
   },
   subheading: {
-    color: "#1b1b1b",
+    color: colors.text,
     fontSize: 16,
     fontWeight: "700",
     marginTop: 12,
     marginBottom: 8,
   },
   card: {
-    backgroundColor: "#ffffff",
+    backgroundColor: colors.card,
     borderRadius: 16,
     padding: 16,
-    shadowColor: "#1b1b1b",
-    shadowOpacity: 0.07,
-    shadowRadius: 8,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: "#f0c6b8",
+    borderColor: colors.cardBorder,
   },
   input: {
-    backgroundColor: "#ffffff",
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 12,
     borderWidth: 1,
-    borderColor: "#f0c6b8",
-    color: "#1b1b1b",
+    borderColor: colors.cardBorder,
+    color: colors.text,
   },
   button: {
-    backgroundColor: "#1b1b1b",
+    backgroundColor: colors.button,
     paddingVertical: 12,
     borderRadius: 12,
     alignItems: "center",
     marginTop: 12,
   },
   buttonText: {
-    color: "#ffffff",
+    color: colors.buttonText,
     fontWeight: "800",
     fontSize: 15,
   },
@@ -141,26 +139,26 @@ const styles = StyleSheet.create({
   },
   actionCard: {
     flex: 1,
-    backgroundColor: "#ffffff",
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 14,
     borderWidth: 1,
-    borderColor: "#f0c6b8",
+    borderColor: colors.cardBorder,
   },
   highlighted: {
-    borderColor: "#1b1b1b",
+    borderColor: colors.button,
     borderWidth: 1.2,
-    backgroundColor: "#fff5f1",
+    backgroundColor: colors.highlight,
   },
-  actionTitle: { color: "#1b1b1b", fontWeight: "800", marginBottom: 4 },
-  actionBody: { color: "#6c6c6c", fontWeight: "700" },
+  actionTitle: { color: colors.text, fontWeight: "800", marginBottom: 4 },
+  actionBody: { color: colors.mutedText, fontWeight: "700" },
   resultCard: {
-    backgroundColor: "#ffffff",
+    backgroundColor: colors.card,
     borderRadius: 14,
     padding: 14,
     marginBottom: 10,
     borderWidth: 1,
-    borderColor: "#f0c6b8",
+    borderColor: colors.cardBorder,
   },
   resultHeader: {
     flexDirection: "row",
@@ -169,16 +167,13 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   resultTitle: {
-    color: "#1b1b1b",
+    color: colors.text,
     fontWeight: "700",
     fontSize: 16,
   },
   resultPrice: {
-    color: "#1b1b1b",
+    color: colors.text,
     fontWeight: "800",
   },
-  resultCompany: {
-    color: "#6c6c6c",
-    fontWeight: "600",
-  },
+  resultCompany: { color: colors.mutedText, fontWeight: "600" },
 });

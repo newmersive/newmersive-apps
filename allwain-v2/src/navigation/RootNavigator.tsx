@@ -10,8 +10,9 @@ import RegisterScreen from "../screens/Auth/RegisterScreen";
 
 import MainTabs from "./MainTabs";
 import AdminDashboardScreen from "../screens/Admin/AdminDashboardScreen";
+import { RootStackParamList } from "./types";
 
-const Stack = createNativeStackNavigator();
+const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export default function RootNavigator() {
   const user = useAuthStore((s) => s.user);
@@ -19,11 +20,14 @@ export default function RootNavigator() {
   const isAdmin = user?.role === "admin";
 
   return (
-    <Stack.Navigator
-      key={isLogged ? "app" : "auth"}
-      screenOptions={{ headerShown: false }}
-    >
-      {isLogged ? (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="DemoLanding" component={DemoLandingScreen} />
+      <Stack.Screen name="DemoScanResult" component={DemoScanResultScreen} />
+
+      <Stack.Screen name="Login" component={LoginScreen} />
+      <Stack.Screen name="Register" component={RegisterScreen} />
+
+      {isLogged && (
         <>
           <Stack.Screen name="MainTabs" component={MainTabs} />
           {isAdmin && (
@@ -32,13 +36,6 @@ export default function RootNavigator() {
               component={AdminDashboardScreen}
             />
           )}
-        </>
-      ) : (
-        <>
-          <Stack.Screen name="DemoLanding" component={DemoLandingScreen} />
-          <Stack.Screen name="DemoScanResult" component={DemoScanResultScreen} />
-          <Stack.Screen name="Login" component={LoginScreen} />
-          <Stack.Screen name="Register" component={RegisterScreen} />
         </>
       )}
     </Stack.Navigator>

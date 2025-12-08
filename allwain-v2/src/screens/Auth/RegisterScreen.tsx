@@ -9,10 +9,14 @@ import {
 } from "react-native";
 import { apiPost, AuthResponse } from "../../config/api";
 import { useAuthStore } from "../../store/auth.store";
+import { NativeStackScreenProps } from "@react-navigation/native-stack";
+import { RootStackParamList } from "../../navigation/types";
 
 type Role = "buyer" | "company" | "";
 
-export default function RegisterScreen({ navigation }: any) {
+type Props = NativeStackScreenProps<RootStackParamList, "Register">;
+
+export default function RegisterScreen({ navigation }: Props) {
   const [name, setName] = useState("");
   const [role, setRole] = useState<Role>("");
   const [email, setEmail] = useState("");
@@ -41,15 +45,12 @@ export default function RegisterScreen({ navigation }: any) {
       });
 
       setAuth(result);
-      // El cambio de store llevará al stack autenticado
+      navigation.replace("MainTabs");
     } catch (err: any) {
-      console.error("Error al registrar", err);
       if (err?.message === "EMAIL_ALREADY_EXISTS") {
         setError("Ese email ya está registrado");
-      } else if (err?.message?.includes("Network request failed")) {
-        setError("No se pudo conectar con el servidor. Revisa la URL base o tu red.");
       } else {
-        setError(err?.message || "Error al crear la cuenta");
+        setError("Error al crear la cuenta");
       }
     } finally {
       setLoading(false);

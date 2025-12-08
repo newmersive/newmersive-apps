@@ -6,7 +6,6 @@ interface AuthState {
   user: AuthResponse["user"] | null;
   setAuth: (payload: AuthResponse) => void;
   clearAuth: () => void;
-  logout: () => void;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
@@ -18,5 +17,4 @@ export const useAuthStore = create<AuthState>((set) => ({
       user: payload.user,
     }),
   clearAuth: () => set({ token: null, user: null }),
-  logout: () => set({ token: null, user: null }),
 }));
