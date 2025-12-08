@@ -1,43 +1,39 @@
 # Arquitectura de TrueQIA (mobile)
 
-## Propósito
-- App Expo/React Native para trueques y colaboración, consumiendo el backend común.
-- Demostrar registro/login con JWT, exploración de ofertas y generación de contratos demo.
+## Resumen funcional
+Plataforma móvil Expo (SDK 54) para intercambio y colaboración con tokens: permite registro/login, navegación por pestañas, publicación y consumo de ofertas, creación de trueques, generación de contratos demo y visualización de patrocinadores.
 
-## Componentes principales
-- **Entrypoint**: `App.tsx` con `NavigationContainer` y `RootNavigator`.
-- **Navegación**: stack que decide entre `AuthScreen` y `MainTabs` según `useAuthStore`.
-- **Pantallas clave** (`src/screens`):
-  - Auth/AuthScreen (login/registro y errores).
-  - Trades/TradesScreen (lista mock inicial).
-  - Offers/OffersListScreen (consume `/trueqia/offers`).
-  - Contracts/ContractPreviewScreen (POST `/trueqia/contracts/preview`).
-  - Chat/ChatScreen (mock local).
-  - Profile/ProfileScreen + SponsorsScreen (datos de usuario, logout, sponsor code).
-  - Pantallas demo heredadas (`Requests`, `AdminDashboardScreen`, etc.) actualmente fuera del flujo principal.
-- **Estado**: Zustand en `auth.store.ts` (token, user, acciones) y `offers.store.ts` (listado y loaders).
-- **APIs**: helpers `apiPost`, `apiAuthGet`, `apiAuthPost` con base `EXPO_PUBLIC_API_BASE_URL`.
+## Estructura de carpetas
+- `App.tsx`: entrypoint y router basado en estado de autenticación.
+- `src/navigation/`: navegación stack/tabs definida en `RootNavigator`.
+- `src/screens/`: pantallas de Login, Main, Home, Sponsor, Offers, Trades, Contracts y variaciones auxiliares.
+- `src/store/`: Zustand para auth, ofertas y trueques.
+- `src/config/`: configuración HTTP y constantes (API base, headers).
+- `src/api/`: helpers de llamadas si se añaden endpoints específicos.
 
 ## Flujo principal
-1. `RootNavigator` revisa sesión en memoria.
-2. Sin usuario: muestra `AuthScreen`; con usuario: carga `MainTabs` (Trades, Chat, Profile).
-3. Desde tabs se navega a ofertas/contratos; acciones de auth actualizan el store y almacenan token en memoria.
+1. **Login / sesión:** `AuthScreen` (o `LoginScreen`) usa `auth.store.ts` para llamar a `/api/auth/login` o `/register`. El token y usuario se guardan y persisten en AsyncStorage.
+2. **MainScreen como hub:** tras login, `MainScreen` muestra tabs internas.
+3. **Tabs internas:**
+   - **Inicio (Home):** resumen y accesos rápidos.
+   - **Patrocinador:** muestra `sponsorCode` y referidos.
+   - **Ofertas:** `OffersScreen` lista `/api/trueqia/offers` y permite crear nuevas.
+   - **Trueques:** `TradesScreen` consume `/api/trueqia/trades` y permite proponer trueques.
+   - **Contratos:** `ContractsScreen` crea previsualizaciones con `/api/trueqia/contracts/preview`.
 
-## Cómo se despliega
-1. Requisitos: Node/npm y Expo CLI.
-2. Variables en `.env` o `.env.local`: `EXPO_PUBLIC_API_BASE_URL=http://<host-backend>:4000/api`.
-3. Instalación: `cd trueqia && npm install`.
-4. Desarrollo: `npm run start` (Metro) y escanear QR en Expo Go o emulador. Confirmar backend accesible desde el dispositivo (misma red o túnel).
-5. Build: `expo prebuild` y `expo build:*` si se requieren binarios nativos; mantener `EXPO_PUBLIC_API_BASE_URL` apuntando al backend productivo.
+## Detalle de stores (Zustand)
+- `auth.store.ts`: estado `{ token, user, sessionMessage, hydrated }`; acciones `restoreSession`, `login`, `register`, `logout`, `setAuth`, `clearSessionMessage`. Usa AsyncStorage para persistir la sesión.
+- `offers.store.ts`: tipos `TrueqiaOffer`/`OfferOwner`; carga ofertas con `apiAuthGet("/trueqia/offers")` y permite `createOffer` reusando el endpoint de creación.
+- `trades.store.ts`: tipo `Trade`; `loadTrades` usa `GET /trueqia/trades`; `proposeTrade` hace `POST /trueqia/trades` y añade el trade devuelto al estado.
 
-## Cómo se repara (errores típicos)
-- **Pantalla vacía tras login**: base URL incorrecta o backend sin CORS; verificar `.env` y que `Authorization` llegue al backend (`/auth/me`).
-- **Sesión se pierde al reiniciar app**: aún no hay persistencia AsyncStorage; re-autenticar o implementar almacenamiento según TODO.
-- **Errores 401**: token expirado o cambiado `JWT_SECRET`; ejecutar logout y login.
-- **Crash por hooks API**: helpers lanzan excepciones; envolver llamadas en `try/catch` en las pantallas para mensajes amigables.
+## Conexión con el backend
+- **Base URL:** `EXPO_PUBLIC_API_BASE_URL` (fallback `http://localhost:4000/api`).
+- **Endpoints usados:**
+  - Auth: `POST /api/auth/login`, `POST /api/auth/register`, `GET /api/auth/me`.
+  - TrueQIA: `GET /api/trueqia/offers`, `POST /api/trueqia/offers`, `GET /api/trueqia/trades`, `POST /api/trueqia/trades`, `POST /api/trueqia/trades/:id/accept|reject`, `POST /api/trueqia/contracts/preview`.
+  - Opcional: endpoints de admin (solo para rol admin) si se añaden accesos en la app.
 
-## TODO críticos
-- Persistir token con AsyncStorage.
-- Conectar pantallas mock (Requests/Admin) o limpiar navegación.
-- Manejo global de expiración de token y errores de red.
-- Ejecutar `npm run lint`/`npm run typecheck` cuando haya entorno Node.
+## Notas de arquitectura
+- El enrutado inicial depende de `useAuthStore.hydrated` para evitar parpadeos al restaurar sesión.
+- Los helpers `apiAuthGet`/`apiAuthPost` limpian la sesión si hay 401; envolver pantallas con mensajes de error mejora UX.
+- Cada dominio (auth, ofertas, trueques) está encapsulado en su store para mantener responsabilidades claras y permitir futuras pestañas sin mezclar estados.

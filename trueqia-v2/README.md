@@ -1,30 +1,32 @@
-# TRUEQIA v2 (app móvil)
+# TRUEQIA v2 (Expo SDK 54)
 
-Aplicación Expo/React Native orientada a trueques con autenticación JWT y navegación por pestañas (Trades, Chat, Profile).
+Aplicación Expo/React Native para trueques con tokens, patrocinadores y contratos demo. Usa el backend unificado bajo `/api/trueqia/*`.
 
-- Arquitectura detallada: [../docs/trueqia-architecture.md](../docs/trueqia-architecture.md).
-- Backend asociado: rutas `/api/auth/*` y `/api/trueqia/*` descritas en [../docs/backend-architecture.md](../docs/backend-architecture.md).
+Arquitectura ampliada: [../docs/trueqia-architecture.md](../docs/trueqia-architecture.md).
 
-## Requisitos
-- Node.js 20.x, npm 10.x y Expo CLI (`npx expo`).
-- Dispositivo o emulador configurado con SDK 54.
-
-## Instalación y comandos
+## Cómo arrancar
 ```bash
 cd trueqia-v2
 npm install
-npm run lint      # linting (usa eslint-config-expo)
-npm run typecheck # comprobación TypeScript
-npm start         # alias de `npx expo start`
+npx expo start
 ```
-Configura `EXPO_PUBLIC_API_BASE_URL` en `.env` o variables de entorno para apuntar al backend (por defecto `http://localhost:4000/api`).
+Usa Expo Go o emulador compatible con SDK 54.
 
-## Notas rápidas
-- Usa el tema blanco/azul propio de TrueQIA, separado de la paleta de Allwain.
-- Comparte backend y autenticación con Allwain pero consume rutas `/trueqia/*`.
-- Si Expo lanza advertencias de peer dependencies, reinstala sin `--legacy-peer-deps` y valida con `npm run lint`.
+## Tabs y flujo
+- **Inicio/Home:** resumen y accesos rápidos.
+- **Patrocinador:** muestra tu `sponsorCode` y referidos.
+- **Ofertas:** lista y creación de ofertas contra `/api/trueqia/offers`.
+- **Trueques:** listado y propuesta de trueques contra `/api/trueqia/trades`.
+- **Contratos:** genera previsualización con `/api/trueqia/contracts/preview`.
 
-## Flujo rápido
-1. Ejecuta `npm start` y abre la app en Expo Go.
-2. Regístrate o inicia sesión (crea admin seed si usas el backend incluido).
-3. Navega a pestaña **Trades** (mock) y usa ofertas/contratos desde las pantallas conectadas al backend.
+## Dependencias clave
+- Expo 54, React 19.1.0, React Native 0.81.5.
+- Zustand para estado (`auth.store.ts`, `offers.store.ts`, `trades.store.ts`).
+- React Navigation (`@react-navigation/native`, `native-stack`, `bottom-tabs`).
+- AsyncStorage para persistir la sesión en `auth.store.ts`.
+
+## Configuración de entorno
+```env
+EXPO_PUBLIC_API_BASE_URL=http://<IP_LOCAL>:4000/api
+```
+Requiere que el backend sea accesible desde el dispositivo. La variable se expone en el bundle gracias al prefijo `EXPO_PUBLIC_`.

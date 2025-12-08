@@ -1,42 +1,37 @@
 # Arquitectura de Allwain (mobile)
 
-## Propósito
-- App Expo/React Native enfocada en búsqueda de productos, ofertas y demostración de escaneo.
-- Compartir autenticación JWT con TrueQIA y habilitar flujos de referidos y ahorros Allwain.
+## Qué es Allwain
+App móvil Expo (SDK 54) con React 19.1.0 y React Native 0.81.5 enfocada en escaneo/búsqueda de productos, descubrimiento de ofertas, registro de ahorro y comisiones por patrocinio.
 
-## Componentes principales
-- **Entrypoint**: `App.tsx` monta `RootNavigator`.
-- **Navegación**: stack que alterna `AuthScreen` o `MainTabs` según `auth.store.ts`.
-- **Pantallas clave**:
-  - Auth/AuthScreen (login/registro con sponsor code opcional).
-  - Search/SearchScreen (buscador mock y acceso a escaneo/demo).
-  - Deals/DealsScreen (GET `/allwain/offers`).
-  - Scan/ScanScreen y ScanResultScreen (GET `/allwain/scan-demo`).
-  - Guests/GuestsScreen (gestión demo comisiones/invitados).
-  - Profile/ProfileScreen y SponsorsScreen (logout, sponsor QR/código).
-  - Demo/Admin placeholders fuera del flujo principal.
-- **Integración backend**: helpers `apiAuthGet`/`apiPost` con `EXPO_PUBLIC_API_BASE_URL`.
-- **Estado**: `auth.store.ts` (token/usuario); resto usa estado local.
+## Estructura de carpetas
+- `App.tsx`: punto de entrada, inicializa fuentes/temas y monta la navegación principal.
+- `src/navigation/`: `RootNavigator` con stack y tabs que alternan entre autenticación y flujo principal según el store de auth.
+- `src/screens/`: pantallas de autenticación, búsqueda, escaneo, resultados, ofertas, invitados/sponsors y perfil.
+- `src/store/`: Zustand para sesión (`auth.store.ts`).
+- `src/config/`: utilidades de red (`api.ts`) con base URL y helpers `apiPost`, `apiAuthGet`, `apiAuthPost`.
+- `src/components/`: componentes UI reutilizables (botones, tarjetas, layouts) cuando existan.
+- `src/theme/`: colores y estilos base Allwain.
 
-## Flujo principal
-1. `RootNavigator` muestra login si no hay token.
-2. Tras login, tabs activas: Buscar, Ofertas, Perfil.
-3. Escaneo llama `/allwain/scan-demo` y presenta resultado; sponsors se visualizan desde datos del usuario.
+## Flujo principal de usuario
+1. **Onboarding / login:** `AuthScreen` gestiona registro/login. Al autenticarse se guarda `token` y `user` en `auth.store`.
+2. **Pantalla principal:** tabs iniciales muestran búsqueda/escaneo. El CTA de búsqueda lleva a `ScanScreen`.
+3. **Escaneo / búsqueda:** `ScanScreen` simula lectura de código y navega a `ScanResultScreen`, que consume `/api/allwain/scan-demo`.
+4. **Ofertas / propuestas:** `DealsScreen` lista `GET /api/allwain/offers`; permite refrescar y manejar estados de carga.
+5. **Sponsor / QR / referidos:** `SponsorsScreen` y secciones de perfil muestran `sponsorCode`, resumen de comisiones e invitados usando `GET /api/allwain/sponsors/summary`.
+6. **Ahorro/comisión:** botones de los flujos de ahorro usan `POST /api/allwain/savings` cuando se habilitan para registrar ahorro y comisión.
 
-## Cómo se despliega
-1. Requisitos: Node/npm y Expo CLI.
-2. Configurar `EXPO_PUBLIC_API_BASE_URL=http://<host-backend>:4000/api` en `.env` o variables Expo.
-3. Instalar dependencias: `cd allwain && npm install`.
-4. Desarrollo: `npm run start` y conectar vía Expo Go/emulador asegurando acceso al backend.
-5. Build nativa opcional: `expo prebuild` y comandos de build según plataforma.
+## Conexión con el backend
+- **Base URL:** `EXPO_PUBLIC_API_BASE_URL` (por defecto `http://localhost:4000/api`) definida en entorno de Expo.
+- **Endpoints consumidos:**
+  - `POST /api/auth/register`, `POST /api/auth/login`, `GET /api/auth/me` — autenticación.
+  - `GET /api/allwain/scan-demo` — resultado de escaneo demo.
+  - `GET /api/allwain/offers` — listado de ofertas.
+  - `GET /api/allwain/products`/`/products/:id` — búsqueda de producto por EAN o ID.
+  - `GET /api/allwain/order-groups` y `POST /api/allwain/order-groups`/`:id/join` — grupos de compra.
+  - `POST /api/allwain/savings` — registro de ahorro y comisión.
+  - `GET /api/allwain/sponsors/summary` — resumen de referidos y comisiones.
 
-## Cómo se repara (errores típicos)
-- **Oferta vacía o error 401**: token expirado o base URL incorrecta; re-login y verificar `.env`.
-- **Escaneo sin datos**: backend caído o `/allwain/scan-demo` inaccesible; probar en navegador y revisar consola Metro.
-- **Sponsor code no visible**: usuario sin `sponsorCode` asignado; revisar seed en backend o endpoint `/auth/me`.
-- **Cierre de sesión al reiniciar**: no hay persistencia de token; re-autenticar o implementar AsyncStorage.
-
-## TODO principales
-- Persistir token y estados de ofertas/escaneo para evitar llamadas duplicadas.
-- Conectar pantallas Guests/Demo/Admin con datos reales o retirarlas.
-- Ejecutar `npm run lint`/`npm run typecheck` cuando haya entorno Node.
+## Notas de arquitectura
+- Estado global mínimo (auth). El resto de pantallas gestionan datos con peticiones directas a la API.
+- `api.ts` centraliza manejo de errores 401 para limpiar sesión (`useAuthStore.clearAuth`).
+- Tema y componentes están aislados para mantener identidad visual separada de TrueQIA.
