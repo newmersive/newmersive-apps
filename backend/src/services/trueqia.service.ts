@@ -1,4 +1,4 @@
-import { v4 as uuidv4 } from "uuid";
+import { randomUUID } from "crypto";
 import {
   Offer,
   Trade,
@@ -34,7 +34,7 @@ export function createTrueqiaOffer(
   meta?: Record<string, unknown>
 ): Offer {
   const offer: Offer = {
-    id: uuidv4(),
+    id: randomUUID(),
     title,
     description,
     owner: "trueqia",
@@ -59,7 +59,7 @@ export function createTrade(
   if (tokens <= 0) throw new Error("INVALID_TOKEN_AMOUNT");
 
   const trade: Trade = {
-    id: uuidv4(),
+    id: randomUUID(),
     offerId,
     fromUserId,
     toUserId,
@@ -119,7 +119,7 @@ export function generateContractPreview(
   `;
 
   const contract: Contract = {
-    id: uuidv4(),
+    id: randomUUID(),
     app: "trueqia",
     type: "trade",
     status: "draft",

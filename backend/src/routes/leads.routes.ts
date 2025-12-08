@@ -1,5 +1,5 @@
 import { Router, Request, Response } from "express";
-import { v4 as uuidv4 } from "uuid";
+import { randomUUID } from "crypto";
 import {
   LeadGlobalSourceApp,
   LeadGlobalStatus,
@@ -63,7 +63,7 @@ router.post(
         status === "contacted" || status === "closed" ? status : "new";
 
       const lead = addLeadGlobal({
-        id: uuidv4(),
+        id: randomUUID(),
         createdAt: new Date().toISOString(),
         channel: "whatsapp",
         sourceApp,
