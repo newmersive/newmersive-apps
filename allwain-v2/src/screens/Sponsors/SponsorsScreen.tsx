@@ -5,7 +5,6 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from "react-native";
 import { colors } from "../../theme/colors";
@@ -71,9 +70,6 @@ export default function SponsorsScreen({ navigation }: any) {
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <View style={styles.card}>
         <View style={styles.headerRow}>
-          <TouchableOpacity onPress={() => navigation.goBack()} activeOpacity={0.8}>
-            <Text style={styles.backButton}>◀ Volver</Text>
-          </TouchableOpacity>
           <Text style={styles.title}>Patrocinadores</Text>
         </View>
 

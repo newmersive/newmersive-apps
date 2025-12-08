@@ -1,17 +1,14 @@
 export type RootStackParamList = {
-  DemoLanding: undefined;
-  DemoScanResult: undefined;
   Login: undefined;
   Register: undefined;
   MainTabs: undefined;
-  AdminDashboard: undefined;
+  Scan: undefined;
+  ScanResult: undefined;
 };
 
 export type MainTabParamList = {
   Inicio: undefined;
-  Escanear: undefined;
-  Resultado: undefined;
-  Ofertas: undefined;
-  Invitados: undefined;
+  Patrocinadores: undefined;
+  Contratos: undefined;
   Perfil: undefined;
 };

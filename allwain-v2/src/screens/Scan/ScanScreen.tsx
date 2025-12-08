@@ -1,10 +1,10 @@
 import React from "react";
 import { View, Text, Button, StyleSheet } from "react-native";
-import { BottomTabScreenProps } from "@react-navigation/bottom-tabs";
-import { MainTabParamList } from "../../navigation/types";
+import { NativeStackScreenProps } from "@react-navigation/native-stack";
+import { RootStackParamList } from "../../navigation/types";
 import { colors } from "../../theme/colors";
 
-type Props = BottomTabScreenProps<MainTabParamList, "Escanear">;
+type Props = NativeStackScreenProps<RootStackParamList, "Scan">;
 
 export default function ScanScreen({ navigation }: Props) {
   return (
@@ -18,7 +18,7 @@ export default function ScanScreen({ navigation }: Props) {
       <Button
         title="Simular escaneo y ver resultado"
         color={colors.button}
-        onPress={() => navigation.navigate("Resultado")}
+        onPress={() => navigation.navigate("ScanResult")}
       />
     </View>
   );
