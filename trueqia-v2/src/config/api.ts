@@ -24,11 +24,13 @@ export interface AuthResponse {
   };
 }
 
-import { useAuthStore } from "../store/auth.store";
+// Import lazily to avoid require cycles with the auth store
+const getAuthStore = () =>
+  require("../store/auth.store").useAuthStore as typeof import("../store/auth.store").useAuthStore;
 
 function handleUnauthorized(status: number, message?: string) {
   if (status === 401) {
-    useAuthStore
+    getAuthStore()
       .getState()
       .logout(message || "Sesión expirada, vuelve a iniciar sesión.");
     throw new Error("SESSION_EXPIRED");
@@ -59,7 +61,7 @@ export async function apiPost<T>(path: string, body: unknown): Promise<T> {
 
 export async function apiAuthGet<T>(path: string): Promise<T> {
   const url = `${API_BASE_URL}${path}`;
-  const token = useAuthStore.getState().token;
+  const token = getAuthStore().getState().token;
 
   const res = await fetch(url, {
     method: "GET",
@@ -84,7 +86,7 @@ export async function apiAuthGet<T>(path: string): Promise<T> {
 
 export async function apiAuthPost<T>(path: string, body: unknown): Promise<T> {
   const url = `${API_BASE_URL}${path}`;
-  const token = useAuthStore.getState().token;
+  const token = getAuthStore().getState().token;
 
   const res = await fetch(url, {
     method: "POST",
