@@ -15,6 +15,12 @@ import {
   TradeStatus,
   User,
 } from "../shared/types";
+import {
+  TrueqiaContract,
+  TrueqiaDomainState,
+  TrueqiaOffer,
+  TrueqiaTrade,
+} from "../types/trueqia";
 
 interface Database {
   users: User[];
@@ -27,6 +33,7 @@ interface Database {
   referralStats: ReferralStat[];
   allwainSavings: AllwainSavingTransaction[];
   orderGroups: OrderGroup[];
+  trueqia?: TrueqiaDomainState;
 }
 
 interface PasswordResetToken {
@@ -281,6 +288,29 @@ const defaultContracts: Contract[] = [];
 const defaultReferralStats: ReferralStat[] = [];
 const defaultAllwainSavings: AllwainSavingTransaction[] = [];
 const defaultOrderGroups: OrderGroup[] = [];
+const defaultTrueqiaDomain: TrueqiaDomainState = {
+  offers: [
+    {
+      id: "offer_demo_1",
+      title: "Clases de diseño gráfico",
+      description: "2h de ayuda con tu marca",
+      tokens: 50,
+      owner: { id: "1", name: "Admin Demo" },
+    },
+  ],
+  trades: [
+    {
+      id: "trade_demo_1",
+      title: "Intercambio diseño por consultoría IA",
+      status: "pending",
+      tokens: 100,
+      participants: ["1"],
+      offerId: "offer_demo_1",
+      ownerId: "1",
+    },
+  ],
+  contracts: [],
+};
 
 const defaultDatabase: Database = {
   users: defaultUsers,
@@ -293,6 +323,7 @@ const defaultDatabase: Database = {
   referralStats: defaultReferralStats,
   allwainSavings: defaultAllwainSavings,
   orderGroups: defaultOrderGroups,
+  trueqia: defaultTrueqiaDomain,
 };
 
 /**
@@ -318,6 +349,116 @@ function mergeById<T extends { id: string }>(
     map.set(item.id, { ...(map.get(item.id) as T), ...item })
   );
   return Array.from(map.values());
+}
+
+function sanitizeTrueqiaOffers(offers?: unknown): TrueqiaOffer[] {
+  if (!Array.isArray(offers)) return [];
+  const sanitized: TrueqiaOffer[] = [];
+
+  for (const offer of offers) {
+    if (!offer || typeof offer !== "object") continue;
+    const typed = offer as Partial<TrueqiaOffer>;
+    if (!typed.id || typeof typed.id !== "string") continue;
+    if (!typed.title || typeof typed.title !== "string") continue;
+
+    sanitized.push({
+      id: typed.id,
+      title: typed.title,
+      description:
+        typeof typed.description === "string" ? typed.description : undefined,
+      tokens: typeof typed.tokens === "number" ? typed.tokens : undefined,
+      owner:
+        typed.owner && typeof typed.owner === "object"
+          ? {
+              id: String((typed.owner as any).id),
+              name:
+                typeof (typed.owner as any).name === "string"
+                  ? (typed.owner as any).name
+                  : undefined,
+              avatar:
+                typeof (typed.owner as any).avatar === "string"
+                  ? (typed.owner as any).avatar
+                  : undefined,
+            }
+          : undefined,
+    });
+  }
+
+  return sanitized;
+}
+
+function sanitizeTrueqiaTrades(trades?: unknown): TrueqiaTrade[] {
+  if (!Array.isArray(trades)) return [];
+  const sanitized: TrueqiaTrade[] = [];
+
+  for (const trade of trades) {
+    if (!trade || typeof trade !== "object") continue;
+    const typed = trade as Partial<TrueqiaTrade>;
+    if (!typed.id || typeof typed.id !== "string") continue;
+    if (!typed.title || typeof typed.title !== "string") continue;
+
+    const participants = Array.isArray(typed.participants)
+      ? typed.participants.filter((p) => typeof p === "string")
+      : undefined;
+
+    sanitized.push({
+      id: typed.id,
+      title: typed.title,
+      status: typeof typed.status === "string" ? typed.status : "pending",
+      participants,
+      tokens: typeof typed.tokens === "number" ? typed.tokens : undefined,
+      offerId:
+        typed.offerId && typeof typed.offerId === "string"
+          ? typed.offerId
+          : undefined,
+      ownerId:
+        typed.ownerId && typeof typed.ownerId === "string"
+          ? typed.ownerId
+          : undefined,
+    });
+  }
+
+  return sanitized;
+}
+
+function sanitizeTrueqiaContracts(contracts?: unknown): TrueqiaContract[] {
+  if (!Array.isArray(contracts)) return [];
+  const sanitized: TrueqiaContract[] = [];
+
+  for (const contract of contracts) {
+    if (!contract || typeof contract !== "object") continue;
+    const typed = contract as Partial<TrueqiaContract>;
+    if (!typed.id || typeof typed.id !== "string") continue;
+    if (!typed.tradeId || typeof typed.tradeId !== "string") continue;
+    if (!typed.summary || typeof typed.summary !== "string") continue;
+    if (!typed.createdAt || typeof typed.createdAt !== "string") continue;
+
+    sanitized.push({
+      id: typed.id,
+      tradeId: typed.tradeId,
+      summary: typed.summary,
+      createdAt: typed.createdAt,
+    });
+  }
+
+  return sanitized;
+}
+
+function mergeTrueqiaDomain(
+  defaults: TrueqiaDomainState,
+  incoming?: Partial<TrueqiaDomainState>
+): TrueqiaDomainState {
+  const sanitizedIncoming: TrueqiaDomainState = {
+    offers: sanitizeTrueqiaOffers(incoming?.offers),
+    trades: sanitizeTrueqiaTrades(incoming?.trades),
+    contracts: sanitizeTrueqiaContracts(incoming?.contracts),
+  };
+
+  return {
+    offers: mergeById(defaults.offers, sanitizedIncoming.offers),
+    trades: mergeById(defaults.trades, sanitizedIncoming.trades),
+    contracts: mergeById(defaults.contracts, sanitizedIncoming.contracts),
+  };
 }
 
 function loadDatabase(): Database {
@@ -348,6 +489,7 @@ function loadDatabase(): Database {
       data.allwainSavings ?? []
     ),
     orderGroups: mergeById(defaultOrderGroups, data.orderGroups ?? []),
+    trueqia: mergeTrueqiaDomain(defaultTrueqiaDomain, data.trueqia),
   };
 
   persistDatabase(merged);
@@ -371,6 +513,22 @@ export function getDatabase(): Database {
     cache = loadDatabase();
   }
   return cache;
+}
+
+export function getTrueqiaState(): TrueqiaDomainState {
+  const db = getDatabase();
+  if (!db.trueqia) {
+    db.trueqia = mergeTrueqiaDomain(defaultTrueqiaDomain, {});
+    persistDatabase(db);
+  }
+  return db.trueqia;
+}
+
+export function saveTrueqiaState(state: TrueqiaDomainState): TrueqiaDomainState {
+  const db = getDatabase();
+  db.trueqia = mergeTrueqiaDomain(defaultTrueqiaDomain, state);
+  persistDatabase(db);
+  return db.trueqia;
 }
 
 export function persistDatabase(db?: Database) {
