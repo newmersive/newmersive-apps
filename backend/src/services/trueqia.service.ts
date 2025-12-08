@@ -1,96 +1,89 @@
-import {
-  addOffer,
-  addTrade,
-  getTradeById,
-  getUserById,
-  getOffersByOwner,
-  updateTrade,
-  upsertUser,
-} from "./data.store";
-import { Offer, Trade } from "../shared/types";
+import { TrueqiaContract, TrueqiaOffer, TrueqiaTrade } from "../types/trueqia";
+import { getTrueqiaState, getUserById, saveTrueqiaState } from "./data.store";
 
 function generateId(prefix: string): string {
-  return `${prefix}-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+  return `${prefix}_${Date.now()}`;
 }
 
-export function listTrueqiaOffers(options?: {
-  excludeUserId?: string;
-}): Offer[] {
-  const offers = getOffersByOwner("trueqia");
-  if (!options?.excludeUserId) return offers;
-  return offers.filter((offer) => offer.ownerUserId !== options.excludeUserId);
+function normalizeTokens(value?: number): number | undefined {
+  return typeof value === "number" && Number.isFinite(value) ? value : undefined;
 }
 
-export function createTrueqiaOffer(
-  input: Omit<Offer, "id" | "owner">
-): Offer {
-  const offer: Offer = {
-    ...input,
-    id: generateId("offer-trueqia"),
-    owner: "trueqia",
+export async function listOffers(_userId: string): Promise<TrueqiaOffer[]> {
+  const state = getTrueqiaState();
+  return state.offers;
+}
+
+export async function createOffer(
+  userId: string,
+  payload: Pick<TrueqiaOffer, "title" | "description" | "tokens">
+): Promise<TrueqiaOffer> {
+  const user = getUserById(userId);
+  const owner = user
+    ? { id: user.id, name: user.name, avatar: user.avatarUrl }
+    : { id: userId };
+
+  const offer: TrueqiaOffer = {
+    id: generateId("offer"),
+    title: payload.title,
+    description: payload.description,
+    tokens: normalizeTokens(payload.tokens),
+    owner,
   };
 
-  return addOffer(offer);
+  const state = getTrueqiaState();
+  state.offers.push(offer);
+  saveTrueqiaState(state);
+
+  return offer;
 }
 
-export function createTrade(params: {
-  offerId: string;
-  fromUserId: string;
-  toUserId: string;
-  tokens: number;
-}): Trade {
-  if (params.tokens <= 0) throw new Error("INVALID_TOKENS");
+export async function listTrades(userId: string): Promise<TrueqiaTrade[]> {
+  const state = getTrueqiaState();
+  return state.trades.filter((trade) => {
+    if (!userId) return true;
+    const isParticipant = trade.participants?.includes(userId);
+    return isParticipant || trade.ownerId === userId;
+  });
+}
 
-  const trade: Trade = {
+export async function createTrade(
+  userId: string,
+  payload: Pick<TrueqiaTrade, "title" | "tokens" | "offerId">
+): Promise<TrueqiaTrade> {
+  const trade: TrueqiaTrade = {
     id: generateId("trade"),
-    offerId: params.offerId,
-    fromUserId: params.fromUserId,
-    toUserId: params.toUserId,
-    tokens: params.tokens,
+    title: payload.title,
     status: "pending",
+    participants: [userId],
+    tokens: normalizeTokens(payload.tokens),
+    offerId: payload.offerId,
+    ownerId: userId,
+  };
+
+  const state = getTrueqiaState();
+  state.trades.push(trade);
+  saveTrueqiaState(state);
+
+  return trade;
+}
+
+export async function createContractDemo(tradeId: string): Promise<TrueqiaContract> {
+  const state = getTrueqiaState();
+  const trade = state.trades.find((item) => item.id === tradeId);
+  if (!trade) {
+    throw new Error("TRADE_NOT_FOUND");
+  }
+
+  const contract: TrueqiaContract = {
+    id: generateId("contract"),
+    tradeId: trade.id,
+    summary: `Contrato demo para "${trade.title}"`,
     createdAt: new Date().toISOString(),
   };
 
-  return addTrade(trade);
-}
+  state.contracts.push(contract);
+  saveTrueqiaState(state);
 
-export function acceptTrade(tradeId: string, actingUserId: string): Trade {
-  const trade = getTradeById(tradeId);
-  if (!trade) throw new Error("TRADE_NOT_FOUND");
-  if (trade.status !== "pending") throw new Error("TRADE_NOT_PENDING");
-  if (![trade.fromUserId, trade.toUserId].includes(actingUserId)) {
-    throw new Error("NOT_PARTICIPANT");
-  }
-
-  const fromUser = getUserById(trade.fromUserId);
-  const toUser = getUserById(trade.toUserId);
-  if (!fromUser || !toUser) throw new Error("USER_NOT_FOUND");
-
-  const availableTokens = fromUser.tokens ?? 0;
-  if (availableTokens < trade.tokens) throw new Error("INSUFFICIENT_TOKENS");
-
-  fromUser.tokens = availableTokens - trade.tokens;
-  toUser.tokens = (toUser.tokens ?? 0) + trade.tokens;
-
-  upsertUser(fromUser);
-  upsertUser(toUser);
-
-  trade.status = "accepted";
-  trade.resolvedAt = new Date().toISOString();
-
-  return updateTrade(trade);
-}
-
-export function rejectTrade(tradeId: string, actingUserId: string): Trade {
-  const trade = getTradeById(tradeId);
-  if (!trade) throw new Error("TRADE_NOT_FOUND");
-  if (trade.status !== "pending") throw new Error("TRADE_NOT_PENDING");
-  if (![trade.fromUserId, trade.toUserId].includes(actingUserId)) {
-    throw new Error("NOT_PARTICIPANT");
-  }
-
-  trade.status = "rejected";
-  trade.resolvedAt = new Date().toISOString();
-
-  return updateTrade(trade);
+  return contract;
 }

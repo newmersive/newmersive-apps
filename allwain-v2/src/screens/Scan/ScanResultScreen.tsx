@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { View, Text, StyleSheet, ActivityIndicator, Button } from "react-native";
 import { apiAuthGet, ScanDemoResponse } from "../../config/api";
-import { BottomTabScreenProps } from "@react-navigation/bottom-tabs";
-import { MainTabParamList } from "../../navigation/types";
+import { NativeStackScreenProps } from "@react-navigation/native-stack";
+import { RootStackParamList } from "../../navigation/types";
 import { colors } from "../../theme/colors";
 
-type Props = BottomTabScreenProps<MainTabParamList, "Resultado">;
+type Props = NativeStackScreenProps<RootStackParamList, "ScanResult">;
 
 export default function ScanResultScreen({ navigation }: Props) {
   const [data, setData] = useState<ScanDemoResponse | null>(null);
@@ -37,7 +37,7 @@ export default function ScanResultScreen({ navigation }: Props) {
       <Button
         title="Volver a escanear"
         color={colors.button}
-        onPress={() => navigation.navigate("Escanear")}
+        onPress={() => navigation.replace("Scan")}
       />
       <View style={{ height: 12 }} />
       <Button

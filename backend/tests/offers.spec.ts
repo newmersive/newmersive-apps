@@ -31,7 +31,8 @@ describe("Offers routes", () => {
       assert.ok(Array.isArray(res.body.items));
       assert.ok(res.body.items.length > 0, "should return demo trueques");
       res.body.items.forEach((offer: any) => {
-        assert.equal(offer.owner, "trueqia");
+        assert.ok(offer.owner);
+        assert.ok(typeof offer.owner.id === "string");
       });
     });
   });

@@ -70,6 +70,50 @@
       "tokens": 0,
       "allwainBalance": 0,
       "sponsorCode": "SPN-DEMO-STR"
+    },
+    {
+      "id": "7",
+      "name": "Test User",
+      "email": "user+1765202388340@test.local",
+      "passwordHash": "$2a$10$ismECl4ING4dzOxbN5PdO.t/j8k/3BErWAzNr3IDdpLwrugpNy4KS",
+      "role": "user",
+      "createdAt": "2025-12-08T13:59:48.522Z",
+      "tokens": 0,
+      "allwainBalance": 0,
+      "sponsorCode": "SPN-0F6062"
+    },
+    {
+      "id": "8",
+      "name": "Member",
+      "email": "member+1765202388341@test.local",
+      "passwordHash": "$2a$10$PevimoS.57ktoFy8zT4Zw.vH3CSF7tL5EqHwRdGKTI88FI1vielFC",
+      "role": "user",
+      "createdAt": "2025-12-08T13:59:48.707Z",
+      "tokens": 0,
+      "allwainBalance": 0,
+      "sponsorCode": "SPN-678417"
+    },
+    {
+      "id": "9",
+      "name": "Test User",
+      "email": "user+1765202409268@test.local",
+      "passwordHash": "$2a$10$K7DP66WqS.NgWxvPbiuKWeQ8ZoBQSeTb0QcRShXEjOvqpdd4.7Vo6",
+      "role": "user",
+      "createdAt": "2025-12-08T14:00:09.459Z",
+      "tokens": 0,
+      "allwainBalance": 0,
+      "sponsorCode": "SPN-1266E0"
+    },
+    {
+      "id": "10",
+      "name": "Member",
+      "email": "member+1765202409268@test.local",
+      "passwordHash": "$2a$10$4VK.u6BYjOISDl2o8yABn.j/0yO5mdVJKPzhn54erWNrnR1lxv1IC",
+      "role": "user",
+      "createdAt": "2025-12-08T14:00:09.652Z",
+      "tokens": 0,
+      "allwainBalance": 0,
+      "sponsorCode": "SPN-AF1424"
     }
   ],
   "offers": [
@@ -80,7 +124,9 @@
       "owner": "trueqia",
       "ownerUserId": "1",
       "tokens": 80,
-      "meta": { "category": "creativos" }
+      "meta": {
+        "category": "creativos"
+      }
     },
     {
       "id": "offer-trueqia-2",
@@ -89,7 +135,9 @@
       "owner": "trueqia",
       "ownerUserId": "1",
       "tokens": 120,
-      "meta": { "category": "formación" }
+      "meta": {
+        "category": "formación"
+      }
     },
     {
       "id": "offer-trueqia-demo-1",
@@ -98,7 +146,9 @@
       "owner": "trueqia",
       "ownerUserId": "4",
       "tokens": 10,
-      "meta": { "category": "preproducción" }
+      "meta": {
+        "category": "preproducción"
+      }
     },
     {
       "id": "offer-trueqia-demo-2",
@@ -107,7 +157,9 @@
       "owner": "trueqia",
       "ownerUserId": "5",
       "tokens": 20,
-      "meta": { "category": "social" }
+      "meta": {
+        "category": "social"
+      }
     },
     {
       "id": "offer-trueqia-demo-3",
@@ -116,7 +168,9 @@
       "owner": "trueqia",
       "ownerUserId": "6",
       "tokens": 50,
-      "meta": { "category": "growth" }
+      "meta": {
+        "category": "growth"
+      }
     },
     {
       "id": "offer-allwain-1",
@@ -126,7 +180,9 @@
       "ownerUserId": "3",
       "price": 30,
       "productId": "product-1",
-      "meta": { "category": "gourmet" }
+      "meta": {
+        "category": "gourmet"
+      }
     },
     {
       "id": "offer-allwain-2",
@@ -135,17 +191,21 @@
       "owner": "allwain",
       "ownerUserId": "3",
       "price": 45,
-      "meta": { "category": "análisis" }
+      "meta": {
+        "category": "análisis"
+      }
     },
     {
       "id": "offer-allwain-3",
       "title": "Bundle Allwain + TrueQIA",
       "description": "Tokens conjuntos para lanzar campaña conjunta con catálogo Allwain y activaciones TrueQIA.",
-      "tokens": 150,
       "owner": "allwain",
       "ownerUserId": "3",
+      "tokens": 150,
       "price": 45,
-      "meta": { "category": "alianzas" }
+      "meta": {
+        "category": "alianzas"
+      }
     }
   ],
   "trades": [
@@ -218,15 +278,50 @@
       "createdAt": "2024-01-05T00:00:00.000Z"
     }
   ],
+  "leadGlobals": [],
   "contracts": [
     {
       "id": "contract-1",
       "title": "Piloto Allwain x tienda local",
       "status": "draft",
-      "counterparties": ["ops@allwain.app", "hola@cafedebarrio.local"],
+      "counterparties": [
+        "ops@allwain.app",
+        "hola@cafedebarrio.local"
+      ],
       "valueTokens": 250,
       "createdAt": "2024-01-06T00:00:00.000Z",
       "notes": "Contrato simulado en memoria hasta migrar a PostgreSQL."
     }
-  ]
+  ],
+  "referralStats": [],
+  "allwainSavings": [],
+  "orderGroups": [],
+  "trueqia": {
+    "offers": [
+      {
+        "id": "offer_demo_1",
+        "title": "Clases de diseño gráfico",
+        "description": "2h de ayuda con tu marca",
+        "tokens": 50,
+        "owner": {
+          "id": "1",
+          "name": "Admin Demo"
+        }
+      }
+    ],
+    "trades": [
+      {
+        "id": "trade_demo_1",
+        "title": "Intercambio diseño por consultoría IA",
+        "status": "pending",
+        "tokens": 100,
+        "participants": [
+          "1"
+        ],
+        "offerId": "offer_demo_1",
+        "ownerId": "1"
+      }
+    ],
+    "contracts": []
+  }
 }
