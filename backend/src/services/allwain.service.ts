@@ -1,4 +1,4 @@
-import { v4 as uuidv4 } from "uuid";
+import { randomUUID } from "crypto";
 import {
   Offer,
   Product,
@@ -70,7 +70,7 @@ export function createAllwainOffer(
   meta?: Record<string, unknown>
 ): Offer {
   const offer: Offer = {
-    id: uuidv4(),
+    id: randomUUID(),
     title,
     description,
     owner: "allwain",
@@ -96,7 +96,7 @@ export function createOrderGroup(
   minUnitsPerClient: number
 ): OrderGroup {
   const group: OrderGroup = {
-    id: uuidv4(),
+    id: randomUUID(),
     productId,
     totalUnits: 0,
     minUnitsPerClient,
@@ -142,7 +142,7 @@ export function registerSaving(
   if (!user) throw new Error("USER_NOT_FOUND");
 
   const saving: AllwainSavingTransaction = {
-    id: uuidv4(),
+    id: randomUUID(),
     userId,
     amount,
     createdAt: new Date().toISOString(),
@@ -168,7 +168,7 @@ export function registerSaving(
       upsertUser(sponsor);
 
       referralStat = {
-        id: uuidv4(),
+        id: randomUUID(),
         userId: sponsor.id,
         invitedUserId: user.id,
         totalSavedByInvited: amount,
