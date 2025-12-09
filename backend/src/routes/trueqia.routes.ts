@@ -1,97 +1,219 @@
-import { Router } from "express";
-import { authRequired, AuthRequest } from "../middleware/auth.middleware";
+import { Router, Request, Response } from "express";
 import {
-  createContractDemo,
-  createOffer,
+  listTrueqiaOffers,
+  createTrueqiaOffer,
   createTrade,
-  listOffers,
-  listTrades,
+  acceptTrade,
+  rejectTrade,
+  generateContractPreview,
 } from "../services/trueqia.service";
+import { authRequired } from "../middleware/auth.middleware";
 
 const router = Router();
 
-router.get("/offers", authRequired, async (req: AuthRequest, res, next) => {
-  try {
-    const items = await listOffers(req.user!.id);
-    res.json({ items });
-  } catch (error) {
-    next(error);
+/* =========================
+   GET /trueqia/offers
+========================= */
+
+router.get(
+  "/offers",
+  authRequired,
+  (req: Request, res: Response): void => {
+    try {
+      const excludeMine =
+        req.query.excludeMine === "true" ||
+        req.query.excludeMine === "1";
+
+      const userId = (req as any).user?.id as string | undefined;
+
+      const offers = listTrueqiaOffers(
+        excludeMine ? userId : undefined
+      );
+
+      res.json({ items: offers });
+    } catch (err) {
+      console.error("Error in GET /trueqia/offers:", err);
+      res.status(500).json({ error: "INTERNAL_ERROR" });
+    }
   }
-});
+);
 
-router.post("/offers", authRequired, async (req: AuthRequest, res, next) => {
-  try {
-    const { title, description, tokens } = req.body || {};
-
-    if (!title || typeof title !== "string") {
-      return res.status(400).json({ error: "INVALID_TITLE", message: "title es obligatorio" });
-    }
-    if (tokens !== undefined && typeof tokens !== "number") {
-      return res
-        .status(400)
-        .json({ error: "INVALID_TOKENS", message: "tokens debe ser numérico" });
-    }
-
-    const offer = await createOffer(req.user!.id, { title, description, tokens });
-    res.status(201).json(offer);
-  } catch (error) {
-    next(error);
-  }
-});
-
-router.get("/trades", authRequired, async (req: AuthRequest, res, next) => {
-  try {
-    const items = await listTrades(req.user!.id);
-    res.json({ items });
-  } catch (error) {
-    next(error);
-  }
-});
-
-router.post("/trades", authRequired, async (req: AuthRequest, res, next) => {
-  try {
-    const { title, tokens, offerId } = req.body || {};
-
-    if (!title || typeof title !== "string") {
-      return res.status(400).json({ error: "INVALID_TITLE", message: "title es obligatorio" });
-    }
-    if (tokens !== undefined && typeof tokens !== "number") {
-      return res
-        .status(400)
-        .json({ error: "INVALID_TOKENS", message: "tokens debe ser numérico" });
-    }
-    if (offerId !== undefined && typeof offerId !== "string") {
-      return res
-        .status(400)
-        .json({ error: "INVALID_OFFER", message: "offerId debe ser string" });
-    }
-
-    const trade = await createTrade(req.user!.id, { title, tokens, offerId });
-    res.status(201).json(trade);
-  } catch (error) {
-    next(error);
-  }
-});
+/* =========================
+   POST /trueqia/offers
+========================= */
 
 router.post(
-  "/contracts-demo",
+  "/offers",
   authRequired,
-  async (req: AuthRequest, res, next) => {
+  async (req: Request, res: Response): Promise<void> => {
     try {
-      const { tradeId } = req.body || {};
-      if (!tradeId || typeof tradeId !== "string") {
-        return res
-          .status(400)
-          .json({ error: "INVALID_TRADE", message: "tradeId es obligatorio" });
+      const userId = (req as any).user?.id as string | undefined;
+      const { title, description, tokens, meta } = req.body as {
+        title?: string;
+        description?: string;
+        tokens?: number;
+        meta?: Record<string, unknown>;
+      };
+
+      if (!userId || !title || !description || typeof tokens !== "number") {
+        res.status(400).json({ error: "MISSING_FIELDS" });
+        return;
       }
 
-      const contract = await createContractDemo(tradeId);
-      res.status(201).json(contract);
-    } catch (error) {
-      if (error instanceof Error && error.message === "TRADE_NOT_FOUND") {
-        return res.status(404).json({ error: "TRADE_NOT_FOUND" });
+      const offer = createTrueqiaOffer(
+        userId,
+        title,
+        description,
+        tokens,
+        meta
+      );
+
+      res.status(201).json(offer);
+    } catch (err) {
+      console.error("Error in POST /trueqia/offers:", err);
+      res.status(500).json({ error: "INTERNAL_ERROR" });
+    }
+  }
+);
+
+/* =========================
+   POST /trueqia/trades
+========================= */
+
+router.post(
+  "/trades",
+  authRequired,
+  (req: Request, res: Response): void => {
+    try {
+      const fromUserId = (req as any).user?.id as string | undefined;
+      const { toUserId, offerId, tokens } = req.body as {
+        toUserId?: string;
+        offerId?: string;
+        tokens?: number;
+      };
+
+      if (
+        !fromUserId ||
+        !toUserId ||
+        !offerId ||
+        typeof tokens !== "number"
+      ) {
+        res.status(400).json({ error: "MISSING_FIELDS" });
+        return;
       }
-      next(error);
+
+      const trade = createTrade(
+        fromUserId,
+        toUserId,
+        offerId,
+        tokens
+      );
+
+      res.status(201).json(trade);
+    } catch (err: any) {
+      if (err instanceof Error && err.message === "INVALID_TOKEN_AMOUNT") {
+        res.status(400).json({ error: "INVALID_TOKEN_AMOUNT" });
+        return;
+      }
+
+      console.error("Error in POST /trueqia/trades:", err);
+      res.status(500).json({ error: "INTERNAL_ERROR" });
+    }
+  }
+);
+
+/* =========================
+   POST /trueqia/trades/:id/accept
+========================= */
+
+router.post(
+  "/trades/:id/accept",
+  authRequired,
+  (req: Request, res: Response): void => {
+    try {
+      const tradeId = req.params.id;
+      const trade = acceptTrade(tradeId);
+      res.json(trade);
+    } catch (err: any) {
+      if (err instanceof Error) {
+        if (err.message === "TRADE_NOT_FOUND") {
+          res.status(404).json({ error: "TRADE_NOT_FOUND" });
+          return;
+        }
+        if (err.message === "INSUFFICIENT_TOKENS") {
+          res.status(400).json({ error: "INSUFFICIENT_TOKENS" });
+          return;
+        }
+      }
+
+      console.error("Error in accept trade:", err);
+      res.status(500).json({ error: "INTERNAL_ERROR" });
+    }
+  }
+);
+
+/* =========================
+   POST /trueqia/trades/:id/reject
+========================= */
+
+router.post(
+  "/trades/:id/reject",
+  authRequired,
+  (req: Request, res: Response): void => {
+    try {
+      const tradeId = req.params.id;
+      const trade = rejectTrade(tradeId);
+      res.json(trade);
+    } catch (err: any) {
+      if (err instanceof Error && err.message === "TRADE_NOT_FOUND") {
+        res.status(404).json({ error: "TRADE_NOT_FOUND" });
+        return;
+      }
+
+      console.error("Error in reject trade:", err);
+      res.status(500).json({ error: "INTERNAL_ERROR" });
+    }
+  }
+);
+
+/* =========================
+   POST /trueqia/contracts/preview
+========================= */
+
+router.post(
+  "/contracts/preview",
+  authRequired,
+  (req: Request, res: Response): void => {
+    try {
+      const { offerTitle, requesterName, providerName, tokens } =
+        req.body as {
+          offerTitle?: string;
+          requesterName?: string;
+          providerName?: string;
+          tokens?: number;
+        };
+
+      if (
+        !offerTitle ||
+        !requesterName ||
+        !providerName ||
+        typeof tokens !== "number"
+      ) {
+        res.status(400).json({ error: "MISSING_FIELDS" });
+        return;
+      }
+
+      const contract = generateContractPreview({
+        offerTitle,
+        requesterName,
+        providerName,
+        tokens,
+      });
+
+      res.status(201).json(contract);
+    } catch (err) {
+      console.error("Error in preview contract:", err);
+      res.status(500).json({ error: "INTERNAL_ERROR" });
     }
   }
 );

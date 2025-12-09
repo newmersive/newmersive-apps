@@ -1,68 +1,217 @@
 # Newmersive Backend
 
-API en Node.js/TypeScript para TRUEQIA y ALLWAIN. Expone rutas bajo `/api` con autenticación JWT, ofertas demo y utilidades de IA simuladas.
+API en Node.js + TypeScript para **TRUEQIA** y **ALLWAIN**.  
+Toda la plataforma funciona en **modo DEMO con persistencia en JSON**, preparada para escalar posteriormente a base de datos real.
 
-Consulta la descripción detallada de rutas y lógica en [../docs/backend-architecture.md](../docs/backend-architecture.md).
+---
 
-## Requisitos
-- Node.js 20.x (LTS recomendado) y npm 10.x.
-- Acceso a red para instalar dependencias.
-- Permisos de escritura en `data/database.json` (se crea automáticamente con semillas).
+## 📦 Stack
 
-## Instalación
+- Node.js 20 (LTS)
+- Express
+- TypeScript
+- JWT Auth
+- Persistencia en archivo JSON (`data/database.json`)
+- IA simulada (contratos + moderación)
+- Arquitectura compartida para:
+  - TrueQIA (trueques + tokens)
+  - Allwain (compras + ahorro + comisiones)
+
+---
+
+## ⚙️ Requisitos
+
+- Node.js 20+
+- npm 10+
+- Permisos de escritura en:
+  ```
+  backend/data/database.json
+  ```
+
+---
+
+## 🔐 Variables de entorno (`.env`)
+
+```env
+PORT=4000
+JWT_SECRET=dev-secret-change-me
+NODE_ENV=development
+DEMO_MODE=false
+DATA_FILE=./data/database.json
+```
+
+---
+
+## 🚀 Instalación
+
 ```bash
 cd backend
 npm install
+npm run dev
 ```
-Si tu entorno bloquea la instalación de Node/npm (como en este auditoría), instala Node manualmente o con `nvm` antes de ejecutar los comandos.
 
-## Variables de entorno
-Crea `.env` (opcional) en `backend/` con:
+Producción:
 
-| Variable | Descripción | Valor por defecto |
-| --- | --- | --- |
-| `PORT` | Puerto de Express | `4000` |
-| `JWT_SECRET` | Clave para firmar tokens | `dev-secret-change-me` |
-| `NODE_ENV` | `development` \| `production` \| `test` | `development` |
-| `DEMO_MODE` | Habilita comportamientos demo | `false` |
-| `DATA_FILE` | Ruta del archivo JSON persistente | `./data/database.json` |
+```bash
+npm run build
+npm start
+```
 
-## Scripts
-- **Desarrollo:** `npm run dev` (usa `ts-node-dev`, recarga automática).
-- **Build:** `npm run build` (compila a `dist`).
-- **Producción:** `npm start` (ejecuta `dist/server.js`).
-- **Pruebas:** `npm test` (usa `node:test` + `ts-node/register`).
+Con pm2:
 
-## Despliegue rápido en IONOS (Ubuntu + pm2)
-1. Instala dependencias (Node 20+ ya presente):
-   ```bash
-   cd backend
-   npm install
-   npm run build
-   ```
-2. Lanza el servicio con pm2:
-   ```bash
-   pm2 start dist/server.js --name newmersive-backend \
-     --env production \
-     -- --port ${PORT:-4000}
-   ```
-3. Variables de entorno recomendadas:
-   ```bash
-   export PORT=4000
-   export JWT_SECRET="cambia-esta-clave"
-   export NODE_ENV=production
-   export DATA_FILE="/var/newmersive/data/database.json" # opcional, ruta persistente
-   ```
-4. Verifica salud: `curl http://localhost:4000/api/health` debe responder `{ status: "ok" }`.
+```bash
+pm2 start dist/server.js --name newmersive-backend
+```
 
-## Problemas conocidos
-- En entornos sin Node/npm, `npm install` y los scripts fallan (`bash: command not found: npm`). Instala Node (v20 LTS) o ejecuta en una imagen que ya lo incluya.
-- Asegura que `JWT_SECRET` no sea el valor por defecto en entornos productivos.
+---
 
-## Endpoints principales
-- `GET /api/health` — estado del servicio.
-- `POST /api/auth/register`, `POST /api/auth/login`, `GET /api/auth/me` — autenticación y perfil.
-- `GET /api/trueqia/offers`, `GET /api/trueqia/trades`, `POST /api/trueqia/contracts/preview` — flujo TrueQIA.
-- `GET /api/allwain/scan-demo`, `GET /api/allwain/offers` — flujo Allwain.
-- `POST /api/leads/whatsapp` — registra un lead capturado por el bot de WhatsApp y lo almacena para el panel admin.
-- `GET /api/admin/dashboard`, `/api/admin/users`, `/api/admin/ai/activity` — endpoints protegidos para admin.
+## ✅ Healthcheck
+
+```
+GET /api/health
+```
+
+---
+
+# 🔐 AUTH
+
+| Método | Ruta |
+|--------|------|
+| POST | /api/auth/register |
+| POST | /api/auth/login |
+| GET  | /api/auth/me |
+| POST | /api/auth/forgot-password |
+| POST | /api/auth/reset-password |
+
+- Soporta `sponsorCode`
+- Genera uno propio automático
+- Devuelve `AuthTokenResponse`
+
+---
+
+# 🔁 TRUEQIA
+
+| Método | Ruta |
+|--------|------|
+| GET  | /api/trueqia/offers |
+| POST | /api/trueqia/offers |
+| POST | /api/trueqia/trades |
+| POST | /api/trueqia/trades/:id/accept |
+| POST | /api/trueqia/trades/:id/reject |
+| POST | /api/trueqia/contracts/preview |
+
+- Usa **tokens internos**
+- Genera contratos por IA (demo)
+- Control total desde `data.store.ts`
+
+---
+
+# 🛒 ALLWAIN
+
+| Método | Ruta |
+|--------|------|
+| GET  | /api/allwain/scan-demo |
+| GET  | /api/allwain/offers |
+| POST | /api/allwain/offers |
+| POST | /api/allwain/offers/:id/interest |
+| GET  | /api/allwain/order-groups |
+| POST | /api/allwain/order-groups |
+| POST | /api/allwain/order-groups/:id/join |
+| POST | /api/allwain/savings |
+| GET  | /api/allwain/sponsors/summary |
+
+- Calcula **ahorro real**
+- Aplica **comisión de por vida**
+- Guarda balances en el usuario
+
+---
+
+# 🤝 LEADS (WEB + APP + WHATSAPP)
+
+```
+POST /api/leads/whatsapp
+```
+
+```json
+{
+  "message": "Estoy interesado",
+  "sourceApp": "trueqia",
+  "phone": "+34...",
+  "name": "Carlos"
+}
+```
+
+- Canal: `whatsapp | web | app`
+- Fuente: `trueqia | allwain`
+- Visible desde panel admin
+
+---
+
+# 🛠️ ADMIN
+
+| Método | Ruta |
+|--------|------|
+| GET | /api/admin/dashboard |
+| GET | /api/admin/users |
+| GET | /api/admin/leads |
+| GET | /api/admin/ai/activity |
+
+Protegido con:
+- `authRequired`
+- `adminOnly`
+
+---
+
+# 🧠 IA (DEMO)
+
+- `contracts.service.ts` → genera texto de contratos
+- `moderation.service.ts` → filtra contenido futuro
+
+---
+
+# 📁 Estructura clave
+
+```
+src/
+ ├─ routes/
+ ├─ services/
+ ├─ ia/
+ ├─ shared/
+ ├─ middleware/
+data/
+ └─ database.json
+```
+
+---
+
+# ⚠️ Notas importantes
+
+- NO usa base de datos real
+- NO hay pagos reales
+- NO WhatsApp real (solo endpoint preparado)
+- TODO es reproducible con JSON
+
+---
+
+# ✅ Estado actual
+
+- Auth ✅
+- TrueQIA ✅
+- Allwain ✅
+- Leads ✅
+- Sponsors ✅
+- Contracts ✅
+- IA Demo ✅
+- Admin ✅
+
+---
+
+# ⛔ Producción real
+
+Cuando pases a producción real:
+- Cambiar `DATA_FILE` a ruta persistente
+- Cambiar `JWT_SECRET`
+- Migrar a PostgreSQL/Mongo
+
+---
+

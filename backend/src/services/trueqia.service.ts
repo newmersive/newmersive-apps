@@ -1,89 +1,132 @@
-import { TrueqiaContract, TrueqiaOffer, TrueqiaTrade } from "../types/trueqia";
-import { getTrueqiaState, getUserById, saveTrueqiaState } from "./data.store";
+import { randomUUID } from "crypto";
+import {
+  Offer,
+  Trade,
+  Contract,
+  DemoContractInput,
+} from "../shared/types";
+import {
+  getOffersByOwner,
+  addOffer,
+  getTradeById,
+  addTrade,
+  updateTradeStatus,
+  getUserById,
+  upsertUser,
+  createContract,
+} from "./data.store";
 
-function generateId(prefix: string): string {
-  return `${prefix}_${Date.now()}`;
+/* =========================
+   OFFERS (TRUEQIA)
+========================= */
+
+export function listTrueqiaOffers(excludeUserId?: string) {
+  const offers = getOffersByOwner("trueqia");
+  if (!excludeUserId) return offers;
+  return offers.filter(o => o.ownerUserId !== excludeUserId);
 }
 
-function normalizeTokens(value?: number): number | undefined {
-  return typeof value === "number" && Number.isFinite(value) ? value : undefined;
-}
-
-export async function listOffers(_userId: string): Promise<TrueqiaOffer[]> {
-  const state = getTrueqiaState();
-  return state.offers;
-}
-
-export async function createOffer(
+export function createTrueqiaOffer(
   userId: string,
-  payload: Pick<TrueqiaOffer, "title" | "description" | "tokens">
-): Promise<TrueqiaOffer> {
-  const user = getUserById(userId);
-  const owner = user
-    ? { id: user.id, name: user.name, avatar: user.avatarUrl }
-    : { id: userId };
-
-  const offer: TrueqiaOffer = {
-    id: generateId("offer"),
-    title: payload.title,
-    description: payload.description,
-    tokens: normalizeTokens(payload.tokens),
-    owner,
+  title: string,
+  description: string,
+  tokens: number,
+  meta?: Record<string, unknown>
+): Offer {
+  const offer: Offer = {
+    id: randomUUID(),
+    title,
+    description,
+    owner: "trueqia",
+    ownerUserId: userId,
+    tokens,
+    meta,
   };
 
-  const state = getTrueqiaState();
-  state.offers.push(offer);
-  saveTrueqiaState(state);
-
-  return offer;
+  return addOffer(offer);
 }
 
-export async function listTrades(userId: string): Promise<TrueqiaTrade[]> {
-  const state = getTrueqiaState();
-  return state.trades.filter((trade) => {
-    if (!userId) return true;
-    const isParticipant = trade.participants?.includes(userId);
-    return isParticipant || trade.ownerId === userId;
-  });
-}
+/* =========================
+   TRADES (TRUEQIA)
+========================= */
 
-export async function createTrade(
-  userId: string,
-  payload: Pick<TrueqiaTrade, "title" | "tokens" | "offerId">
-): Promise<TrueqiaTrade> {
-  const trade: TrueqiaTrade = {
-    id: generateId("trade"),
-    title: payload.title,
+export function createTrade(
+  fromUserId: string,
+  toUserId: string,
+  offerId: string,
+  tokens: number
+): Trade {
+  if (tokens <= 0) throw new Error("INVALID_TOKEN_AMOUNT");
+
+  const trade: Trade = {
+    id: randomUUID(),
+    offerId,
+    fromUserId,
+    toUserId,
+    tokens,
     status: "pending",
-    participants: [userId],
-    tokens: normalizeTokens(payload.tokens),
-    offerId: payload.offerId,
-    ownerId: userId,
-  };
-
-  const state = getTrueqiaState();
-  state.trades.push(trade);
-  saveTrueqiaState(state);
-
-  return trade;
-}
-
-export async function createContractDemo(tradeId: string): Promise<TrueqiaContract> {
-  const state = getTrueqiaState();
-  const trade = state.trades.find((item) => item.id === tradeId);
-  if (!trade) {
-    throw new Error("TRADE_NOT_FOUND");
-  }
-
-  const contract: TrueqiaContract = {
-    id: generateId("contract"),
-    tradeId: trade.id,
-    summary: `Contrato demo para "${trade.title}"`,
     createdAt: new Date().toISOString(),
   };
 
-  state.contracts.push(contract);
-  saveTrueqiaState(state);
+  return addTrade(trade);
+}
 
-  return contract;
+export function acceptTrade(tradeId: string) {
+  const trade = getTradeById(tradeId);
+  if (!trade) throw new Error("TRADE_NOT_FOUND");
+
+  const fromUser = getUserById(trade.fromUserId);
+  const toUser = getUserById(trade.toUserId);
+
+  if (!fromUser || !toUser) throw new Error("USER_NOT_FOUND");
+
+  if ((fromUser.tokens || 0) < trade.tokens)
+    throw new Error("INSUFFICIENT_TOKENS");
+
+  fromUser.tokens = (fromUser.tokens || 0) - trade.tokens;
+  toUser.tokens = (toUser.tokens || 0) + trade.tokens;
+
+  upsertUser(fromUser);
+  upsertUser(toUser);
+
+  return updateTradeStatus(tradeId, "accepted");
+}
+
+export function rejectTrade(tradeId: string) {
+  const trade = getTradeById(tradeId);
+  if (!trade) throw new Error("TRADE_NOT_FOUND");
+
+  return updateTradeStatus(tradeId, "rejected");
+}
+
+/* =========================
+   CONTRACTS (TRUEQIA)
+========================= */
+
+export function generateContractPreview(
+  input: DemoContractInput
+): Contract {
+  const text = `
+  CONTRATO DE TRUEQUE DEMO
+
+  OFERTA: ${input.offerTitle}
+  SOLICITANTE: ${input.requesterName}
+  PROVEEDOR: ${input.providerName}
+
+  TOKENS ACORDADOS: ${input.tokens}
+
+  Este contrato es solo una simulación sin validez legal.
+  `;
+
+  const contract: Contract = {
+    id: randomUUID(),
+    app: "trueqia",
+    type: "trade",
+    status: "draft",
+    generatedText: text.trim(),
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+
+  return createContract(contract);
 }
