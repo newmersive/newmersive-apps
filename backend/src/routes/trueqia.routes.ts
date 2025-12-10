@@ -6,6 +6,7 @@ import {
   acceptTrade,
   rejectTrade,
   generateContractPreview,
+  listTradesForUser,
 } from "../services/trueqia.service";
 import { authRequired } from "../middleware/auth.middleware";
 
@@ -77,6 +78,25 @@ router.post(
 );
 
 /* =========================
+   GET /trueqia/trades
+========================= */
+
+router.get(
+  "/trades",
+  authRequired,
+  (req: Request, res: Response): void => {
+    try {
+      const userId = (req as any).user?.id as string | undefined;
+      const trades = listTradesForUser(userId);
+      res.json({ items: trades });
+    } catch (err) {
+      console.error("Error in GET /trueqia/trades:", err);
+      res.status(500).json({ error: "INTERNAL_ERROR" });
+    }
+  }
+);
+
+/* =========================
    POST /trueqia/trades
 ========================= */
 
@@ -92,12 +112,7 @@ router.post(
         tokens?: number;
       };
 
-      if (
-        !fromUserId ||
-        !toUserId ||
-        !offerId ||
-        typeof tokens !== "number"
-      ) {
+      if (!fromUserId || !toUserId || !offerId) {
         res.status(400).json({ error: "MISSING_FIELDS" });
         return;
       }
@@ -106,7 +121,7 @@ router.post(
         fromUserId,
         toUserId,
         offerId,
-        tokens
+        typeof tokens === "number" ? tokens : undefined
       );
 
       res.status(201).json(trade);

@@ -37,7 +37,11 @@ export const useOffersStore = create<OffersState>((set) => ({
       const data = await apiAuthGet<{ items: TrueqiaOffer[] }>("/trueqia/offers");
       set({ items: data.items || [], loading: false });
     } catch (err: any) {
-      set({ error: err?.message || "ERROR_LOADING_OFFERS", loading: false });
+      const message =
+        err?.message === "Network request failed"
+          ? "No se pudo conectar con el servidor"
+          : err?.message || "ERROR_LOADING_OFFERS";
+      set({ error: message, loading: false });
     }
   },
   createOffer: async (payload) => {

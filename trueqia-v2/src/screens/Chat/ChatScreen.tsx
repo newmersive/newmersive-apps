@@ -1,5 +1,11 @@
 import React from "react";
-import { View, Text, StyleSheet, FlatList, TouchableOpacity } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  TouchableOpacity,
+} from "react-native";
 import { colors } from "../../config/theme";
 
 const demoConversations = [
@@ -20,9 +26,14 @@ export default function ChatScreen() {
     <View style={styles.container}>
       <Text style={styles.title}>Chat de trueques</Text>
       <Text style={styles.subtitle}>Módulo en desarrollo</Text>
+
       <Text style={styles.description}>
-        Aquí verás tus conversaciones sobre trueques. Muy pronto podrás coordinar
-        detalles, compartir archivos y recibir notificaciones en tiempo real.
+        Aquí verás tus conversaciones sobre trueques. Muy pronto podrás
+        coordinar detalles, compartir archivos y recibir notificaciones en
+        tiempo real.
+      </Text>
+      <Text style={styles.caption}>
+        Las demás secciones (ofertas, trueques, contratos) siguen activas.
       </Text>
 
       <FlatList
@@ -52,7 +63,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
     padding: 24,
-    gap: 8,
+    gap: 12,
   },
   title: {
     fontSize: 24,
@@ -68,6 +79,11 @@ const styles = StyleSheet.create({
     color: colors.muted,
     lineHeight: 20,
   },
+  caption: {
+    color: colors.muted,
+    marginTop: 6,
+    fontSize: 12,
+  },
   listTitle: {
     color: colors.text,
     fontWeight: "700",
@@ -76,7 +92,7 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.surface,
     borderRadius: 12,
-    padding: 12,
+    padding: 16,
     borderColor: colors.border,
     borderWidth: 1,
     shadowColor: "#000",
@@ -84,6 +100,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowRadius: 4,
     elevation: 2,
+    gap: 8,
   },
   cardTitle: {
     color: colors.text,

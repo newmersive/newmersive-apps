@@ -66,6 +66,8 @@ export default function AdminPage() {
   const [trueqiaOffers, setTrueqiaOffers] = useState<Offer[]>([]);
   const [allwainOffers, setAllwainOffers] = useState<Offer[]>([]);
   const [trades, setTrades] = useState<Trade[]>([]);
+  const [loadingData, setLoadingData] = useState(false);
+  const [fetchError, setFetchError] = useState<string | null>(null);
 
   const [blockedUsers, setBlockedUsers] = useState<Record<string, boolean>>({});
   const [aiMode, setAiMode] = useState<"demo" | "real">("demo");
@@ -110,6 +112,9 @@ export default function AdminPage() {
   useEffect(() => {
     if (!token) return;
 
+    setLoadingData(true);
+    setFetchError(null);
+
     Promise.all([
       fetchAdminUsers(token),
       fetchModerationEvents(token),
@@ -126,7 +131,8 @@ export default function AdminPage() {
         setAllwainOffers(allwainRes.items || []);
         setTrades(tradesRes.items || []);
       })
-      .catch((err) => setError(err.message));
+      .catch((err) => setFetchError(err.message))
+      .finally(() => setLoadingData(false));
   }, [token]);
 
   async function hydrateFromToken(savedToken: string) {
@@ -145,6 +151,7 @@ export default function AdminPage() {
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    setFetchError(null);
     try {
       const res = await login(email, password);
       if (res.user.role !== "admin") {
@@ -292,6 +299,8 @@ export default function AdminPage() {
           <div className="small">Conectado a {API_BASE_URL}</div>
         </header>
         <section className="content">
+          {loadingData && <div className="alert">Cargando datos del backend...</div>}
+          {fetchError && <div className="alert error">{fetchError}</div>}
           {selectedModule === "Overview" && (
             <div className="grid">
               <div className="card">
@@ -349,29 +358,37 @@ export default function AdminPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {users.map((u) => (
-                    <tr key={u.id}>
-                      <td>{u.name}</td>
-                      <td className="small">{u.email}</td>
-                      <td>
-                        <span className="badge">{u.role}</span>
-                      </td>
-                      <td>{u.tokens ?? 0}</td>
-                      <td>{u.sponsorCode || "-"}</td>
-                      <td>
-                        {blockedUsers[u.id] ? (
-                          <span className="status rejected">Bloqueado</span>
-                        ) : (
-                          <span className="status accepted">Activo</span>
-                        )}
-                      </td>
-                      <td>
-                        <button className="secondary" onClick={() => toggleBlock(u.id)}>
-                          {blockedUsers[u.id] ? "Desbloquear" : "Bloquear"}
-                        </button>
+                  {users.length === 0 && !loadingData ? (
+                    <tr>
+                      <td colSpan={7} className="empty-state">
+                        No hay usuarios cargados desde el backend.
                       </td>
                     </tr>
-                  ))}
+                  ) : (
+                    users.map((u) => (
+                      <tr key={u.id}>
+                        <td>{u.name}</td>
+                        <td className="small">{u.email}</td>
+                        <td>
+                          <span className="badge">{u.role}</span>
+                        </td>
+                        <td>{u.tokens ?? 0}</td>
+                        <td>{u.sponsorCode || "-"}</td>
+                        <td>
+                          {blockedUsers[u.id] ? (
+                            <span className="status rejected">Bloqueado</span>
+                          ) : (
+                            <span className="status accepted">Activo</span>
+                          )}
+                        </td>
+                        <td>
+                          <button className="secondary" onClick={() => toggleBlock(u.id)}>
+                            {blockedUsers[u.id] ? "Desbloquear" : "Bloquear"}
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
               <p className="small">El flag de bloqueo se simula en local para no modificar el backend demo.</p>
@@ -380,36 +397,46 @@ export default function AdminPage() {
 
           {selectedModule === "Patrocinadores" && (
             <div className="grid">
-              <div className="card">
+              <div className="card trueqia-card">
                 <h3>TrueQIA</h3>
                 <p className="small">Tokens acumulados por invitaciones: {totalTrueqiaTokens}</p>
                 <p className="small">Fuente: saldo tokens de usuarios registrados.</p>
               </div>
-              <div className="card">
+              <div className="card allwain-card">
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <h3>Allwain</h3>
                   <span className="small">/api/admin/allwain/sponsors</span>
                 </div>
-                <table className="table">
-                  <thead>
-                    <tr>
-                      <th>Sponsor</th>
-                      <th>Invitado</th>
-                      <th>Ahorro €</th>
-                      <th>Comisión €</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {sponsorStats.map((stat) => (
-                      <tr key={stat.id}>
-                        <td>{stat.sponsorName || stat.userId}</td>
-                        <td>{stat.invitedName || stat.invitedUserId}</td>
-                        <td>{stat.totalSavedByInvited.toFixed(2)}</td>
-                        <td>{stat.commissionEarned.toFixed(2)}</td>
+                <div className="allwain-surface">
+                  <table className="table">
+                    <thead>
+                      <tr>
+                        <th>Sponsor</th>
+                        <th>Invitado</th>
+                        <th>Ahorro €</th>
+                        <th>Comisión €</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {sponsorStats.length === 0 && !loadingData ? (
+                        <tr>
+                          <td colSpan={4} className="empty-state">
+                            No hay datos de patrocinadores para mostrar.
+                          </td>
+                        </tr>
+                      ) : (
+                        sponsorStats.map((stat) => (
+                          <tr key={stat.id}>
+                            <td>{stat.sponsorName || stat.userId}</td>
+                            <td>{stat.invitedName || stat.invitedUserId}</td>
+                            <td>{stat.totalSavedByInvited.toFixed(2)}</td>
+                            <td>{stat.commissionEarned.toFixed(2)}</td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
           )}
@@ -480,18 +507,26 @@ export default function AdminPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {aiEvents.map((event) => (
-                      <tr key={event.id}>
-                        <td>{event.userEmail}</td>
-                        <td>
-                          <span className={`status ${event.severity === "low" ? "pending" : "rejected"}`}>
-                            {event.severity}
-                          </span>
+                    {aiEvents.length === 0 && !loadingData ? (
+                      <tr>
+                        <td colSpan={4} className="empty-state">
+                          No hay eventos de moderación disponibles.
                         </td>
-                        <td>{event.reason}</td>
-                        <td className="small">{new Date(event.createdAt).toLocaleString()}</td>
                       </tr>
-                    ))}
+                    ) : (
+                      aiEvents.map((event) => (
+                        <tr key={event.id}>
+                          <td>{event.userEmail}</td>
+                          <td>
+                            <span className={`status ${event.severity === "low" ? "pending" : "rejected"}`}>
+                              {event.severity}
+                            </span>
+                          </td>
+                          <td>{event.reason}</td>
+                          <td className="small">{new Date(event.createdAt).toLocaleString()}</td>
+                        </tr>
+                      ))
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -545,14 +580,16 @@ export default function AdminPage() {
             </div>
           )}
 
-          {selectedModule === "Contratos" && <ContractsSection contracts={contracts} />}
+          {selectedModule === "Contratos" && (
+            <ContractsSection contracts={contracts} loading={loadingData} />
+          )}
         </section>
       </div>
     </div>
   );
 }
 
-function ContractsSection({ contracts }: { contracts: ContractView[] }) {
+function ContractsSection({ contracts, loading }: { contracts: ContractView[]; loading: boolean }) {
   const [appFilter, setAppFilter] = useState<"all" | "trueqia" | "allwain">("all");
   const [statusFilter, setStatusFilter] = useState<"all" | ContractView["status"]>("all");
 
@@ -601,19 +638,27 @@ function ContractsSection({ contracts }: { contracts: ContractView[] }) {
           </tr>
         </thead>
         <tbody>
-          {filtered.map((contract) => (
-            <tr key={contract.id}>
-              <td className="small">{contract.id}</td>
-              <td>{contract.title}</td>
-              <td>{contract.app}</td>
-              <td>{contract.tokens}</td>
-              <td>
-                <span className={`status ${contract.status}`}>{contract.status}</span>
+          {filtered.length === 0 && !loading ? (
+            <tr>
+              <td colSpan={7} className="empty-state">
+                No hay contratos que coincidan con los filtros seleccionados.
               </td>
-              <td className="small">{formatDate(contract.createdAt)}</td>
-              <td className="small">{contract.resolvedAt ? formatDate(contract.resolvedAt) : "-"}</td>
             </tr>
-          ))}
+          ) : (
+            filtered.map((contract) => (
+              <tr key={contract.id}>
+                <td className="small">{contract.id}</td>
+                <td>{contract.title}</td>
+                <td>{contract.app}</td>
+                <td>{contract.tokens}</td>
+                <td>
+                  <span className={`status ${contract.status}`}>{contract.status}</span>
+                </td>
+                <td className="small">{formatDate(contract.createdAt)}</td>
+                <td className="small">{contract.resolvedAt ? formatDate(contract.resolvedAt) : "-"}</td>
+              </tr>
+            ))
+          )}
         </tbody>
       </table>
       <p className="small">La tabla combina ofertas TrueQIA/Allwain con trades para simular contratos.</p>

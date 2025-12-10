@@ -1,5 +1,13 @@
-import React, { useEffect, useState } from "react";
-import { View, Text, StyleSheet, ActivityIndicator, FlatList } from "react-native";
+import React, { useCallback, useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  FlatList,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { apiAuthGet, SponsorSummaryResponse } from "../../config/api";
 import { colors } from "../../theme/colors";
 
@@ -8,78 +16,120 @@ export default function GuestsScreen() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function loadSummary() {
+  const loadSummary = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
-      const res = await apiAuthGet<SponsorSummaryResponse>("/allwain/sponsors/summary");
+      const res = await apiAuthGet<SponsorSummaryResponse>(
+        "/allwain/sponsors/summary",
+      );
       setSummary(res);
-    } catch (err) {
-      setError("No se pudo cargar el panel de invitados");
+    } catch (err: any) {
+      setError(err?.message || "No se pudo cargar el panel de invitados");
     } finally {
       setLoading(false);
     }
-  }
+  }, []);
 
   useEffect(() => {
     loadSummary();
-  }, []);
+  }, [loadSummary]);
+
+  const hasReferrals = (summary?.referrals?.length || 0) > 0;
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Panel de invitados</Text>
-      <Text style={styles.muted}>
-        Datos simulados de referidos: ahorro total, comisiones y balance actual.
+    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      <Text style={styles.title}>Tu red de invitados</Text>
+      <Text style={styles.subtitle}>
+        Consulta el ahorro generado y las comisiones acumuladas por tus invitados.
       </Text>
 
-      {loading && <ActivityIndicator />}
-      {error && <Text style={styles.error}>{error}</Text>}
-
-      {summary && (
-        <View style={styles.card}>
-          <Text style={styles.highlight}>Invitados: {summary.invitedCount}</Text>
-          <Text style={styles.muted}>Ahorro total: €{summary.totalSaved.toFixed(2)}</Text>
-          <Text style={styles.muted}>
-            Comisión acumulada: €{summary.totalCommission.toFixed(2)}
-          </Text>
-          <Text style={styles.muted}>Balance disponible: €{summary.balance.toFixed(2)}</Text>
+      {loading && (
+        <View className="stateBox">
+          <ActivityIndicator color={colors.card} />
+          <Text style={styles.stateText}>Cargando invitados…</Text>
         </View>
       )}
 
-      {summary && summary.referrals.length > 0 && (
-        <FlatList
-          data={summary.referrals}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
-            <View style={styles.card}>
-              <Text style={styles.offerTitle}>{item.invitedName || item.invitedUserId}</Text>
-              <Text style={styles.muted}>
-                Ahorro generado: €{item.totalSavedByInvited.toFixed(2)}
-              </Text>
-              <Text style={styles.muted}>
-                Comisión: €{item.commissionEarned.toFixed(2)}
-              </Text>
-            </View>
-          )}
-        />
+      {error && (
+        <View style={styles.stateBox}>
+          <Text style={[styles.stateText, styles.error]}>{error}</Text>
+          <TouchableOpacity style={styles.button} onPress={loadSummary}>
+            <Text style={styles.buttonText}>Reintentar</Text>
+          </TouchableOpacity>
+        </View>
       )}
-    </View>
-  );
-}
 
-const styles = StyleSheet.create({
-  container: { flex: 1, padding: 24, gap: 12 },
-  title: { fontSize: 24, fontWeight: "700", color: colors.text },
-  error: { color: colors.danger },
-  muted: { color: colors.mutedText },
-  card: {
-    padding: 12,
-    borderWidth: 1,
-    borderColor: colors.cardBorder,
-    borderRadius: 8,
-    backgroundColor: colors.card,
-    gap: 4,
-  },
-  offerTitle: { fontSize: 16, fontWeight: "600", color: colors.text },
-  highlight: { fontSize: 18, fontWeight: "700", color: colors.primary },
-});
+      {!loading && !error && !summary && (
+        <View style={styles.stateBox}>
+          <Text style={styles.stateText}>
+            Aún no tenemos datos de tu red de invitados.
+          </Text>
+          <Text style={styles.stateHelper}>
+            Comparte tu código para comenzar a sumar ahorros y comisiones.
+          </Text>
+        </View>
+      )}
+
+      {summary && (
+        <View style={styles.totalsCard}>
+          <Text style={styles.sectionLabel}>Resumen</Text>
+          <View style={styles.totalRow}>
+            <Text style={styles.totalLabel}>Total ganado</Text>
+            <Text style={styles.totalValue}>
+              €{summary.totalCommission.toFixed(2)}
+            </Text>
+          </View>
+          <View style={styles.totalRow}>
+            <Text style={styles.totalLabel}>Ahorro estimado</Text>
+            <Text style={styles.totalValue}>
+              €{summary.totalSaved.toFixed(2)}
+            </Text>
+          </View>
+          <View style={styles.totalRow}>
+            <Text style={styles.totalLabel}>Invitados activos</Text>
+            <Text style={styles.totalValue}>{summary.invitedCount}</Text>
+          </View>
+          <Text style={styles.helperText}>
+            Balance disponible: €{summary.balance.toFixed(2)}
+          </Text>
+        </View>
+      )}
+
+      {summary && hasReferrals ? (
+        <View style={styles.listContainer}>
+          <Text style={styles.sectionLabel}>Invitados</Text>
+          <FlatList
+            data={summary.referrals}
+            keyExtractor={(item) => item.id}
+            renderItem={({ item }) => (
+              <View style={styles.card}>
+                <Text style={styles.invitedName}>
+                  {item.invitedName || item.invitedUserId}
+                </Text>
+                <Text style={styles.muted}>
+                  Ahorro generado: €
+                  {item.totalSavedByInvited.toFixed(2)}
+                </Text>
+                <Text style={styles.muted}>
+                  Comisión: €{item.commissionEarned.toFixed(2)}
+                </Text>
+              </View>
+            )}
+            scrollEnabled={false}
+            ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
+          />
+        </View>
+      ) : null}
+
+      {summary && !hasReferrals && !loading ? (
+        <View style={styles.stateBox}>
+          <Text style={styles.stateText}>
+            Aún no tienes invitados registrados.
+          </Text>
+          <Text style={styles.stateHelper}>
+            Comparte tus invitaciones para comenzar a generar ahorro en red.
+          </Text>
+        </View>
+      ) : null}
+    </ScrollVi
