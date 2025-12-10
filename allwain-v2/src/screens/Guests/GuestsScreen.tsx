@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, StyleSheet, ActivityIndicator, FlatList } from "react-native";
+import { View, Text, StyleSheet, ActivityIndicator, FlatList, TouchableOpacity } from "react-native";
 import { apiAuthGet, SponsorSummaryResponse } from "../../config/api";
 import { colors } from "../../theme/colors";
 
@@ -29,8 +29,12 @@ export default function GuestsScreen() {
     <View style={styles.container}>
       <Text style={styles.title}>Panel de invitados</Text>
       <Text style={styles.muted}>
-        Datos simulados de referidos: ahorro total, comisiones y balance actual.
+        Resumen real de referidos: ahorro total, comisiones y balance actual.
       </Text>
+
+      <TouchableOpacity onPress={loadSummary} style={styles.reloadButton}>
+        <Text style={styles.reloadText}>Actualizar</Text>
+      </TouchableOpacity>
 
       {loading && <ActivityIndicator />}
       {error && <Text style={styles.error}>{error}</Text>}
@@ -82,4 +86,15 @@ const styles = StyleSheet.create({
   },
   offerTitle: { fontSize: 16, fontWeight: "600", color: colors.text },
   highlight: { fontSize: 18, fontWeight: "700", color: colors.primary },
+  reloadButton: {
+    alignSelf: "flex-start",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    backgroundColor: colors.primary,
+    borderRadius: 8,
+  },
+  reloadText: {
+    color: "#fff",
+    fontWeight: "700",
+  },
 });

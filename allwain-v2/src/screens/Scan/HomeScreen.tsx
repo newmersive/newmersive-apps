@@ -8,64 +8,40 @@ import {
   RefreshControl,
 } from "react-native";
 import { useAuthStore } from "../../store/auth.store";
-import { apiClient } from "../../config/api";
-
-type Product = {
-  id: string;
-  name: string;
-  description?: string;
-  ean?: string;
-};
-
-type Offer = {
-  id: string;
-  title: string;
-  description?: string;
-  price?: number;
-  meta?: {
-    distanceKm?: number;
-    [key: string]: unknown;
-  };
-};
-
-type ScanDemoResponse = {
-  product: Product;
-  offers: Offer[];
-};
+import {
+  apiAuthGet,
+  SponsorSummaryResponse,
+  AllwainOffer,
+  ScanDemoResponse,
+} from "../../config/api";
 
 export default function HomeScreen() {
   const user = useAuthStore((s) => s.user);
-  const token = useAuthStore((s) => (s as any).token as string | undefined);
 
+  const [summary, setSummary] = useState<SponsorSummaryResponse | null>(null);
   const [scanData, setScanData] = useState<ScanDemoResponse | null>(null);
-  const [offers, setOffers] = useState<Offer[]>([]);
+  const [offers, setOffers] = useState<AllwainOffer[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
-    if (!token) {
-      setError("Falta token de sesión");
-      return;
-    }
-
     try {
       setError(null);
       setLoading(true);
 
-      const [scanRes, offersRes] = await Promise.all([
-        apiClient.get<ScanDemoResponse>("/allwain/scan-demo", token),
-        apiClient.get<{ items: Offer[] } | Offer[]>("/allwain/offers", token),
+      const [scanParsed, offersRes, summaryRes] = await Promise.all([
+        apiAuthGet<ScanDemoResponse>("/allwain/scan-demo"),
+        apiAuthGet<{ items: AllwainOffer[] }>("/allwain/offers"),
+        apiAuthGet<SponsorSummaryResponse>("/allwain/sponsors/summary"),
       ]);
 
-      const scanParsed: ScanDemoResponse = scanRes.data;
-      const offersParsed: Offer[] = Array.isArray(offersRes.data)
-        ? offersRes.data
-        : Array.isArray((offersRes.data as any).items)
-        ? (offersRes.data as any).items
+      const offersParsed: AllwainOffer[] = Array.isArray(offersRes.items)
+        ? offersRes.items
         : [];
 
       setScanData(scanParsed);
+      setSummary(summaryRes);
       setOffers(offersParsed);
     } catch (e: any) {
       console.error("Error cargando datos de Allwain:", e);
@@ -73,7 +49,7 @@ export default function HomeScreen() {
     } finally {
       setLoading(false);
     }
-  }, [token]);
+  }, []);
 
   useEffect(() => {
     loadData();
@@ -85,7 +61,7 @@ export default function HomeScreen() {
     setRefreshing(false);
   };
 
-  const renderOffer = ({ item }: { item: Offer }) => {
+  const renderOffer = ({ item }: { item: AllwainOffer }) => {
     const distance =
       typeof item.meta?.distanceKm === "number"
         ? item.meta.distanceKm.toFixed(1)
@@ -136,6 +112,21 @@ export default function HomeScreen() {
       <Text style={styles.subtitle}>
         Sesión iniciada como: {user?.name ?? user?.email ?? "usuario"}
       </Text>
+
+      {summary && (
+        <View style={styles.summaryRow}>
+          <View style={styles.summaryCard}>
+            <Text style={styles.summaryLabel}>Ahorro total</Text>
+            <Text style={styles.summaryValue}>€ {summary.totalSaved.toFixed(2)}</Text>
+            <Text style={styles.helper}>Histórico generado por tus invitaciones.</Text>
+          </View>
+          <View style={styles.summaryCard}>
+            <Text style={styles.summaryLabel}>Invitados</Text>
+            <Text style={styles.summaryValue}>{summary.invitedCount}</Text>
+            <Text style={styles.helper}>Participantes conectados a tu cuenta.</Text>
+          </View>
+        </View>
+      )}
 
       {scanData ? (
         <View style={styles.productBox}>
@@ -204,6 +195,22 @@ const styles = StyleSheet.create({
     marginTop: 12,
     marginBottom: 6,
   },
+  summaryRow: {
+    flexDirection: "row",
+    columnGap: 12,
+    marginBottom: 10,
+  },
+  summaryCard: {
+    flex: 1,
+    padding: 12,
+    borderRadius: 12,
+    backgroundColor: "#ffffff",
+    borderWidth: 1,
+    borderColor: "#e6e6e6",
+    gap: 6,
+  },
+  summaryLabel: { fontSize: 13, color: "#555" },
+  summaryValue: { fontSize: 18, fontWeight: "800", color: "#0F6CBD" },
   productBox: {
     padding: 12,
     borderRadius: 10,

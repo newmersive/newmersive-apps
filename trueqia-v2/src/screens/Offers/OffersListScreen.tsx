@@ -31,13 +31,17 @@ export default function OffersListScreen({ navigation }: any) {
     [items]
   );
 
-  async function handlePropose(offerId: string, ownerId?: string) {
+  async function handlePropose(offerId: string, ownerId?: string, tokens?: number) {
     if (!ownerId) {
       setProposalStatus((prev) => ({ ...prev, [offerId]: "Falta dueño" }));
       return;
     }
     setProposalStatus((prev) => ({ ...prev, [offerId]: "Enviando" }));
-    const res = await proposeTrade({ offerId, toUserId: ownerId });
+    const res = await proposeTrade({
+      offerId,
+      toUserId: ownerId,
+      tokens: typeof tokens === "number" ? tokens : undefined,
+    });
     if (res) {
       setProposalStatus((prev) => ({ ...prev, [offerId]: res.status || "pending" }));
     } else {
@@ -99,7 +103,7 @@ export default function OffersListScreen({ navigation }: any) {
             )}
             <Button
               title="Proponer intercambio"
-              onPress={() => handlePropose(item.id, item.owner?.id)}
+              onPress={() => handlePropose(item.id, item.owner?.id, item.tokens)}
             />
             {proposalStatus[item.id] && (
               <Text style={styles.statusText}>

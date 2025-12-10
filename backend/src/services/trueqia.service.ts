@@ -7,7 +7,9 @@ import {
 } from "../shared/types";
 import {
   getOffersByOwner,
+  getOfferById,
   addOffer,
+  getTrades,
   getTradeById,
   addTrade,
   updateTradeStatus,
@@ -54,16 +56,20 @@ export function createTrade(
   fromUserId: string,
   toUserId: string,
   offerId: string,
-  tokens: number
+  tokens?: number
 ): Trade {
-  if (tokens <= 0) throw new Error("INVALID_TOKEN_AMOUNT");
+  const offer = getOfferById(offerId);
+  const tokenAmount =
+    typeof tokens === "number" ? tokens : offer?.tokens ?? 0;
+
+  if (tokenAmount <= 0) throw new Error("INVALID_TOKEN_AMOUNT");
 
   const trade: Trade = {
     id: randomUUID(),
     offerId,
     fromUserId,
     toUserId,
-    tokens,
+    tokens: tokenAmount,
     status: "pending",
     createdAt: new Date().toISOString(),
   };
@@ -97,6 +103,30 @@ export function rejectTrade(tradeId: string) {
   if (!trade) throw new Error("TRADE_NOT_FOUND");
 
   return updateTradeStatus(tradeId, "rejected");
+}
+
+export function listTradesForUser(userId?: string) {
+  return getTrades()
+    .filter((trade) =>
+      userId
+        ? trade.fromUserId === userId || trade.toUserId === userId
+        : true
+    )
+    .map((trade) => {
+      const offer = getOfferById(trade.offerId);
+      const fromUser = getUserById(trade.fromUserId);
+      const toUser = getUserById(trade.toUserId);
+
+      return {
+        ...trade,
+        title: offer?.title || "Trueque",
+        participants: [
+          fromUser?.name || trade.fromUserId,
+          toUser?.name || trade.toUserId,
+        ].filter(Boolean),
+        offerOwnerId: offer?.ownerUserId,
+      };
+    });
 }
 
 /* =========================

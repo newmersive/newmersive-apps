@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ScrollView,
   View,
@@ -6,30 +6,52 @@ import {
   TextInput,
   TouchableOpacity,
   StyleSheet,
+  ActivityIndicator,
+  RefreshControl,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { colors } from "../../theme/colors";
-
-type SearchItem = {
-  id: string;
-  name: string;
-  price: string;
-  company: string;
-};
-
-const mockResults: SearchItem[] = [
-  { id: "1", name: "Acero galvanizado", price: "320 €", company: "Empresa A" },
-  { id: "2", name: "Cableado industrial", price: "180 €", company: "Empresa B" },
-  { id: "3", name: "Energía renovable", price: "48 € / MWh", company: "Empresa A" },
-  { id: "4", name: "Transporte marítimo", price: "1.120 €", company: "Empresa B" },
-];
+import { apiAuthGet, AllwainOffer } from "../../config/api";
 
 export default function SearchScreen() {
   const [query, setQuery] = useState("");
+  const [offers, setOffers] = useState<AllwainOffer[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const navigation = useNavigation<any>();
 
+  const loadOffers = useCallback(async () => {
+    try {
+      setError(null);
+      setLoading(true);
+      const res = await apiAuthGet<{ items: AllwainOffer[] }>("/allwain/offers");
+      setOffers(res.items || []);
+    } catch (err) {
+      setError("No se pudo cargar el catálogo");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadOffers();
+  }, [loadOffers]);
+
+  const filteredResults = useMemo(() => {
+    const term = query.trim().toLowerCase();
+    if (!term) return offers;
+    return offers.filter((item) => {
+      const haystack = `${item.title} ${item.description || ""}`.toLowerCase();
+      return haystack.includes(term);
+    });
+  }, [offers, query]);
+
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={styles.content}
+      refreshControl={<RefreshControl refreshing={loading} onRefresh={loadOffers} />}
+    >
       <Text style={styles.heading}>¿Qué estás buscando?</Text>
 
       <View style={styles.card}>
@@ -68,15 +90,32 @@ export default function SearchScreen() {
       </View>
 
       <Text style={styles.subheading}>Resultados sugeridos</Text>
-      {mockResults.map((item) => (
-        <View key={item.id} style={styles.resultCard}>
-          <View style={styles.resultHeader}>
-            <Text style={styles.resultTitle}>{item.name}</Text>
-            <Text style={styles.resultPrice}>{item.price}</Text>
-          </View>
-          <Text style={styles.resultCompany}>{item.company}</Text>
-        </View>
-      ))}
+      {error && <Text style={styles.error}>{error}</Text>}
+      {loading && filteredResults.length === 0 ? (
+        <ActivityIndicator color={colors.button} />
+      ) : filteredResults.length === 0 ? (
+        <Text style={styles.resultCompany}>No hay resultados que coincidan.</Text>
+      ) : (
+        filteredResults.map((item) => {
+          const priceLabel =
+            typeof item.price === "number"
+              ? `${item.price.toFixed(2)} €`
+              : typeof item.tokens === "number"
+              ? `${item.tokens} tokens`
+              : "Precio pendiente";
+          return (
+            <View key={item.id} style={styles.resultCard}>
+              <View style={styles.resultHeader}>
+                <Text style={styles.resultTitle}>{item.title}</Text>
+                <Text style={styles.resultPrice}>{priceLabel}</Text>
+              </View>
+              {item.description ? (
+                <Text style={styles.resultCompany}>{item.description}</Text>
+              ) : null}
+            </View>
+          );
+        })
+      )}
     </ScrollView>
   );
 }
@@ -176,4 +215,5 @@ const styles = StyleSheet.create({
     fontWeight: "800",
   },
   resultCompany: { color: colors.mutedText, fontWeight: "600" },
+  error: { color: colors.danger, marginBottom: 8 },
 });

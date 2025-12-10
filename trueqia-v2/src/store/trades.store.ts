@@ -9,6 +9,8 @@ export type Trade = {
   tokens?: number;
   offerId?: string;
   ownerId?: string;
+  offerOwnerId?: string;
+  createdAt?: string;
 };
 
 interface TradesState {
@@ -16,7 +18,11 @@ interface TradesState {
   loading: boolean;
   error: string | null;
   loadTrades: () => Promise<void>;
-  proposeTrade: (payload: { offerId: string; toUserId: string }) => Promise<Trade | null>;
+  proposeTrade: (payload: {
+    offerId: string;
+    toUserId: string;
+    tokens?: number;
+  }) => Promise<Trade | null>;
 }
 
 export const useTradesStore = create<TradesState>((set) => ({
@@ -37,7 +43,10 @@ export const useTradesStore = create<TradesState>((set) => ({
   },
   proposeTrade: async (payload) => {
     try {
-      const res = await apiAuthPost<Trade>("/trueqia/trades", payload);
+      const res = await apiAuthPost<Trade>("/trueqia/trades", {
+        ...payload,
+        tokens: typeof payload.tokens === "number" ? payload.tokens : undefined,
+      });
       set((state) => ({ items: [res, ...state.items] }));
       return res;
     } catch (err: any) {
