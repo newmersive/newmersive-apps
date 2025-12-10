@@ -293,3 +293,4 @@ const styles = StyleSheet.create({
   resultBody: { color: colors.text, fontWeight: "600", marginTop: 2 },
   resultMeta: { color: colors.mutedText, fontWeight: "700", marginTop: 4 },
 });
+

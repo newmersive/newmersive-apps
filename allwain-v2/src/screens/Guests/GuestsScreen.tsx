@@ -45,7 +45,7 @@ export default function GuestsScreen() {
       </Text>
 
       {loading && (
-        <View style={styles.stateBox}>
+        <View className="stateBox">
           <ActivityIndicator color={colors.card} />
           <Text style={styles.stateText}>Cargando invitados…</Text>
         </View>
@@ -76,11 +76,15 @@ export default function GuestsScreen() {
           <Text style={styles.sectionLabel}>Resumen</Text>
           <View style={styles.totalRow}>
             <Text style={styles.totalLabel}>Total ganado</Text>
-            <Text style={styles.totalValue}>€{summary.totalCommission.toFixed(2)}</Text>
+            <Text style={styles.totalValue}>
+              €{summary.totalCommission.toFixed(2)}
+            </Text>
           </View>
           <View style={styles.totalRow}>
             <Text style={styles.totalLabel}>Ahorro estimado</Text>
-            <Text style={styles.totalValue}>€{summary.totalSaved.toFixed(2)}</Text>
+            <Text style={styles.totalValue}>
+              €{summary.totalSaved.toFixed(2)}
+            </Text>
           </View>
           <View style={styles.totalRow}>
             <Text style={styles.totalLabel}>Invitados activos</Text>
@@ -104,7 +108,8 @@ export default function GuestsScreen() {
                   {item.invitedName || item.invitedUserId}
                 </Text>
                 <Text style={styles.muted}>
-                  Ahorro generado: €{item.totalSavedByInvited.toFixed(2)}
+                  Ahorro generado: €
+                  {item.totalSavedByInvited.toFixed(2)}
                 </Text>
                 <Text style={styles.muted}>
                   Comisión: €{item.commissionEarned.toFixed(2)}
@@ -119,83 +124,12 @@ export default function GuestsScreen() {
 
       {summary && !hasReferrals && !loading ? (
         <View style={styles.stateBox}>
-          <Text style={styles.stateText}>Aún no tienes invitados registrados.</Text>
+          <Text style={styles.stateText}>
+            Aún no tienes invitados registrados.
+          </Text>
           <Text style={styles.stateHelper}>
             Comparte tus invitaciones para comenzar a generar ahorro en red.
           </Text>
         </View>
       ) : null}
-    </ScrollView>
-  );
-}
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.primary },
-  content: { padding: 20, gap: 12 },
-  title: { fontSize: 24, fontWeight: "800", color: colors.card },
-  subtitle: {
-    color: colors.card,
-    fontWeight: "600",
-    opacity: 0.95,
-    marginBottom: 8,
-  },
-  sectionLabel: { color: colors.mutedText, fontWeight: "800", marginBottom: 8 },
-  stateBox: {
-    backgroundColor: colors.card,
-    borderRadius: 14,
-    padding: 14,
-    shadowColor: "#000",
-    shadowOpacity: 0.08,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 6,
-    elevation: 2,
-  },
-  stateText: { color: colors.text, fontWeight: "700", marginBottom: 4 },
-  stateHelper: { color: colors.mutedText, fontWeight: "600" },
-  error: { color: colors.danger },
-  button: {
-    marginTop: 8,
-    backgroundColor: colors.card,
-    paddingVertical: 10,
-    borderRadius: 12,
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  buttonText: { color: colors.text, fontWeight: "800" },
-  totalsCard: {
-    backgroundColor: colors.card,
-    borderRadius: 16,
-    padding: 16,
-    shadowColor: "#000",
-    shadowOpacity: 0.08,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 6,
-    elevation: 2,
-    gap: 10,
-  },
-  totalRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  totalLabel: { color: colors.mutedText, fontWeight: "700" },
-  totalValue: { color: colors.text, fontWeight: "800", fontSize: 18 },
-  helperText: { color: colors.mutedText, fontWeight: "600" },
-  listContainer: { gap: 8 },
-  card: {
-    padding: 14,
-    borderRadius: 12,
-    backgroundColor: colors.card,
-    shadowColor: "#000",
-    shadowOpacity: 0.08,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 6,
-    elevation: 1,
-  },
-  invitedName: { fontSize: 16, fontWeight: "700", color: colors.text },
-  muted: { color: colors.mutedText, fontWeight: "600" },
-});
+    </ScrollVi

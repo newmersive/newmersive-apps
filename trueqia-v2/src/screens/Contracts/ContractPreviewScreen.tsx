@@ -3,16 +3,18 @@ import { View, Text, TextInput, Button, ScrollView, ActivityIndicator } from "re
 import { apiAuthPost } from "../../config/api";
 import { TrueqiaOffer } from "../../store/offers.store";
 import { Trade } from "../../store/trades.store";
+import { useAuthStore } from "../../store/auth.store";
 
 export default function ContractPreviewScreen({ route }: any) {
   const offer: TrueqiaOffer | undefined = route.params?.offer;
   const trade: Trade | undefined = route.params?.trade;
+  const user = useAuthStore((s) => s.user);
 
   const [requesterName, setRequesterName] = useState(
-    trade?.participants?.[0] || "Solicitante demo"
+    trade?.participants?.[0] || user?.name || "Solicitante"
   );
   const [providerName, setProviderName] = useState(
-    trade?.participants?.[1] || "Proveedor demo"
+    trade?.participants?.[1] || offer?.owner?.name || "Proveedor"
   );
   const [tokens, setTokens] = useState(
     offer?.tokens !== undefined
@@ -27,7 +29,7 @@ export default function ContractPreviewScreen({ route }: any) {
   const [error, setError] = useState<string | null>(null);
 
   const offerTitle = useMemo(
-    () => trade?.title || offer?.title || "Oferta demo",
+    () => trade?.title || offer?.title || "Oferta pendiente",
     [offer?.title, trade?.title]
   );
 
@@ -51,11 +53,11 @@ export default function ContractPreviewScreen({ route }: any) {
       );
       setContractText(res.contractText);
     } catch (err: any) {
-      if (err?.message === "SESSION_EXPIRED") {
-        setError("Sesión expirada, vuelve a iniciar sesión.");
-      } else {
-        setError("No se pudo generar el contrato demo.");
-      }
+      setError(
+        err?.message === "SESSION_EXPIRED"
+          ? "Sesión expirada, vuelve a iniciar sesión."
+          : "No se pudo generar el contrato en este momento."
+      );
       setContractText(null);
     } finally {
       setLoading(false);
@@ -117,7 +119,7 @@ export default function ContractPreviewScreen({ route }: any) {
         multiline
       />
 
-      <Button title="Generar contrato demo" onPress={generate} disabled={loading} />
+      <Button title="Generar contrato" onPress={generate} disabled={loading} />
 
       {loading && (
         <View style={{ marginTop: 12 }}>

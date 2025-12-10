@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useCallback } from "react";
 import {
   View,
   Text,
@@ -7,77 +7,22 @@ import {
   ActivityIndicator,
   RefreshControl,
 } from "react-native";
+import { useFocusEffect } from "@react-navigation/native";
 import { useAuthStore } from "../store/auth.store";
-
-type TrueqiaOffer = {
-  id: string;
-  title: string;
-  description?: string;
-  tokens?: number;
-};
-
-const API_BASE_URL =
-  process.env.EXPO_PUBLIC_API_BASE_URL ?? "http://localhost:4000/api";
+import { useOffersStore } from "../store/offers.store";
 
 export default function HomeScreen() {
   const user = useAuthStore((s) => s.user);
-  // 👇 ajusta esta línea si en tu store el token se llama distinto
-  const token = useAuthStore((s) => (s as any).token as string | undefined);
+  const { items: offers, loading, error, loadOffers } = useOffersStore();
 
-  const [offers, setOffers] = useState<TrueqiaOffer[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const loadOffers = useCallback(async () => {
-    if (!token) {
-      setError("Falta token de sesión");
-      return;
-    }
-
-    try {
-      setError(null);
-      setLoading(true);
-
-      const res = await fetch(`${API_BASE_URL}/trueqia/offers`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      });
-
-      if (!res.ok) {
-        const text = await res.text();
-        console.warn("Error /trueqia/offers:", res.status, text);
-        setError(`Error ${res.status} al cargar ofertas`);
-        return;
-      }
-
-      const data = await res.json();
-      // el backend devuelve normalmente { items: [...] } o un array directo
-      const items: TrueqiaOffer[] = Array.isArray(data)
-        ? data
-        : Array.isArray(data.items)
-        ? data.items
-        : [];
-
-      setOffers(items);
-    } catch (e: any) {
-      console.error("Error fetch /trueqia/offers", e);
-      setError("No se ha podido conectar con el servidor");
-    } finally {
-      setLoading(false);
-    }
-  }, [token]);
-
-  useEffect(() => {
-    loadOffers();
-  }, [loadOffers]);
+  useFocusEffect(
+    useCallback(() => {
+      loadOffers();
+    }, [loadOffers])
+  );
 
   const onRefresh = async () => {
-    setRefreshing(true);
     await loadOffers();
-    setRefreshing(false);
   };
 
   return (
@@ -100,9 +45,7 @@ export default function HomeScreen() {
         <FlatList
           data={offers}
           keyExtractor={(item) => item.id}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-          }
+          refreshControl={<RefreshControl refreshing={loading} onRefresh={onRefresh} />}
           ListEmptyComponent={
             <Text style={styles.helper}>
               De momento no hay ofertas activas.
