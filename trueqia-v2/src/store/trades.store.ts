@@ -16,10 +16,13 @@ interface TradesState {
   loading: boolean;
   error: string | null;
   loadTrades: () => Promise<void>;
+  fetchTradeById: (id: string) => Promise<Trade | null>;
+  acceptTrade: (id: string) => Promise<Trade | null>;
+  rejectTrade: (id: string) => Promise<Trade | null>;
   proposeTrade: (payload: { offerId: string; toUserId: string }) => Promise<Trade | null>;
 }
 
-export const useTradesStore = create<TradesState>((set) => ({
+export const useTradesStore = create<TradesState>((set, get) => ({
   items: [],
   loading: false,
   error: null,
@@ -33,6 +36,45 @@ export const useTradesStore = create<TradesState>((set) => ({
         error: err?.message || "ERROR_LOADING_TRADES",
         loading: false,
       });
+    }
+  },
+  fetchTradeById: async (id) => {
+    try {
+      set({ loading: true, error: null });
+      const trade = await apiAuthGet<Trade>(`/trueqia/trades/${id}`);
+      set((state) => {
+        const exists = state.items.some((item) => item.id === trade.id);
+        return {
+          loading: false,
+          items: exists
+            ? state.items.map((item) => (item.id === trade.id ? trade : item))
+            : [trade, ...state.items],
+        };
+      });
+      return trade;
+    } catch (err: any) {
+      set({ error: err?.message || "ERROR_LOADING_TRADE", loading: false });
+      return null;
+    }
+  },
+  acceptTrade: async (id) => {
+    try {
+      const res = await apiAuthPost<Trade>(`/trueqia/trades/${id}/accept`, {});
+      await get().loadTrades();
+      return res;
+    } catch (err: any) {
+      set({ error: err?.message || "ERROR_ACCEPTING_TRADE" });
+      return null;
+    }
+  },
+  rejectTrade: async (id) => {
+    try {
+      const res = await apiAuthPost<Trade>(`/trueqia/trades/${id}/reject`, {});
+      await get().loadTrades();
+      return res;
+    } catch (err: any) {
+      set({ error: err?.message || "ERROR_REJECTING_TRADE" });
+      return null;
     }
   },
   proposeTrade: async (payload) => {
