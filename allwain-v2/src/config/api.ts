@@ -133,3 +133,7 @@ export async function apiAuthPost<T>(path: string, body: unknown): Promise<T> {
 
   return data as T;
 }
+
+export async function postAllwainSaving<T = unknown>(body: unknown): Promise<T> {
+  return apiAuthPost<T>("/allwain/savings", body);
+}
