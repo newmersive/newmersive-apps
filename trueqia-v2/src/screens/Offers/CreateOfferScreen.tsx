@@ -1,34 +1,43 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
   View,
   Text,
   TextInput,
-  Button,
   StyleSheet,
   ActivityIndicator,
   ScrollView,
+  TouchableOpacity,
 } from "react-native";
+import { colors } from "../../config/theme";
 import { useOffersStore } from "../../store/offers.store";
 
 export default function CreateOfferScreen({ navigation }: any) {
   const createOffer = useOffersStore((s) => s.createOffer);
+  const loadOffers = useOffersStore((s) => s.loadOffers);
   const loading = useOffersStore((s) => s.loading);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [tokens, setTokens] = useState("");
   const [error, setError] = useState<string | null>(null);
 
-  const canSubmit = title.trim().length > 0;
+  const numericTokens = useMemo(() => Number(tokens), [tokens]);
+  const canSubmit =
+    title.trim().length > 0 && Number.isFinite(numericTokens) && numericTokens > 0;
 
   async function handleSubmit() {
     setError(null);
+    if (!canSubmit) {
+      setError("Agrega un título y tokens mayores a cero.");
+      return;
+    }
     try {
       await createOffer({
         title: title.trim(),
         description: description.trim(),
-        tokens: tokens ? Number(tokens) : undefined,
+        tokens: numericTokens,
       });
-      navigation.goBack();
+      await loadOffers();
+      navigation.navigate("OffersList");
     } catch (err: any) {
       setError(err?.message || "No se pudo crear la oferta.");
     }
@@ -66,7 +75,17 @@ export default function CreateOfferScreen({ navigation }: any) {
 
       {error && <Text style={styles.error}>{error}</Text>}
 
-      <Button title="Publicar" onPress={handleSubmit} disabled={!canSubmit || loading} />
+      <TouchableOpacity
+        style={[styles.submitButton, !canSubmit || loading ? styles.buttonDisabled : null]}
+        onPress={handleSubmit}
+        disabled={!canSubmit || loading}
+      >
+        {loading ? (
+          <ActivityIndicator color="#FFF" />
+        ) : (
+          <Text style={styles.submitText}>Publicar</Text>
+        )}
+      </TouchableOpacity>
 
       {loading && (
         <View style={styles.loadingBox}>
@@ -83,20 +102,24 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     padding: 16,
     gap: 8,
+    backgroundColor: colors.background,
   },
   title: {
     fontSize: 22,
     fontWeight: "700",
     marginBottom: 8,
+    color: colors.text,
   },
   label: {
     fontWeight: "600",
+    color: colors.text,
   },
   input: {
     borderWidth: 1,
     borderColor: "#ddd",
     borderRadius: 8,
     padding: 10,
+    backgroundColor: "#FFF",
   },
   multiline: {
     minHeight: 90,
@@ -111,5 +134,25 @@ const styles = StyleSheet.create({
   },
   muted: {
     color: "#555",
+  },
+  submitButton: {
+    marginTop: 12,
+    backgroundColor: colors.primary,
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  buttonDisabled: {
+    opacity: 0.6,
+  },
+  submitText: {
+    color: "#FFF",
+    fontWeight: "700",
+    fontSize: 16,
   },
 });

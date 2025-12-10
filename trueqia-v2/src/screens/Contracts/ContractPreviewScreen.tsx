@@ -1,27 +1,45 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { View, Text, TextInput, Button, ScrollView, ActivityIndicator } from "react-native";
+import {
+  View,
+  Text,
+  TextInput,
+  ScrollView,
+  ActivityIndicator,
+  TouchableOpacity,
+  StyleSheet,
+} from "react-native";
 import { apiAuthPost } from "../../config/api";
+import { colors } from "../../config/theme";
+import { useAuthStore } from "../../store/auth.store";
 import { TrueqiaOffer } from "../../store/offers.store";
 import { Trade } from "../../store/trades.store";
-import { useAuthStore } from "../../store/auth.store";
 
-export default function ContractPreviewScreen({ route }: any) {
+type ContractPreviewScreenProps = {
+  route: {
+    params?: {
+      offer?: TrueqiaOffer;
+      trade?: Trade;
+    };
+  };
+};
+
+export default function ContractPreviewScreen({ route }: ContractPreviewScreenProps) {
   const offer: TrueqiaOffer | undefined = route.params?.offer;
   const trade: Trade | undefined = route.params?.trade;
   const user = useAuthStore((s) => s.user);
 
   const [requesterName, setRequesterName] = useState(
-    trade?.participants?.[0] || user?.name || "Solicitante"
+    trade?.participants?.[0] || user?.name || "Solicitante",
   );
   const [providerName, setProviderName] = useState(
-    trade?.participants?.[1] || offer?.owner?.name || "Proveedor"
+    trade?.participants?.[1] || offer?.owner?.name || "Proveedor",
   );
   const [tokens, setTokens] = useState(
     offer?.tokens !== undefined
       ? String(offer.tokens)
       : trade?.tokens !== undefined
       ? String(trade.tokens)
-      : "10"
+      : "10",
   );
   const [notes, setNotes] = useState("");
   const [contractText, setContractText] = useState<string | null>(null);
@@ -30,33 +48,53 @@ export default function ContractPreviewScreen({ route }: any) {
 
   const offerTitle = useMemo(
     () => trade?.title || offer?.title || "Oferta pendiente",
-    [offer?.title, trade?.title]
+    [offer?.title, trade?.title],
+  );
+
+  const payload = useMemo(
+    () => ({
+      app: "trueqia",
+      title: offerTitle,
+      fromUserId: user?.id,
+      toUserId: trade?.ownerId || offer?.owner?.id,
+      tokens: Number(tokens) || 0,
+      offerId: offer?.id || trade?.offerId,
+      tradeId: trade?.id,
+      requesterName: requesterName.trim(),
+      providerName: providerName.trim(),
+      notes: notes.trim(),
+      description: offer?.description || trade?.title,
+    }),
+    [
+      offer?.description,
+      offer?.id,
+      offerTitle,
+      providerName,
+      requesterName,
+      tokens,
+      trade?.id,
+      trade?.offerId,
+      trade?.ownerId,
+      trade?.title,
+      user?.id,
+      notes,
+    ],
   );
 
   async function generate() {
     setError(null);
     setLoading(true);
-    const body = {
-      offerId: offer?.id || trade?.offerId,
-      tradeId: trade?.id,
-      offerTitle,
-      requesterName,
-      providerName,
-      tokens: Number(tokens) || 0,
-      notes: notes.trim(),
-      description: offer?.description,
-    };
     try {
       const res = await apiAuthPost<{ contractText: string }>(
         "/trueqia/contracts/preview",
-        body
+        payload,
       );
       setContractText(res.contractText);
     } catch (err: any) {
       setError(
         err?.message === "SESSION_EXPIRED"
           ? "Sesión expirada, vuelve a iniciar sesión."
-          : "No se pudo generar el contrato en este momento."
+          : "No se pudo generar el contrato en este momento.",
       );
       setContractText(null);
     } finally {
@@ -64,85 +102,5 @@ export default function ContractPreviewScreen({ route }: any) {
     }
   }
 
-  useEffect(() => {
-    if (trade?.status === "accepted") {
-      generate();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [trade?.id, trade?.status]);
+  useEffe
 
-  return (
-    <ScrollView style={{ flex: 1, padding: 24 }}>
-      <Text style={{ fontSize: 20, marginBottom: 8 }}>
-        Contrato IA – {offerTitle}
-      </Text>
-
-      <View style={{ marginBottom: 12 }}>
-        <Text style={{ fontWeight: "600" }}>Oferta seleccionada</Text>
-        {offer?.id && <Text>ID: {offer.id}</Text>}
-        {offer?.tokens !== undefined && <Text>Tokens: {offer.tokens}</Text>}
-        {offer?.description && <Text>{offer.description}</Text>}
-        {trade?.id && (
-          <Text style={{ color: "#444", marginTop: 4 }}>
-            Trueque {trade.id} – estado {trade.status || "pending"}
-          </Text>
-        )}
-      </View>
-
-      <Text>Nombre solicitante:</Text>
-      <TextInput
-        style={{ borderWidth: 1, marginBottom: 8, padding: 8 }}
-        value={requesterName}
-        onChangeText={setRequesterName}
-      />
-
-      <Text>Nombre proveedor:</Text>
-      <TextInput
-        style={{ borderWidth: 1, marginBottom: 8, padding: 8 }}
-        value={providerName}
-        onChangeText={setProviderName}
-      />
-
-      <Text>Tokens:</Text>
-      <TextInput
-        style={{ borderWidth: 1, marginBottom: 8, padding: 8 }}
-        value={tokens}
-        onChangeText={setTokens}
-        keyboardType="numeric"
-      />
-
-      <Text>Notas adicionales:</Text>
-      <TextInput
-        style={{ borderWidth: 1, marginBottom: 8, padding: 8, height: 60 }}
-        value={notes}
-        onChangeText={setNotes}
-        multiline
-      />
-
-      <Button title="Generar contrato" onPress={generate} disabled={loading} />
-
-      {loading && (
-        <View style={{ marginTop: 12 }}>
-          <ActivityIndicator />
-          <Text style={{ marginTop: 6 }}>Solicitando contrato…</Text>
-        </View>
-      )}
-
-      {error && (
-        <Text style={{ color: "#B3261E", marginTop: 8 }}>{error}</Text>
-      )}
-
-      {contractText && (
-        <View style={{ marginTop: 16 }}>
-          <Text style={{ fontWeight: "bold", marginBottom: 4 }}>
-            Resultado:
-          </Text>
-          <Text>{contractText}</Text>
-          <Text style={{ marginTop: 8, color: "#444" }}>
-            Próximamente podrás copiar/compartir este contrato.
-          </Text>
-        </View>
-      )}
-    </ScrollView>
-  );
-}

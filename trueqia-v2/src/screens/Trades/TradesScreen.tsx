@@ -1,5 +1,12 @@
-import React, { useEffect } from "react";
-import { View, Text, FlatList, StyleSheet, TouchableOpacity, ActivityIndicator } from "react-native";
+import React, { useEffect, useMemo, useState } from "react";
+import {
+  View,
+  Text,
+  FlatList,
+  StyleSheet,
+  TouchableOpacity,
+  ActivityIndicator,
+} from "react-native";
 import { colors } from "../../config/theme";
 import { useTradesStore } from "../../store/trades.store";
 
@@ -8,10 +15,32 @@ export default function TradesScreen({ navigation }: any) {
   const loading = useTradesStore((s) => s.loading);
   const error = useTradesStore((s) => s.error);
   const loadTrades = useTradesStore((s) => s.loadTrades);
+  const acceptTrade = useTradesStore((s) => s.acceptTrade);
+  const rejectTrade = useTradesStore((s) => s.rejectTrade);
+  const [actionLoading, setActionLoading] = useState<
+    Record<string, "accept" | "reject" | null>
+  >({});
+  const [actionError, setActionError] = useState<string | null>(null);
+
+  const sortedItems = useMemo(
+    () => [...items].sort((a, b) => a.title.localeCompare(b.title)),
+    [items]
+  );
 
   useEffect(() => {
     loadTrades();
   }, [loadTrades]);
+
+  async function handleAction(id: string, action: "accept" | "reject") {
+    setActionError(null);
+    setActionLoading((prev) => ({ ...prev, [id]: action }));
+    const res =
+      action === "accept" ? await acceptTrade(id) : await rejectTrade(id);
+    if (!res) {
+      setActionError("No se pudo actualizar el trueque. Intenta de nuevo.");
+    }
+    setActionLoading((prev) => ({ ...prev, [id]: null }));
+  }
 
   return (
     <View style={styles.container}>
@@ -40,8 +69,12 @@ export default function TradesScreen({ navigation }: any) {
         </View>
       )}
 
+      {actionError && (
+        <Text style={[styles.statusText, { color: "#B3261E" }]}>{actionError}</Text>
+      )}
+
       <FlatList
-        data={items}
+        data={sortedItems}
         keyExtractor={(item) => item.id}
         contentContainerStyle={{ gap: 12, paddingVertical: 12 }}
         renderItem={({ item }) => (
@@ -56,6 +89,30 @@ export default function TradesScreen({ navigation }: any) {
             {typeof item.tokens === "number" && (
               <Text style={styles.tokens}>{`~${item.tokens} tokens`}</Text>
             )}
+            <View style={styles.actionsRow}>
+              <TouchableOpacity
+                style={[styles.actionButton, styles.acceptButton]}
+                onPress={() => handleAction(item.id, "accept")}
+                disabled={actionLoading[item.id] === "accept"}
+              >
+                {actionLoading[item.id] === "accept" ? (
+                  <ActivityIndicator color="#FFF" size="small" />
+                ) : (
+                  <Text style={styles.actionText}>Aceptar</Text>
+                )}
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.actionButton, styles.rejectButton]}
+                onPress={() => handleAction(item.id, "reject")}
+                disabled={actionLoading[item.id] === "reject"}
+              >
+                {actionLoading[item.id] === "reject" ? (
+                  <ActivityIndicator color="#FFF" size="small" />
+                ) : (
+                  <Text style={styles.actionText}>Rechazar</Text>
+                )}
+              </TouchableOpacity>
+            </View>
             {item.status === "accepted" && (
               <TouchableOpacity
                 style={styles.contractButton}
@@ -68,7 +125,7 @@ export default function TradesScreen({ navigation }: any) {
         )}
         ListEmptyComponent={
           !loading && !error ? (
-            <Text style={styles.statusText}>No hay trueques activos aún.</Text>
+            <Text style={styles.statusText}>Todavía no tienes trueques activos.</Text>
           ) : null
         }
       />
@@ -94,6 +151,11 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     backgroundColor: colors.primary,
     marginTop: 8,
+    shadowColor: "#000",
+    shadowOpacity: 0.08,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 4,
+    elevation: 2,
   },
   reloadText: {
     color: "#FFF",
@@ -125,6 +187,32 @@ const styles = StyleSheet.create({
     color: colors.primary,
     fontWeight: "700",
   },
+  actionsRow: {
+    flexDirection: "row",
+    gap: 10,
+    marginTop: 12,
+  },
+  actionButton: {
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: 10,
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  acceptButton: {
+    backgroundColor: "#0E9F6E",
+  },
+  rejectButton: {
+    backgroundColor: "#C1121F",
+  },
+  actionText: {
+    color: "#FFF",
+    fontWeight: "700",
+  },
   contractButton: {
     marginTop: 10,
     alignSelf: "flex-start",
@@ -132,6 +220,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 10,
+    shadowColor: "#000",
+    shadowOpacity: 0.08,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 4,
+    elevation: 2,
   },
   contractText: {
     color: "#FFF",
@@ -150,6 +243,11 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 10,
     backgroundColor: colors.primary,
+    shadowColor: "#000",
+    shadowOpacity: 0.08,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 4,
+    elevation: 2,
   },
   retryText: {
     color: "#FFF",
