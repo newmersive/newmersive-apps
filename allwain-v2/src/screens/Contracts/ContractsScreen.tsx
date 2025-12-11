@@ -8,7 +8,8 @@ export type Contract = {
   product: string;
   monthlyCost: number;
   currentSaving: number;
-  status: "activo" | "pendiente" | "renovacion";
+  status: "demo" | "ejemplo";
+  note: string;
 };
 
 export default function ContractsScreen() {
@@ -17,26 +18,29 @@ export default function ContractsScreen() {
       {
         id: "a1",
         provider: "Iberluz",
-        product: "Luz Hogar 4.0",
+        product: "Cambio de tarifa de luz",
         monthlyCost: 62.4,
         currentSaving: 18.6,
-        status: "activo",
+        status: "demo",
+        note: "Ejemplo de contrato energético optimizado.",
       },
       {
         id: "b2",
-        provider: "HogarNet",
-        product: "Fibra + Móvil 600Mb",
-        monthlyCost: 48.9,
-        currentSaving: 12.1,
-        status: "pendiente",
+        provider: "FibraMax",
+        product: "Contrato de internet fibra 1Gb",
+        monthlyCost: 49.9,
+        currentSaving: 10.2,
+        status: "ejemplo",
+        note: "Simulación de conexión de fibra y móvil.",
       },
       {
         id: "c3",
-        provider: "Agua Clara",
-        product: "Plan Familiar",
-        monthlyCost: 24.5,
-        currentSaving: 6.8,
-        status: "renovacion",
+        provider: "ProtecHome",
+        product: "Seguro de hogar integral",
+        monthlyCost: 22.5,
+        currentSaving: 5.4,
+        status: "demo",
+        note: "Coberturas y precios ilustrativos para la demo.",
       },
     ],
     [],
@@ -47,18 +51,8 @@ export default function ContractsScreen() {
     [contracts],
   );
 
-  function statusLabel(status: Contract["status"]) {
-    switch (status) {
-      case "activo":
-        return "Activo";
-      case "pendiente":
-        return "Pendiente de firma";
-      case "renovacion":
-        return "Renovación sugerida";
-      default:
-        return "";
-    }
-  }
+  const statusLabel = (status: Contract["status"]) =>
+    status === "demo" ? "Demo" : "Ejemplo";
 
   return (
     <View style={styles.container}>
@@ -102,8 +96,7 @@ export default function ContractsScreen() {
             </View>
 
             <Text style={styles.helper}>
-              Datos simulados. El backend devolverá los contratos vinculados al
-              usuario y sus ahorros.
+              {item.note}
             </Text>
           </View>
         )}
@@ -143,9 +136,8 @@ const styles = StyleSheet.create({
   cardTitle: { fontSize: 18, fontWeight: "800", color: colors.text },
   cardSubtitle: { color: colors.mutedText },
   status: { fontWeight: "700" },
-  status_activo: { color: colors.primary },
-  status_pendiente: { color: colors.warning },
-  status_renovacion: { color: colors.danger },
+  status_demo: { color: colors.primary },
+  status_ejemplo: { color: colors.warning },
   row: {
     flexDirection: "row",
     justifyContent: "space-between",

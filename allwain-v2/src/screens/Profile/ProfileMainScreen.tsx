@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { View, Text, Button, StyleSheet } from "react-native";
 import { useAuthStore } from "../../store/auth.store";
 import { CompositeScreenProps } from "@react-navigation/native";
@@ -14,27 +14,46 @@ type Props = CompositeScreenProps<
 
 export default function ProfileMainScreen({ navigation }: Props) {
   const user = useAuthStore((s) => s.user);
-  const clearAuth = useAuthStore((s) => s.clearAuth);
+  const logout = useAuthStore((s) => s.logout);
 
-  function logout() {
-    clearAuth();
-    navigation.replace("Login");
+  const initials = useMemo(() => {
+    if (!user?.name) return "";
+    return user.name
+      .split(" ")
+      .map((part) => part[0])
+      .join("");
+  }, [user?.name]);
+
+  async function handleLogout() {
+    await logout("Has cerrado sesión");
+    navigation.reset({ index: 0, routes: [{ name: "Login" }] });
   }
 
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Perfil</Text>
-      <Text style={styles.item}>Email: {user?.email}</Text>
-      <Text style={styles.item}>Rol: {user?.role}</Text>
 
       <View style={styles.card}>
-        <Text style={styles.cardTitle}>Mi patrocinio</Text>
+        <Text style={styles.cardTitle}>Hola, {user?.name || "patrocinador"}</Text>
+        <Text style={styles.cardText}>Email: {user?.email}</Text>
+        <Text style={styles.cardText}>Rol: {user?.role}</Text>
+        {initials ? (
+          <Text style={styles.cardHelper}>Identificador: {initials}</Text>
+        ) : null}
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Mi ahorro estimado</Text>
         <Text style={styles.cardText}>
-          Consulta la pestaña Patrocinadores para compartir tu QR y ganar euros.
+          Tus ahorros y comisiones se actualizarán al sincronizar con Allwain.
         </Text>
       </View>
 
-      <Button title="Cerrar sesión" color={colors.button} onPress={logout} />
+      <Button
+        title="Cerrar sesión"
+        color={colors.button}
+        onPress={handleLogout}
+      />
     </View>
   );
 }
@@ -53,4 +72,5 @@ const styles = StyleSheet.create({
   },
   cardTitle: { color: colors.text, fontWeight: "800", fontSize: 16 },
   cardText: { color: colors.mutedText },
+  cardHelper: { color: colors.text, fontWeight: "700" },
 });

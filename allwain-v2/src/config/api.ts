@@ -33,6 +33,7 @@ export interface ScanDemoResponse {
     name: string;
     description?: string;
     brand?: string;
+    ean?: string;
   };
   offers?: AllwainOffer[];
   message?: string;
