@@ -11,24 +11,22 @@ import { colors } from "../../config/theme";
 import { Trade, useTradesStore } from "../../store/trades.store";
 
 export default function TradeDetailScreen({ route, navigation }: any) {
-  const items = useTradesStore((s) => s.items);
+  const items = useTradesStore((s) => s.items || []);
   const storeError = useTradesStore((s) => s.error);
   const fetchTradeById = useTradesStore((s) => s.fetchTradeById);
   const acceptTrade = useTradesStore((s) => s.acceptTrade);
   const rejectTrade = useTradesStore((s) => s.rejectTrade);
 
-  const tradeId: string | undefined =
-    route?.params?.tradeId || route?.params?.trade?.id;
+  const tradeId: string | undefined = route?.params?.tradeId || route?.params?.trade?.id;
 
-  const initialTrade: Trade | null = route?.params?.trade || null;
-  const [trade, setTrade] = useState<Trade | null>(initialTrade);
+  const [trade, setTrade] = useState<Trade | null>(route?.params?.trade || null);
   const [loading, setLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState<"accept" | "reject" | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const participants = useMemo(
-    () => trade?.participants?.join(" • "),
-    [trade?.participants]
+    () => (trade?.participants && trade.participants.length > 0 ? trade.participants.join(" • ") : null),
+    [trade?.participants],
   );
 
   useEffect(() => {
@@ -56,13 +54,15 @@ export default function TradeDetailScreen({ route, navigation }: any) {
   }, [fetchTradeById, trade, tradeId]);
 
   async function handleAction(action: "accept" | "reject") {
-    if (!tradeId) return;
+    if (!tradeId || !trade) return;
     setActionLoading(action);
     setError(null);
-    const res =
-      action === "accept" ? await acceptTrade(tradeId) : await rejectTrade(tradeId);
-    if (res) {
-      navigation.navigate("Trades");
+    const result = action === "accept" ? await acceptTrade(tradeId) : await rejectTrade(tradeId);
+    if (result) {
+      setTrade(result);
+      if (action === "accept") {
+        navigation.navigate("ContractPreview", { trade: result, offer: result.offer });
+      }
     } else {
       setError("No se pudo actualizar el trueque. Intenta nuevamente.");
     }
@@ -80,9 +80,7 @@ export default function TradeDetailScreen({ route, navigation }: any) {
         </View>
       )}
 
-      {showError && (
-        <Text style={[styles.muted, { color: "#B3261E" }]}>{showError}</Text>
-      )}
+      {showError && <Text style={[styles.muted, { color: "#B3261E" }]}>{showError}</Text>}
 
       {trade && (
         <>
@@ -92,14 +90,14 @@ export default function TradeDetailScreen({ route, navigation }: any) {
 
           {participants && <Text style={styles.meta}>Participantes: {participants}</Text>}
           {typeof trade.tokens === "number" && (
-            <Text style={styles.meta}>Equilibrio sugerido: ~{trade.tokens} tokens</Text>
+            <Text style={styles.meta}>Equilibrio sugerido: {trade.tokens} tokens</Text>
           )}
           {trade.ownerId && <Text style={styles.meta}>Propietario: {trade.ownerId}</Text>}
           {trade.offerId && <Text style={styles.meta}>Oferta origen: {trade.offerId}</Text>}
 
           <Text style={styles.helper}>
-            Aquí podrás ver las condiciones del trueque, mensajes relevantes y el contrato
-            generado por la IA.
+            Aquí podrás ver las condiciones del trueque, mensajes relevantes y el contrato generado
+            por la IA.
           </Text>
 
           <View style={styles.actionsRow}>

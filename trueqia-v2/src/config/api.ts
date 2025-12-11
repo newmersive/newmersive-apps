@@ -9,6 +9,7 @@ export interface AuthResponse {
     email: string;
     role: string;
     sponsorCode?: string;
+    qrCode?: string;
     referredByCode?: string;
     avatarUrl?: string;
     tokens?: number;
