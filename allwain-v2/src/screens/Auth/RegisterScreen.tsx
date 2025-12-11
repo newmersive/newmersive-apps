@@ -3,7 +3,7 @@ import {
   View,
   Text,
   TextInput,
-  Button,
+  TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
 } from "react-native";
@@ -11,6 +11,27 @@ import { apiPost, AuthResponse } from "../../config/api";
 import { useAuthStore } from "../../store/auth.store";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../../navigation/types";
+
+const COLORS = {
+  background: "#FF795A",
+  primary: "#FFFFFF",
+  accent: "#000000",
+  muted: "rgba(255,255,255,0.7)",
+};
+
+const RADIUS = { m: 14, l: 22 };
+const SPACING = { s: 8, m: 14, l: 20 };
+
+const INPUT_STYLE = {
+  borderWidth: 1,
+  borderColor: COLORS.primary,
+  backgroundColor: "rgba(255,255,255,0.15)",
+  color: COLORS.primary,
+  borderRadius: RADIUS.m,
+  paddingVertical: SPACING.m,
+  paddingHorizontal: SPACING.m,
+  fontSize: 16,
+};
 
 type Role = "buyer" | "company" | "";
 
@@ -42,6 +63,7 @@ export default function RegisterScreen({ navigation }: Props) {
         email,
         password,
         role,
+        app: "allwain",
       });
 
       setAuth(result);
@@ -63,76 +85,188 @@ export default function RegisterScreen({ navigation }: Props) {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Crear cuenta</Text>
-
-      <TextInput
-        style={styles.input}
-        placeholder="Nombre"
-        value={name}
-        onChangeText={setName}
-      />
-
-      <TextInput
-        style={styles.input}
-        placeholder="Email"
-        autoCapitalize="none"
-        keyboardType="email-address"
-        value={email}
-        onChangeText={setEmail}
-      />
-
-      <TextInput
-        style={styles.input}
-        placeholder="Contraseña"
-        secureTextEntry
-        value={password}
-        onChangeText={setPassword}
-      />
-
-      <Text style={styles.label}>Rol</Text>
-      <View style={styles.rolesRow}>
-        <View style={styles.roleButtonWrapper}>
-          <Button
-            title={isRoleSelected("buyer") ? "✔ Comprador" : "Comprador"}
-            onPress={() => setRole("buyer")}
-          />
-        </View>
-        <View style={{ width: 12 }} />
-        <View style={styles.roleButtonWrapper}>
-          <Button
-            title={isRoleSelected("company") ? "✔ Empresa" : "Empresa"}
-            onPress={() => setRole("company")}
-          />
-        </View>
+      <View style={styles.header}>
+        <Text style={styles.brand}>Allwain</Text>
+        <Text style={styles.title}>Crear cuenta</Text>
+        <Text style={styles.subtitle}>
+          Completa los datos para comenzar a escanear y gestionar tu negocio.
+        </Text>
       </View>
 
-      {error && <Text style={styles.error}>{error}</Text>}
-
-      {loading ? (
-        <ActivityIndicator />
-      ) : (
-        <Button
-          title="Registrar y entrar"
-          onPress={handleRegister}
-          disabled={!role}
+      <View style={styles.card}>
+        <TextInput
+          style={styles.input}
+          placeholder="Nombre"
+          placeholderTextColor={COLORS.muted}
+          value={name}
+          onChangeText={setName}
         />
-      )}
+
+        <TextInput
+          style={styles.input}
+          placeholder="Email"
+          placeholderTextColor={COLORS.muted}
+          autoCapitalize="none"
+          keyboardType="email-address"
+          value={email}
+          onChangeText={setEmail}
+        />
+
+        <TextInput
+          style={styles.input}
+          placeholder="Contraseña"
+          placeholderTextColor={COLORS.muted}
+          secureTextEntry
+          value={password}
+          onChangeText={setPassword}
+        />
+
+        <View style={styles.rolesHeader}>
+          <Text style={styles.label}>Rol</Text>
+          <Text style={styles.helper}>Selecciona el tipo de cuenta</Text>
+        </View>
+
+        <View style={styles.rolesRow}>
+          <TouchableOpacity
+            style={[
+              styles.roleButton,
+              isRoleSelected("buyer") && styles.roleButtonActive,
+            ]}
+            onPress={() => setRole("buyer")}
+          >
+            <Text
+              style={[
+                styles.roleText,
+                isRoleSelected("buyer") && styles.roleTextActive,
+              ]}
+            >
+              Comprador
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.roleButton,
+              isRoleSelected("company") && styles.roleButtonActive,
+            ]}
+            onPress={() => setRole("company")}
+          >
+            <Text
+              style={[
+                styles.roleText,
+                isRoleSelected("company") && styles.roleTextActive,
+              ]}
+            >
+              Empresa
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {error && <Text style={styles.error}>{error}</Text>}
+
+        <TouchableOpacity
+          style={[styles.primaryButton, loading && styles.buttonDisabled]}
+          onPress={handleRegister}
+          disabled={loading}
+        >
+          {loading ? (
+            <ActivityIndicator color={COLORS.accent} />
+          ) : (
+            <Text style={styles.primaryButtonText}>Registrar y entrar</Text>
+          )}
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: "center", padding: 24 },
-  title: { fontSize: 24, fontWeight: "bold", marginBottom: 16 },
-  input: {
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 6,
-    padding: 10,
-    marginBottom: 12,
+  container: {
+    flex: 1,
+    backgroundColor: COLORS.background,
+    padding: SPACING.l,
+    justifyContent: "center",
   },
-  label: { marginTop: 8, marginBottom: 8, fontWeight: "600" },
-  rolesRow: { flexDirection: "row", alignItems: "center" },
-  roleButtonWrapper: { flex: 1 },
-  error: { color: "red", marginTop: 12, marginBottom: 12 },
+  header: {
+    marginBottom: SPACING.l,
+  },
+  brand: {
+    color: COLORS.accent,
+    fontSize: 18,
+    fontWeight: "700",
+    letterSpacing: 1,
+    textTransform: "uppercase",
+  },
+  title: {
+    color: COLORS.primary,
+    fontSize: 30,
+    fontWeight: "800",
+    marginTop: SPACING.s,
+  },
+  subtitle: {
+    color: COLORS.muted,
+    marginTop: SPACING.s,
+    lineHeight: 20,
+  },
+  card: {
+    backgroundColor: "rgba(0,0,0,0.1)",
+    borderRadius: RADIUS.l,
+    padding: SPACING.l,
+    gap: SPACING.m,
+    borderWidth: 1,
+    borderColor: "rgba(0,0,0,0.08)",
+  },
+  input: INPUT_STYLE,
+  rolesHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  label: {
+    color: COLORS.primary,
+    fontWeight: "700",
+    fontSize: 15,
+  },
+  helper: {
+    color: COLORS.muted,
+    fontSize: 13,
+  },
+  rolesRow: {
+    flexDirection: "row",
+    gap: SPACING.m,
+  },
+  roleButton: {
+    flex: 1,
+    paddingVertical: SPACING.m,
+    borderRadius: RADIUS.m,
+    borderWidth: 1,
+    borderColor: COLORS.primary,
+    alignItems: "center",
+    backgroundColor: "rgba(255,255,255,0.12)",
+  },
+  roleButtonActive: {
+    backgroundColor: COLORS.primary,
+  },
+  roleText: {
+    color: COLORS.primary,
+    fontWeight: "600",
+  },
+  roleTextActive: {
+    color: COLORS.accent,
+  },
+  error: { color: COLORS.primary, fontWeight: "600" },
+  primaryButton: {
+    backgroundColor: COLORS.primary,
+    paddingVertical: SPACING.m,
+    borderRadius: RADIUS.l,
+    alignItems: "center",
+  },
+  primaryButtonText: {
+    color: COLORS.accent,
+    fontWeight: "800",
+    fontSize: 16,
+  },
+  buttonDisabled: {
+    opacity: 0.85,
+  },
 });
