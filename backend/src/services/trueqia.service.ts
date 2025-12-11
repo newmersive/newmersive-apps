@@ -18,14 +18,40 @@ import {
   createContract,
 } from "./data.store";
 
+type TrueqiaOfferResponse = Omit<Offer, "owner"> & {
+  owner: {
+    id: string;
+    name?: string;
+    avatarUrl?: string;
+    tokens?: number;
+  };
+};
+
 /* =========================
    OFFERS (TRUEQIA)
 ========================= */
 
-export function listTrueqiaOffers(excludeUserId?: string) {
+export function listTrueqiaOffers(
+  excludeUserId?: string
+): TrueqiaOfferResponse[] {
   const offers = getOffersByOwner("trueqia");
-  if (!excludeUserId) return offers;
-  return offers.filter(o => o.ownerUserId !== excludeUserId);
+  const filteredOffers = excludeUserId
+    ? offers.filter((offer) => offer.ownerUserId !== excludeUserId)
+    : offers;
+
+  return filteredOffers.map((offer): TrueqiaOfferResponse => {
+    const owner = getUserById(offer.ownerUserId);
+
+    return {
+      ...offer,
+      owner: {
+        id: owner?.id || offer.ownerUserId,
+        name: owner?.name,
+        avatarUrl: owner?.avatarUrl,
+        tokens: owner?.tokens,
+      },
+    };
+  });
 }
 
 export function createTrueqiaOffer(
