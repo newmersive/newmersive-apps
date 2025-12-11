@@ -7,9 +7,19 @@ import {
   StyleSheet,
   ActivityIndicator,
 } from "react-native";
-import { colors } from "../../config/theme";
-import { radii, spacing } from "../../config/layout";
 import { useAuthStore } from "../../store/auth.store";
+
+const COLORS = {
+  background: "#FFFFFF",
+  primary: "#004BFF",
+  text: "#0A0A0A",
+  muted: "rgba(0,0,0,0.5)",
+  surface: "#F7F7F9",
+  border: "#E5E7EB",
+};
+
+const RADIUS = { s: 10, m: 14, l: 22 };
+const SPACING = { s: 8, m: 12, l: 20 };
 
 export default function LoginScreen({ navigation }: any) {
   const [email, setEmail] = useState("");
@@ -54,7 +64,7 @@ export default function LoginScreen({ navigation }: any) {
         <TextInput
           style={styles.input}
           placeholder="Email"
-          placeholderTextColor={colors.muted}
+          placeholderTextColor={COLORS.muted}
           autoCapitalize="none"
           keyboardType="email-address"
           value={email}
@@ -64,7 +74,7 @@ export default function LoginScreen({ navigation }: any) {
         <TextInput
           style={styles.input}
           placeholder="Contraseña"
-          placeholderTextColor={colors.muted}
+          placeholderTextColor={COLORS.muted}
           secureTextEntry
           value={password}
           onChangeText={setPassword}
@@ -98,56 +108,56 @@ export default function LoginScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
-    padding: spacing.l,
+    backgroundColor: COLORS.background,
+    padding: SPACING.l,
     justifyContent: "center",
   },
   header: {
-    marginBottom: spacing.l,
+    marginBottom: SPACING.l,
   },
   title: {
     fontSize: 28,
     fontWeight: "800",
-    marginBottom: spacing.s,
-    color: colors.text,
+    marginBottom: SPACING.s,
+    color: COLORS.text,
   },
   subtitle: {
-    color: colors.muted,
+    color: COLORS.muted,
     fontSize: 15,
     lineHeight: 22,
   },
   card: {
-    backgroundColor: colors.surface,
-    borderRadius: radii.l,
-    padding: spacing.l,
+    backgroundColor: COLORS.surface,
+    borderRadius: RADIUS.l,
+    padding: SPACING.l,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: COLORS.border,
   },
   input: {
     borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radii.m,
-    paddingVertical: spacing.m,
-    paddingHorizontal: spacing.m,
-    color: colors.text,
+    borderColor: COLORS.border,
+    borderRadius: RADIUS.m,
+    paddingVertical: SPACING.m,
+    paddingHorizontal: SPACING.m,
+    color: COLORS.text,
     backgroundColor: "#FFFFFF",
-    marginBottom: spacing.m,
+    marginBottom: SPACING.m,
     fontSize: 16,
   },
-  error: { color: "#B3261E", marginBottom: spacing.m },
+  error: { color: "#B3261E", marginBottom: SPACING.m },
   primaryButton: {
-    backgroundColor: colors.primary,
-    paddingVertical: spacing.m,
-    borderRadius: radii.l,
+    backgroundColor: COLORS.primary,
+    paddingVertical: SPACING.m,
+    borderRadius: RADIUS.l,
     alignItems: "center",
   },
   primaryButtonText: { color: "#FFFFFF", fontWeight: "700", fontSize: 16 },
   buttonDisabled: { opacity: 0.7 },
   secondaryButton: {
-    marginTop: spacing.m,
-    paddingVertical: spacing.m,
+    marginTop: SPACING.m,
+    paddingVertical: SPACING.m,
     alignItems: "center",
-    borderRadius: radii.m,
+    borderRadius: RADIUS.m,
   },
-  secondaryText: { color: colors.primary, fontWeight: "700" },
+  secondaryText: { color: COLORS.primary, fontWeight: "700" },
 });

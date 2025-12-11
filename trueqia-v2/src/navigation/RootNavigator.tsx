@@ -5,6 +5,7 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 import AuthScreen from "../screens/Auth/AuthScreen";
 import SponsorQRScreen from "../screens/Auth/SponsorQRScreen";
+import SplashScreen from "../screens/SplashScreen";
 import MainTabs from "./MainTabs";
 import OffersListScreen from "../screens/Offers/OffersListScreen";
 import TradeDetailScreen from "../screens/Trades/TradeDetailScreen";
@@ -15,6 +16,7 @@ import { useAuthStore } from "../store/auth.store";
 import { colors } from "../config/theme";
 
 export type RootStackParamList = {
+  Splash: undefined;
   Auth: { sponsorCode?: string } | undefined;
   SponsorQR: { code?: string } | undefined;
   MainTabs: undefined;
@@ -48,6 +50,7 @@ export default function RootNavigator() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <Stack.Navigator
+        initialRouteName="Splash"
         screenOptions={{
           headerStyle: { backgroundColor: colors.background },
           headerTitleStyle: { color: colors.text },
@@ -55,6 +58,12 @@ export default function RootNavigator() {
           contentStyle: { backgroundColor: colors.background },
         }}
       >
+        <Stack.Screen
+          name="Splash"
+          component={SplashScreen}
+          options={{ headerShown: false }}
+        />
+
         {user ? (
           <>
             <Stack.Screen
