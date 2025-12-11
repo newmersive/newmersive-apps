@@ -4,7 +4,6 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  Alert,
   ActivityIndicator,
 } from "react-native";
 import { colors } from "../../config/theme";
@@ -19,7 +18,6 @@ export default function ProfileScreen({ navigation }: any) {
   const profile = {
     name: user?.name ?? "Usuario TRUEQIA",
     email: user?.email ?? "usuario@trueqia.com",
-    role: user?.role ?? "colaborador",
     tokens: user?.tokens ?? 0,
   };
 
@@ -45,9 +43,6 @@ export default function ProfileScreen({ navigation }: any) {
 
         <Text style={styles.label}>Email</Text>
         <Text style={styles.value}>{profile.email}</Text>
-
-        <Text style={styles.label}>Rol</Text>
-        <Text style={styles.value}>{profile.role}</Text>
       </View>
 
       <View style={[styles.card, styles.tokensCard]}>
@@ -63,13 +58,6 @@ export default function ProfileScreen({ navigation }: any) {
           <Text style={styles.sponsorsButtonText}>Ver patrocinadores</Text>
         </TouchableOpacity>
       </View>
-
-      <TouchableOpacity
-        style={[styles.button, styles.secondaryButton]}
-        onPress={() => Alert.alert("Edición pendiente", "Próximamente podrás editar.")}
-      >
-        <Text style={styles.secondaryText}>Editar (mock)</Text>
-      </TouchableOpacity>
 
       <TouchableOpacity style={styles.button} onPress={handleLogout} disabled={loading}>
         {loading ? (

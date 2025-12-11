@@ -1,5 +1,5 @@
 import React from "react";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { Image, ScrollView, StyleSheet, Text, View } from "react-native";
 import { colors } from "../../config/theme";
 import { useAuthStore } from "../../store/auth.store";
 import { UserAvatar } from "./UserAvatar";
@@ -7,9 +7,10 @@ import { UserAvatar } from "./UserAvatar";
 export default function SponsorsScreen() {
   const user = useAuthStore((s) => s.user);
 
-  const sponsorCode = user?.sponsorCode ?? "Sin código asignado";
+  const sponsorCode = user?.qrCode || user?.sponsorCode || "SIN-CODIGO";
   const tokensFromInvites = user?.tokensFromInvites ?? 0;
   const invitedUsers = user?.invitedUsers ?? [];
+  const totalTokens = (user?.tokens ?? 0) + tokensFromInvites;
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
@@ -19,17 +20,32 @@ export default function SponsorsScreen() {
       </Text>
 
       <View style={styles.card}>
-        <Text style={styles.label}>Tu código personal</Text>
-        <View style={styles.codeBox}>
-          <Text style={styles.code}>{sponsorCode}</Text>
-          <Text style={styles.helper}>Copia el código y compártelo con tus contactos.</Text>
+        <Text style={styles.label}>Tu código de patrocinador</Text>
+        <View style={styles.qrBox}>
+          <Image
+            source={{
+              uri: `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(
+                sponsorCode,
+              )}`,
+            }}
+            style={styles.qrImage}
+          />
         </View>
+        <Text style={styles.code}>{sponsorCode}</Text>
+        <Text style={styles.helper}>
+          Comparte este QR para invitar a otras personas a TrueQIA y ganar tokens.
+        </Text>
 
         <View style={styles.tokensRow}>
           <View>
             <Text style={styles.label}>Tokens ganados por invitaciones</Text>
             <Text style={styles.tokenValue}>{tokensFromInvites}</Text>
             <Text style={styles.helper}>Valor calculado desde el backend.</Text>
+          </View>
+          <View style={{ alignItems: "flex-end" }}>
+            <Text style={styles.label}>Tokens actuales</Text>
+            <Text style={styles.tokenValue}>{totalTokens}</Text>
+            <Text style={styles.helper}>Incluye tus tokens y referidos.</Text>
           </View>
         </View>
       </View>
@@ -96,12 +112,18 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
     letterSpacing: 0.4,
   },
-  codeBox: {
+  qrBox: {
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 16,
+    borderRadius: 12,
     backgroundColor: "#F4F6FC",
-    borderRadius: 10,
-    padding: 12,
     borderWidth: 1,
     borderColor: colors.border,
+  },
+  qrImage: {
+    width: 200,
+    height: 200,
   },
   code: {
     fontSize: 18,
