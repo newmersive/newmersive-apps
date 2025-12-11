@@ -198,7 +198,7 @@ router.post(
 router.post(
   "/contracts/preview",
   authRequired,
-  (req: Request, res: Response): void => {
+  async (req: Request, res: Response): Promise<void> => {
     try {
       const { offerTitle, requesterName, providerName, tokens } =
         req.body as {
@@ -218,7 +218,7 @@ router.post(
         return;
       }
 
-      const contract = generateContractPreview({
+      const contract = await generateContractPreview({
         offerTitle,
         requesterName,
         providerName,

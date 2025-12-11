@@ -43,6 +43,31 @@ router.get(
 );
 
 /* =========================
+   GET /admin/summary
+========================= */
+
+router.get(
+  "/summary",
+  authRequired,
+  adminOnly,
+  (req: Request, res: Response): void => {
+    try {
+      const db = getDatabase();
+
+      res.json({
+        users: db.users.length,
+        leads: db.leadsGlobal.length,
+        offers: db.offers.length,
+        trades: db.trades.length,
+      });
+    } catch (err) {
+      console.error("Error in GET /admin/summary:", err);
+      res.status(500).json({ error: "INTERNAL_ERROR" });
+    }
+  }
+);
+
+/* =========================
    GET /admin/users
 ========================= */
 

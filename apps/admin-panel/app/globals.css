@@ -227,6 +227,10 @@ button.secondary {
   color: var(--muted);
 }
 
+.muted {
+  color: var(--muted);
+}
+
 .allwain-card .small {
   color: #5a5a5a;
 }
@@ -312,4 +316,35 @@ button.secondary {
   text-align: center;
   color: var(--muted);
   padding: 12px 0;
+}
+
+.big-number {
+  font-size: 32px;
+  font-weight: 700;
+  margin: 6px 0;
+}
+
+.ia-list {
+  list-style: none;
+  padding: 0;
+  margin: 12px 0 0 0;
+  display: grid;
+  gap: 12px;
+}
+
+.ia-list li {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.status-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  margin: 6px 0;
+  text-transform: capitalize;
 }
