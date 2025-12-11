@@ -159,27 +159,26 @@ export function listTradesForUser(userId?: string) {
    CONTRACTS (TRUEQIA)
 ========================= */
 
-export function generateContractPreview(
+export async function generateContractPreview(
   input: DemoContractInput
-): Contract {
-  const text = `
-  CONTRATO DE TRUEQUE DEMO
+): Promise<Contract> {
+  const { generateContractText } = await import(
+    "./ai/contracts.ai.service"
+  );
 
-  OFERTA: ${input.offerTitle}
-  SOLICITANTE: ${input.requesterName}
-  PROVEEDOR: ${input.providerName}
-
-  TOKENS ACORDADOS: ${input.tokens}
-
-  Este contrato es solo una simulación sin validez legal.
-  `;
+  const generatedText = await generateContractText({
+    title: input.offerTitle,
+    requesterName: input.requesterName,
+    providerName: input.providerName,
+    tokens: input.tokens,
+  });
 
   const contract: Contract = {
     id: randomUUID(),
     app: "trueqia",
     type: "trade",
     status: "draft",
-    generatedText: text.trim(),
+    generatedText,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   };

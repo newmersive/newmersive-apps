@@ -66,6 +66,31 @@ export interface Trade {
   resolvedAt?: string;
 }
 
+export interface Lead {
+  id: string;
+  name?: string;
+  phone?: string;
+  email?: string;
+  message: string;
+  channel: string;
+  sourceApp: string;
+  status: string;
+  createdAt: string;
+}
+
+export interface AdminSummary {
+  users: number;
+  leads: number;
+  offers: number;
+  trades: number;
+}
+
+export interface SponsorSummary {
+  totalInvited: number;
+  totalSaved: number;
+  totalCommission: number;
+}
+
 async function apiRequest<T>(path: string, options: RequestInit = {}) {
   const res = await fetch(`${API_BASE_URL}${path}`, {
     ...options,
@@ -123,6 +148,24 @@ export async function fetchOffers(owner: "trueqia" | "allwain", token: string) {
 
 export async function fetchTrades(token: string) {
   return apiRequest<{ items: Trade[] }>("/trueqia/trades", {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+export async function fetchAdminLeads(token: string) {
+  return apiRequest<{ items: Lead[] }>("/admin/leads", {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+export async function fetchAdminSummary(token: string) {
+  return apiRequest<AdminSummary>("/admin/summary", {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+export async function fetchAllwainSponsorSummary(token: string) {
+  return apiRequest<SponsorSummary>("/allwain/sponsors/summary", {
     headers: { Authorization: `Bearer ${token}` },
   });
 }
