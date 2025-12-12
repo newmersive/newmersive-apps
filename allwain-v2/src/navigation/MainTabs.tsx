@@ -3,7 +3,7 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 
 import HomeScreen from "../screens/Scan/HomeScreen";
 import OffersScreen from "../screens/Offers/OffersScreen";
-import SponsorScreen from "../screens/Sponsors/SponsorScreen";
+import SponsorsScreen from "../screens/Sponsors/SponsorsScreen";
 import ProfileMainScreen from "../screens/Profile/ProfileMainScreen";
 import { MainTabParamList } from "./types";
 
@@ -30,7 +30,7 @@ export default function MainTabs() {
 
       <Tab.Screen
         name="ProgramaRecomendados"
-        component={SponsorScreen}
+        component={SponsorsScreen}
         options={{ title: "Programa recomendados" }}
       />
 

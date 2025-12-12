@@ -14,7 +14,7 @@ import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { colors } from "../../theme/colors";
 import { useAuthStore } from "../../store/auth.store";
-import { RootStackParamList } from "../../navigation/RootNavigator";
+import { RootStackParamList } from "../../navigation/types";
 
 export default function AuthScreen() {
   const navigation =
