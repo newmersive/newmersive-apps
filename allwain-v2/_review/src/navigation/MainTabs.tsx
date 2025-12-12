@@ -3,7 +3,7 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 
 import HomeScreen from "../screens/Scan/HomeScreen";
 import OffersScreen from "../screens/Offers/OffersScreen";
-import SponsorScreen from "../screens/Sponsors/SponsorScreen";
+import SponsorScreen from "../screens/Sponsor/SponsorScreen";
 import ProfileMainScreen from "../screens/Profile/ProfileMainScreen";
 import { MainTabParamList } from "./types";
 
