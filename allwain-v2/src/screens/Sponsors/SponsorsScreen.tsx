@@ -37,7 +37,7 @@ function buildLocalQrMatrix(seed: string, size = 15) {
   );
 }
 
-export default function SponsorScreen() {
+export default function SponsorsScreen() {
   const user = useAuthStore((s) => s.user);
   const [loading, setLoading] = useState(true);
   const [snapshot, setSnapshot] = useState<SponsorsSnapshot | null>(null);
