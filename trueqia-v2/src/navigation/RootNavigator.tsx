@@ -1,7 +1,6 @@
 import React, { useEffect } from "react";
 import { ActivityIndicator, View } from "react-native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 import AuthScreen from "../screens/Auth/AuthScreen";
 import SponsorQRScreen from "../screens/Auth/SponsorQRScreen";
@@ -48,65 +47,63 @@ export default function RootNavigator() {
   }
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <Stack.Navigator
-        initialRouteName="Splash"
-        screenOptions={{
-          headerStyle: { backgroundColor: colors.background },
-          headerTitleStyle: { color: colors.text },
-          headerShadowVisible: false,
-          contentStyle: { backgroundColor: colors.background },
-        }}
-      >
-        <Stack.Screen
-          name="Splash"
-          component={SplashScreen}
-          options={{ headerShown: false }}
-        />
+    <Stack.Navigator
+      initialRouteName="Splash"
+      screenOptions={{
+        headerStyle: { backgroundColor: colors.background },
+        headerTitleStyle: { color: colors.text },
+        headerShadowVisible: false,
+        contentStyle: { backgroundColor: colors.background },
+      }}
+    >
+      <Stack.Screen
+        name="Splash"
+        component={SplashScreen}
+        options={{ headerShown: false }}
+      />
 
-        {user ? (
-          <>
-            <Stack.Screen
-              name="MainTabs"
-              component={MainTabs}
-              options={{ headerShown: false }}
-            />
-            <Stack.Screen
-              name="OffersList"
-              component={OffersListScreen}
-              options={{ title: "Ofertas" }}
-            />
-            <Stack.Screen
-              name="TradeDetail"
-              component={TradeDetailScreen}
-              options={{ title: "Detalle de trueque" }}
-            />
-            <Stack.Screen
-              name="ContractPreview"
-              component={ContractPreviewScreen}
-              options={{ title: "Contrato IA" }}
-            />
-            <Stack.Screen
-              name="CreateOffer"
-              component={CreateOfferScreen}
-              options={{ title: "Crear oferta" }}
-            />
-          </>
-        ) : (
-          <>
-            <Stack.Screen
-              name="Auth"
-              component={AuthScreen}
-              options={{ headerShown: false }}
-            />
-            <Stack.Screen
-              name="SponsorQR"
-              component={SponsorQRScreen}
-              options={{ title: "Invitación" }}
-            />
-          </>
-        )}
-      </Stack.Navigator>
-    </GestureHandlerRootView>
+      {user ? (
+        <>
+          <Stack.Screen
+            name="MainTabs"
+            component={MainTabs}
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="OffersList"
+            component={OffersListScreen}
+            options={{ title: "Ofertas" }}
+          />
+          <Stack.Screen
+            name="TradeDetail"
+            component={TradeDetailScreen}
+            options={{ title: "Detalle de trueque" }}
+          />
+          <Stack.Screen
+            name="ContractPreview"
+            component={ContractPreviewScreen}
+            options={{ title: "Contrato IA" }}
+          />
+          <Stack.Screen
+            name="CreateOffer"
+            component={CreateOfferScreen}
+            options={{ title: "Crear oferta" }}
+          />
+        </>
+      ) : (
+        <>
+          <Stack.Screen
+            name="Auth"
+            component={AuthScreen}
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="SponsorQR"
+            component={SponsorQRScreen}
+            options={{ title: "Invitación" }}
+          />
+        </>
+      )}
+    </Stack.Navigator>
   );
 }
