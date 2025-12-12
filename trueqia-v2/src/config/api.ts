@@ -1,5 +1,9 @@
-export const API_BASE_URL =
-  process.env.EXPO_PUBLIC_API_BASE_URL || "http://localhost:4000/api";
+const envBaseUrl =
+  (typeof globalThis !== "undefined" &&
+    (globalThis as any)?.process?.env?.EXPO_PUBLIC_API_BASE_URL) ||
+  undefined;
+
+export const API_BASE_URL = envBaseUrl || "http://localhost:4000/api";
 
 export interface AuthResponse {
   token: string;

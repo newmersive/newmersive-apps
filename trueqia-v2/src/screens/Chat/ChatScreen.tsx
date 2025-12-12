@@ -1,58 +1,39 @@
 import React from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  FlatList,
-  TouchableOpacity,
-} from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
+import { useNavigation } from "@react-navigation/native";
 import { colors } from "../../config/theme";
 
-const demoConversations = [
-  {
-    id: "1",
-    title: "Diseño UX por mentoría",
-    preview: "¿Te funciona tener el entregable el viernes?",
-  },
-  {
-    id: "2",
-    title: "Clases de inglés",
-    preview: "Puedo darte 2 tokens de descuento si iniciamos mañana",
-  },
-];
-
 export default function ChatScreen() {
+  const navigation = useNavigation<any>();
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Chat de trueques</Text>
-      <Text style={styles.subtitle}>Módulo en desarrollo</Text>
+      <Text style={styles.subtitle}>Conversaciones seguras</Text>
 
       <Text style={styles.description}>
-        Aquí verás tus conversaciones sobre trueques. Muy pronto podrás
-        coordinar detalles, compartir archivos y recibir notificaciones en
-        tiempo real.
+        Aquí verás las conversaciones asociadas a tus trueques. Estamos
+        habilitando la mensajería segura para coordinar detalles y compartir
+        archivos con tus contactos.
       </Text>
       <Text style={styles.caption}>
         Las demás secciones (ofertas, trueques, contratos) siguen activas.
+        Recibirás una notificación cuando el chat esté disponible.
       </Text>
 
-      <FlatList
-        data={demoConversations}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={{ gap: 10, marginTop: 16 }}
-        renderItem={({ item }) => (
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>{item.title}</Text>
-            <Text style={styles.cardPreview}>{item.preview}</Text>
-          </View>
-        )}
-        ListHeaderComponent={() => (
-          <Text style={styles.listTitle}>Conversaciones de ejemplo</Text>
-        )}
-      />
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Tu chat aparecerá aquí</Text>
+        <Text style={styles.cardPreview}>
+          En cuanto tengas un trueque activo, crearemos un canal privado para
+          que coordines el intercambio sin salir de TrueQIA.
+        </Text>
+      </View>
 
-      <TouchableOpacity style={styles.button} disabled>
-        <Text style={styles.buttonText}>Pronto podrás chatear aquí</Text>
+      <TouchableOpacity
+        style={styles.button}
+        onPress={() => navigation.navigate("Offers")}
+      >
+        <Text style={styles.buttonText}>Explorar ofertas</Text>
       </TouchableOpacity>
     </View>
   );
@@ -83,11 +64,6 @@ const styles = StyleSheet.create({
     color: colors.muted,
     marginTop: 6,
     fontSize: 12,
-  },
-  listTitle: {
-    color: colors.text,
-    fontWeight: "700",
-    marginBottom: 6,
   },
   card: {
     backgroundColor: colors.surface,

@@ -4,26 +4,27 @@ import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../../navigation/RootNavigator";
 import { colors } from "../../config/theme";
 
-const MOCK_SPONSOR_CODE = "SPONSOR-DEMO-QR";
+const FALLBACK_SPONSOR_CODE = "SPONSOR-QR";
 
 type Props = NativeStackScreenProps<RootStackParamList, "SponsorQR">;
 
 export default function SponsorQRScreen({ navigation, route }: Props) {
   const handleUseCode = (code?: string) => {
-    navigation.navigate("Auth", { sponsorCode: code || MOCK_SPONSOR_CODE });
+    navigation.navigate("Auth", { sponsorCode: code || FALLBACK_SPONSOR_CODE });
   };
 
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Escanear QR de patrocinador</Text>
       <Text style={styles.subtitle}>
-        Esta pantalla simula la lectura de un código QR de invitación. Al
-        integrar el escáner se debe navegar a esta vista y pasar el código.
+        Escanea el código de invitación de tu patrocinador para continuar con el
+        registro. Si llegaste desde un lector externo, verás el código
+        detectado listo para usar.
       </Text>
 
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Código detectado</Text>
-        <Text style={styles.code}>{route.params?.code || MOCK_SPONSOR_CODE}</Text>
+        <Text style={styles.code}>{route.params?.code || FALLBACK_SPONSOR_CODE}</Text>
         <TouchableOpacity
           style={styles.button}
           onPress={() => handleUseCode(route.params?.code)}
@@ -33,7 +34,7 @@ export default function SponsorQRScreen({ navigation, route }: Props) {
       </View>
 
       <TouchableOpacity style={styles.link} onPress={() => handleUseCode()}>
-        <Text style={styles.linkText}>Probar con código de ejemplo</Text>
+        <Text style={styles.linkText}>Ingresar con este código</Text>
       </TouchableOpacity>
     </View>
   );
