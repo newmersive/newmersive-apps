@@ -1,0 +1,126 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id             String   @id
+  name           String
+  email          String   @unique
+  passwordHash   String
+  role           String
+  sponsorCode    String?  @unique
+  referredByCode String?
+  avatarUrl      String?
+  tokens         Int?
+  allwainBalance Float?
+  createdAt      DateTime @default(now())
+}
+
+model Offer {
+  id          String   @id
+  title       String
+  description String
+  owner       String
+  ownerUserId String
+  tokens      Int?
+  price       Float?
+  productId   String?
+  meta        Json?
+  createdAt   DateTime @default(now())
+  isUnique    Boolean  @default(false)
+}
+
+model Trade {
+  id         String    @id
+  offerId    String
+  fromUserId String
+  toUserId   String
+  tokens     Int
+  status     String
+  createdAt  DateTime  @default(now())
+  resolvedAt DateTime?
+}
+
+model Product {
+  id          String  @id
+  name        String
+  ean         String? @unique
+  category    String?
+  brand       String?
+  description String?
+  imageUrl    String?
+  priceTokens Int?
+}
+
+model Lead {
+  id        String   @id
+  name      String?
+  email     String?
+  phone     String?
+  source    String
+  message   String?
+  offerId   String?
+  userId    String?
+  status    String
+  createdAt DateTime @default(now())
+  notes     String?
+}
+
+model LeadGlobal {
+  id        String   @id
+  createdAt DateTime @default(now())
+  channel   String
+  sourceApp String
+  name      String?
+  phone     String?
+  email     String?
+  message   String
+  status    String
+  meta      Json?
+}
+
+model Contract {
+  id            String   @id
+  app           String
+  type          String
+  status        String
+  basePdfId     String?
+  generatedText String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @default(now())
+}
+
+model OrderGroup {
+  id                String @id
+  productId         String
+  totalUnits        Int
+  minUnitsPerClient Int
+  status            String
+  participants      Json
+}
+
+model ReferralStat {
+  id                  String @id
+  userId              String
+  invitedUserId       String
+  totalSavedByInvited Float
+  commissionEarned    Float
+  monthlyHistory      Json
+}
+
+model AllwainSavingTransaction {
+  id        String   @id
+  userId    String
+  amount    Float
+  createdAt DateTime @default(now())
+}
+
+model PasswordResetToken {
+  token     String @id
+  userId    String
+  expiresAt BigInt
+}

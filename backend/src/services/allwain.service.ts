@@ -6,69 +6,57 @@ import {
   AllwainSavingTransaction,
   ReferralStat,
 } from "../shared/types";
+import { ENV } from "../config/env";
+import { getUserByIdPg, upsertUserPg } from "./data.store.pg";
 import {
-  getOffersByOwner,
-  addOffer,
-  getProducts,
-  getProductById,
-  getProductByEAN,
-  getOrderGroups,
-  addOrderGroup,
-  addSaving,
-  addReferralStat,
-  getReferralStatsByUser,
-  getUserById,
-  upsertUser,
-} from "./data.store";
+  getRandomProductPg,
+  getProductByEANPg,
+  getAllwainOffersPg,
+  addAllwainOfferPg,
+  getOrderGroupsPg,
+  createOrderGroupPg,
+  updateOrderGroupPg,
+  addSavingPg,
+  addReferralStatPg,
+  getReferralStatsByUserPg,
+} from "./data.store.allwain.pg";
 
 /* =========================
-   SCAN DEMO
+   SCAN DEMO (POSTGRES)
 ========================= */
 
-export function scanDemoProduct(ean?: string) {
-  let product: Product | undefined;
-
-  if (ean) {
-    product = getProductByEAN(ean);
-  }
+export async function scanDemoProduct(ean?: string) {
+  const product = ean
+    ? await getProductByEANPg(ean)
+    : await getRandomProductPg();
 
   if (!product) {
-    const products = getProducts();
-    product = products[Math.floor(Math.random() * products.length)];
+    return { product: null, offers: [] };
   }
 
-  if (!product)
-    return {
-      product: null,
-      offers: [],
-    };
-
-  const offers = getOffersByOwner("allwain").filter(
-    o => o.productId === product!.id
+  const offers = (await getAllwainOffersPg()).filter(
+    o => o.productId === product.id
   );
 
-  return {
-    product,
-    offers,
-  };
+  return { product, offers };
 }
 
 /* =========================
-   OFFERS (ALLWAIN)
+   OFFERS
 ========================= */
 
-export function listAllwainOffers() {
-  return getOffersByOwner("allwain");
+export async function listAllwainOffers() {
+  return getAllwainOffersPg();
 }
 
-export function createAllwainOffer(
+export async function createAllwainOffer(
   userId: string,
   title: string,
   description: string,
   price: number,
   productId?: string,
   meta?: Record<string, unknown>
-): Offer {
+): Promise<Offer> {
   const offer: Offer = {
     id: randomUUID(),
     title,
@@ -80,21 +68,21 @@ export function createAllwainOffer(
     meta,
   };
 
-  return addOffer(offer);
+  return addAllwainOfferPg(offer);
 }
 
 /* =========================
    ORDER GROUPS
 ========================= */
 
-export function listOrderGroups() {
-  return getOrderGroups();
+export async function listOrderGroups() {
+  return getOrderGroupsPg();
 }
 
-export function createOrderGroup(
+export async function createOrderGroup(
   productId: string,
   minUnitsPerClient: number
-): OrderGroup {
+): Promise<OrderGroup> {
   const group: OrderGroup = {
     id: randomUUID(),
     productId,
@@ -104,41 +92,39 @@ export function createOrderGroup(
     participants: [],
   };
 
-  return addOrderGroup(group);
+  return createOrderGroupPg(group);
 }
 
-export function joinOrderGroup(
+export async function joinOrderGroup(
   groupId: string,
   userId: string,
   units: number
 ) {
-  const groups = getOrderGroups();
+  const groups = await getOrderGroupsPg();
   const group = groups.find(g => g.id === groupId);
   if (!group) throw new Error("GROUP_NOT_FOUND");
 
-  const participant = group.participants.find(p => p.userId === userId);
-  if (participant) {
-    participant.units += units;
-  } else {
-    group.participants.push({ userId, units });
-  }
+  const participants = group.participants as any[];
+
+  const participant = participants.find(p => p.userId === userId);
+  if (participant) participant.units += units;
+  else participants.push({ userId, units });
 
   group.totalUnits += units;
-  return group;
+  group.participants = participants;
+
+  return updateOrderGroupPg(group);
 }
 
 /* =========================
    SAVINGS + REFERRALS
 ========================= */
 
-export function registerSaving(
+export async function registerSaving(
   userId: string,
   amount: number
-): {
-  saving: AllwainSavingTransaction;
-  referral?: ReferralStat;
-} {
-  const user = getUserById(userId);
+): Promise<{ saving: AllwainSavingTransaction; referral?: ReferralStat }> {
+  const user = await getUserByIdPg(userId);
   if (!user) throw new Error("USER_NOT_FOUND");
 
   const saving: AllwainSavingTransaction = {
@@ -148,57 +134,47 @@ export function registerSaving(
     createdAt: new Date().toISOString(),
   };
 
-  addSaving(saving);
+  await addSavingPg(saving);
 
   user.allwainBalance = (user.allwainBalance || 0) + amount;
-  upsertUser(user);
+  await upsertUserPg(user);
 
-  let referralStat: ReferralStat | undefined;
+  let referral: ReferralStat | undefined;
 
   if (user.referredByCode) {
-    const sponsor = getUserById(
-      getReferralStatsByUser(user.referredByCode)?.[0]?.userId || ""
-    );
+    const stats = await getReferralStatsByUserPg(user.referredByCode);
+    const sponsorId = stats?.[0]?.userId;
+    if (sponsorId) {
+      const sponsor = await getUserByIdPg(sponsorId);
+      if (sponsor) {
+        const commission = amount * 0.1;
+        sponsor.allwainBalance =
+          (sponsor.allwainBalance || 0) + commission;
+        await upsertUserPg(sponsor);
 
-    if (sponsor) {
-      const commission = amount * 0.1;
+        referral = {
+          id: randomUUID(),
+          userId: sponsor.id,
+          invitedUserId: user.id,
+          totalSavedByInvited: amount,
+          commissionEarned: commission,
+          monthlyHistory: [],
+        };
 
-      sponsor.allwainBalance =
-        (sponsor.allwainBalance || 0) + commission;
-      upsertUser(sponsor);
-
-      referralStat = {
-        id: randomUUID(),
-        userId: sponsor.id,
-        invitedUserId: user.id,
-        totalSavedByInvited: amount,
-        commissionEarned: commission,
-        monthlyHistory: [],
-      };
-
-      addReferralStat(referralStat);
+        await addReferralStatPg(referral);
+      }
     }
   }
 
-  return { saving, referral: referralStat };
+  return { saving, referral };
 }
 
-/* =========================
-   SPONSORS SUMMARY
-========================= */
-
-export function getSponsorSummary(userId: string) {
-  const stats = getReferralStatsByUser(userId);
+export async function getSponsorSummary(userId: string) {
+  const stats = await getReferralStatsByUserPg(userId);
 
   const totalInvited = stats.length;
-  const totalSaved = stats.reduce(
-    (sum, r) => sum + r.totalSavedByInvited,
-    0
-  );
-  const totalCommission = stats.reduce(
-    (sum, r) => sum + r.commissionEarned,
-    0
-  );
+  const totalSaved = stats.reduce((s, r) => s + r.totalSavedByInvited, 0);
+  const totalCommission = stats.reduce((s, r) => s + r.commissionEarned, 0);
 
   return {
     totalInvited,
