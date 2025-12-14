@@ -3,6 +3,19 @@ import { useAuthStore } from "../store/auth.store";
 export const API_BASE_URL =
   process.env.EXPO_PUBLIC_API_BASE_URL || "http://localhost:4000/api";
 
+export interface AuthResponse {
+  token: string;
+  user: {
+    id: string;
+    email: string;
+    role: string;
+    name?: string;
+    sponsorCode?: string;
+    referredByCode?: string;
+    tokens?: number;
+  };
+}
+
 export interface AllwainOffer {
   id: string;
   title: string;

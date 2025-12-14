@@ -10,6 +10,9 @@ import ScanScreen from "../screens/Scan/ScanScreen";
 import ScanResultScreen from "../screens/Scan/ScanResultScreen";
 import MainTabs from "./MainTabs";
 import { RootStackParamList } from "./types";
+import { demoModeEnabled } from "../config/env";
+import DemoLandingScreen from "../screens/Demo/DemoLandingScreen";
+import DemoScanResultScreen from "../screens/Demo/DemoScanResultScreen";
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -26,6 +29,15 @@ export default function RootNavigator() {
       <Stack.Screen name="SponsorQR" component={SponsorQRScreen} />
       <Stack.Screen name="Scan" component={ScanScreen} />
       <Stack.Screen name="ScanResult" component={ScanResultScreen} />
+      {demoModeEnabled ? (
+        <>
+          <Stack.Screen name="DemoLanding" component={DemoLandingScreen} />
+          <Stack.Screen
+            name="DemoScanResult"
+            component={DemoScanResultScreen}
+          />
+        </>
+      ) : null}
       <Stack.Screen name="MainTabs" component={MainTabs} />
     </Stack.Navigator>
   );

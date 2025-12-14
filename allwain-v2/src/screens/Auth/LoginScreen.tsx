@@ -7,8 +7,9 @@ import {
   StyleSheet,
   ActivityIndicator,
 } from "react-native";
-import { apiPost, API_BASE_URL } from "../../config/api";
+import { API_BASE_URL } from "../../config/api";
 import { useAuthStore } from "../../store/auth.store";
+import { demoModeEnabled } from "../../config/env";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../../navigation/types";
 
@@ -20,7 +21,7 @@ export default function LoginScreen({ navigation }: Props) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const setAuth = useAuthStore((s) => s.setAuth);
+  const login = useAuthStore((s) => s.login);
 
   async function handleLogin() {
     const cleanEmail = email.trim().toLowerCase();
@@ -33,26 +34,7 @@ export default function LoginScreen({ navigation }: Props) {
       console.log("[LOGIN] base:", API_BASE_URL);
       console.log("[LOGIN] email:", cleanEmail);
 
-      const res = await apiPost<any>("/auth/login", {
-        email: cleanEmail,
-        password: cleanPass,
-      });
-
-      console.log("[LOGIN] res keys:", res ? Object.keys(res) : null);
-
-      if (!res?.token) {
-        throw new Error("NO_TOKEN_IN_RESPONSE");
-      }
-
-      const user = res.user ?? {};
-      setAuth({
-        token: String(res.token),
-        user: {
-          id: String(user.id ?? ""),
-          email: String(user.email ?? cleanEmail),
-          role: String(user.role ?? "user"),
-        },
-      });
+      await login(cleanEmail, cleanPass);
 
       console.log("[LOGIN] setAuth OK, navigating -> MainTabs");
       navigation.replace("MainTabs");
@@ -101,6 +83,15 @@ export default function LoginScreen({ navigation }: Props) {
           <Text style={styles.buttonText}>Entrar</Text>
         )}
       </TouchableOpacity>
+
+      {demoModeEnabled ? (
+        <TouchableOpacity
+          style={[styles.button, { backgroundColor: "#FFE1D9" }]}
+          onPress={() => navigation.navigate("DemoLanding")}
+        >
+          <Text style={[styles.buttonText, { color: "#000" }]}>Probar demo</Text>
+        </TouchableOpacity>
+      ) : null}
 
       <TouchableOpacity onPress={() => navigation.navigate("Register")}>
         <Text style={styles.link}>Crear cuenta</Text>

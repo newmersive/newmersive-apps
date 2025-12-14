@@ -10,9 +10,13 @@ import OffersListScreen from "../screens/Offers/OffersListScreen";
 import TradeDetailScreen from "../screens/Trades/TradeDetailScreen";
 import ContractPreviewScreen from "../screens/Contracts/ContractPreviewScreen";
 import CreateOfferScreen from "../screens/Offers/CreateOfferScreen";
+import DemoLandingScreen from "../screens/Demo/DemoLandingScreen";
+import DemoOffersScreen from "../screens/Demo/DemoOffersScreen";
+import DemoOfferDetailScreen from "../screens/Demo/DemoOfferDetailScreen";
 
 import { useAuthStore } from "../store/auth.store";
 import { colors } from "../config/theme";
+import { demoModeEnabled } from "../config/env";
 
 export type RootStackParamList = {
   Splash: undefined;
@@ -23,6 +27,9 @@ export type RootStackParamList = {
   TradeDetail: { [key: string]: any } | undefined;
   ContractPreview: { [key: string]: any } | undefined;
   CreateOffer: { [key: string]: any } | undefined;
+  DemoLanding: undefined;
+  DemoOffers: undefined;
+  DemoOfferDetail: { id: string } | undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -102,6 +109,25 @@ export default function RootNavigator() {
             component={SponsorQRScreen}
             options={{ title: "Invitación" }}
           />
+          {demoModeEnabled ? (
+            <>
+              <Stack.Screen
+                name="DemoLanding"
+                component={DemoLandingScreen}
+                options={{ headerShown: false }}
+              />
+              <Stack.Screen
+                name="DemoOffers"
+                component={DemoOffersScreen}
+                options={{ title: "Ofertas demo" }}
+              />
+              <Stack.Screen
+                name="DemoOfferDetail"
+                component={DemoOfferDetailScreen}
+                options={{ title: "Detalle demo" }}
+              />
+            </>
+          ) : null}
         </>
       )}
     </Stack.Navigator>

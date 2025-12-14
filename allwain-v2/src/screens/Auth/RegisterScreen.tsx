@@ -7,7 +7,6 @@ import {
   StyleSheet,
   ActivityIndicator,
 } from "react-native";
-import { apiPost, AuthResponse } from "../../config/api";
 import { useAuthStore } from "../../store/auth.store";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../../navigation/types";
@@ -46,7 +45,7 @@ export default function RegisterScreen({ navigation }: Props) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const setAuth = useAuthStore((s) => s.setAuth);
+  const register = useAuthStore((s) => s.register);
 
   async function handleRegister() {
     if (!name || !email || !password || !role) {
@@ -58,15 +57,7 @@ export default function RegisterScreen({ navigation }: Props) {
       setLoading(true);
       setError(null);
 
-      const result = await apiPost<AuthResponse>("/auth/register", {
-        name,
-        email,
-        password,
-        role,
-        app: "allwain",
-      });
-
-      setAuth(result);
+      await register(name, email, password, undefined, role);
       navigation.replace("MainTabs");
     } catch (err: any) {
       if (err?.message === "EMAIL_ALREADY_EXISTS") {
