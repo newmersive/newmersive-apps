@@ -6,6 +6,9 @@ import OffersScreen from "../screens/Offers/OffersScreen";
 import SponsorsScreen from "../screens/Sponsors/SponsorsScreen";
 import ProfileMainScreen from "../screens/Profile/ProfileMainScreen";
 import { MainTabParamList } from "./types";
+import HeaderLogo from "../components/HeaderLogo";
+import { colors } from "../theme/colors";
+import logo from "../assets/logos/logo2.png";
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
@@ -14,6 +17,9 @@ export default function MainTabs() {
     <Tab.Navigator
       screenOptions={{
         headerShown: true,
+        headerTitle: () => <HeaderLogo source={logo} />,
+        headerTitleAlign: "center",
+        headerStyle: { backgroundColor: colors.background },
       }}
     >
       <Tab.Screen

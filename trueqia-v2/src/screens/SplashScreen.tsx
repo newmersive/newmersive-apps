@@ -3,9 +3,10 @@ import { View, StyleSheet, Image } from "react-native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../navigation/RootNavigator";
 import { useAuthStore } from "../store/auth.store";
+import { colors } from "../config/theme";
 
-const ACCENT_COLOR = "#004BFF";
-const BACKGROUND_COLOR = "#FFFFFF";
+const ACCENT_COLOR = colors.primary;
+const BACKGROUND_COLOR = colors.background;
 
 const LOGO = require("../assets/logos/trueqia-logo.png");
 

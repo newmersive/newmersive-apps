@@ -42,7 +42,7 @@ export default function SponsorQRScreen({ navigation, route }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.primary,
+    backgroundColor: colors.background,
     padding: 24,
     justifyContent: "center",
     gap: 16,
@@ -50,10 +50,10 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: "800",
-    color: colors.button,
+    color: colors.text,
   },
   subtitle: {
-    color: colors.button,
+    color: colors.mutedText,
     fontSize: 15,
     lineHeight: 22,
   },

@@ -205,11 +205,11 @@ export default function AuthScreen() {
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: colors.primary },
+  safeArea: { flex: 1, backgroundColor: colors.background },
   container: {
     flex: 1,
     padding: 24,
-    backgroundColor: colors.primary,
+    backgroundColor: colors.background,
     justifyContent: "center",
   },
   header: {
@@ -229,7 +229,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 12,
     alignItems: "center",
-    backgroundColor: "rgba(255, 255, 255, 0.25)",
+    backgroundColor: colors.highlight,
   },
   switchActive: {
     backgroundColor: colors.card,

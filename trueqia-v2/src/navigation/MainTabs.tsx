@@ -8,7 +8,9 @@ import ProfileScreen from "../screens/Profile/ProfileScreen";
 import SponsorsScreen from "../screens/Profile/SponsorsScreen";
 import HomeScreen from "../screens/Home/HomeScreen";
 import OffersListScreen from "../screens/Offers/OffersListScreen";
+import HeaderLogo from "../components/HeaderLogo";
 import { colors } from "../config/theme";
+import logo from "../assets/logos/trueqia-logo2.png";
 
 const Tab = createBottomTabNavigator();
 const ProfileStack = createNativeStackNavigator();
@@ -43,6 +45,9 @@ export default function MainTabs() {
         headerStyle: { backgroundColor: colors.background },
         headerTitleStyle: { color: colors.text },
         headerShadowVisible: false,
+        headerTitleAlign: "center",
+        headerTitle: () => <HeaderLogo source={logo} />,
+        headerTintColor: colors.text,
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.muted,
         tabBarStyle: {

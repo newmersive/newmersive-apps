@@ -46,6 +46,9 @@ export default function CreateOfferScreen({ navigation }: any) {
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.title}>Crear oferta</Text>
+      <Text style={styles.subtitle}>
+        Publica tu producto o servicio y compártelo con la comunidad.
+      </Text>
 
       <Text style={styles.label}>Título</Text>
       <TextInput
@@ -110,16 +113,21 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     color: colors.text,
   },
+  subtitle: {
+    color: colors.muted,
+    marginBottom: 12,
+  },
   label: {
-    fontWeight: "600",
+    fontWeight: "700",
     color: colors.text,
   },
   input: {
     borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 8,
-    padding: 10,
-    backgroundColor: "#FFF",
+    borderColor: colors.border,
+    borderRadius: 12,
+    padding: 12,
+    backgroundColor: colors.surface,
+    color: colors.text,
   },
   multiline: {
     minHeight: 90,
@@ -133,7 +141,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   muted: {
-    color: "#555",
+    color: colors.muted,
   },
   submitButton: {
     marginTop: 12,
@@ -151,7 +159,7 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   submitText: {
-    color: "#FFF",
+    color: "#0b0c0e",
     fontWeight: "700",
     fontSize: 16,
   },

@@ -110,21 +110,20 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.primary },
+  container: { flex: 1, backgroundColor: colors.background },
   content: {
     paddingHorizontal: 18,
     paddingTop: 22,
     paddingBottom: 32,
   },
   title: {
-    color: colors.card,
+    color: colors.text,
     fontSize: 24,
     fontWeight: "800",
     marginBottom: 6,
   },
   subtitle: {
-    color: colors.card,
-    opacity: 0.9,
+    color: colors.mutedText,
     fontSize: 15,
     marginBottom: 18,
     fontWeight: "600",
