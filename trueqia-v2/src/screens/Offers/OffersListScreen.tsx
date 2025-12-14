@@ -1,61 +1,34 @@
-import React, { useCallback, useMemo, useState } from "react";
+import React, { useEffect, useMemo } from "react";
 import {
   View,
   Text,
-  Button,
   ActivityIndicator,
   FlatList,
   StyleSheet,
-  Image,
+  TouchableOpacity,
 } from "react-native";
-import { useFocusEffect } from "@react-navigation/native";
 import { useOffersStore } from "../../store/offers.store";
-import { useTradesStore } from "../../store/trades.store";
 
 export default function OffersListScreen({ navigation }: any) {
   const items = useOffersStore((s) => s.items);
   const loading = useOffersStore((s) => s.loading);
   const error = useOffersStore((s) => s.error);
   const loadOffers = useOffersStore((s) => s.loadOffers);
-  const proposeTrade = useTradesStore((s) => s.proposeTrade);
-  const [proposalStatus, setProposalStatus] = useState<Record<string, string | null>>({});
 
-  useFocusEffect(
-    useCallback(() => {
-      loadOffers();
-    }, [loadOffers])
-  );
+  useEffect(() => {
+    loadOffers();
+  }, [loadOffers]);
 
   const sortedItems = useMemo(
     () => [...items].sort((a, b) => a.title.localeCompare(b.title)),
-    [items]
+    [items],
   );
-
-  async function handlePropose(offerId: string, ownerId?: string) {
-    if (!ownerId) {
-      setProposalStatus((prev) => ({ ...prev, [offerId]: "Falta dueño" }));
-      return;
-    }
-    setProposalStatus((prev) => ({ ...prev, [offerId]: "Enviando" }));
-    const res = await proposeTrade({ offerId, toUserId: ownerId });
-    if (res) {
-      setProposalStatus((prev) => ({ ...prev, [offerId]: res.status || "pending" }));
-    } else {
-      setProposalStatus((prev) => ({ ...prev, [offerId]: "Error" }));
-    }
-  }
 
   return (
     <View style={{ flex: 1, padding: 24 }}>
       <View style={styles.headerRow}>
         <Text style={{ fontSize: 24, marginBottom: 12 }}>Ofertas</Text>
-        <Button
-          title="Crear"
-          onPress={() => navigation.navigate("CreateOffer")}
-          color="#0F6CBD"
-        />
       </View>
-      <Button title="Recargar" onPress={loadOffers} />
 
       {loading && (
         <View style={styles.statusBox}>
@@ -63,6 +36,7 @@ export default function OffersListScreen({ navigation }: any) {
           <Text style={styles.statusText}>Cargando ofertas…</Text>
         </View>
       )}
+
       {error && (
         <View style={styles.statusBox}>
           <Text style={[styles.statusText, { color: "#C1121F" }]}>
@@ -70,7 +44,9 @@ export default function OffersListScreen({ navigation }: any) {
               ? "Sesión expirada, vuelve a iniciar sesión."
               : `No pudimos cargar las ofertas: ${error}`}
           </Text>
-          <Button title="Reintentar" onPress={loadOffers} />
+          <TouchableOpacity style={styles.retryButton} onPress={loadOffers}>
+            <Text style={styles.retryText}>Reintentar</Text>
+          </TouchableOpacity>
         </View>
       )}
 
@@ -79,38 +55,22 @@ export default function OffersListScreen({ navigation }: any) {
         data={sortedItems}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
-          <View style={styles.card}>
-            <View style={styles.titleRow}>
-              {item.owner?.avatar && (
-                <Image source={{ uri: item.owner.avatar }} style={styles.avatar} />
+          <TouchableOpacity
+            style={styles.card}
+            onPress={() => navigation.navigate("ContractPreview", { offer: item })}
+          >
+            <View style={{ flex: 1 }}>
+              <Text style={styles.title}>{item.title}</Text>
+              {item.description && <Text style={styles.description}>{item.description}</Text>}
+              {typeof item.tokens === "number" && (
+                <Text style={styles.tokens}>{item.tokens} tokens</Text>
               )}
-              <View style={{ flex: 1 }}>
-                <Text style={styles.title}>{item.title}</Text>
-                {item.owner?.name && (
-                  <Text style={styles.owner}>Por {item.owner.name}</Text>
-                )}
-              </View>
             </View>
-            {item.description && (
-              <Text style={styles.description}>{item.description}</Text>
-            )}
-            {typeof item.tokens === "number" && (
-              <Text style={styles.tokens}>{item.tokens} tokens</Text>
-            )}
-            <Button
-              title="Proponer intercambio"
-              onPress={() => handlePropose(item.id, item.owner?.id)}
-            />
-            {proposalStatus[item.id] && (
-              <Text style={styles.statusText}>
-                Estado: {proposalStatus[item.id]}
-              </Text>
-            )}
-          </View>
+          </TouchableOpacity>
         )}
         ListEmptyComponent={
-          !loading ? (
-            <Text style={styles.statusText}>No hay ofertas disponibles.</Text>
+          !loading && !error ? (
+            <Text style={styles.statusText}>Aún no hay ofertas disponibles.</Text>
           ) : null
         }
       />
@@ -124,16 +84,6 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
   },
-  titleRow: {
-    flexDirection: "row",
-    gap: 8,
-    alignItems: "center",
-  },
-  avatar: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-  },
   card: {
     padding: 12,
     marginBottom: 8,
@@ -142,9 +92,16 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   title: { fontWeight: "600", marginBottom: 4 },
-  owner: { color: "#666" },
   description: { color: "#555" },
   tokens: { color: "#0F6CBD", marginTop: 4, fontWeight: "700" },
   statusBox: { marginTop: 12 },
   statusText: { color: "#444", marginTop: 6 },
+  retryButton: {
+    marginTop: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    backgroundColor: "#0F6CBD",
+    borderRadius: 8,
+  },
+  retryText: { color: "#FFF", fontWeight: "700" },
 });

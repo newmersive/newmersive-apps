@@ -1,12 +1,5 @@
-import {
-  addGlobalLead,
-  getGlobalLeads as getGlobalLeadsFromStore,
-} from "./data.store";
-import {
-  LeadGlobal,
-  LeadGlobalSourceApp,
-  LeadGlobalStatus,
-} from "../shared/types";
+import { LeadGlobal, LeadGlobalSourceApp, LeadGlobalStatus } from "../shared/types";
+import { addLeadGlobalPg, getLeadsGlobalPg } from "./data.store.pg";
 
 interface CreateWhatsappLeadInput {
   name?: string;
@@ -17,9 +10,7 @@ interface CreateWhatsappLeadInput {
   status?: LeadGlobalStatus;
 }
 
-export function createWhatsappLead(
-  input: CreateWhatsappLeadInput
-): LeadGlobal {
+export async function createWhatsappLead(input: CreateWhatsappLeadInput): Promise<LeadGlobal> {
   const lead: LeadGlobal = {
     id: `lead-global-${Date.now()}`,
     channel: "whatsapp",
@@ -32,9 +23,9 @@ export function createWhatsappLead(
     status: input.status ?? "new",
   };
 
-  return addGlobalLead(lead);
+  return addLeadGlobalPg(lead);
 }
 
-export function getGlobalLeads(): LeadGlobal[] {
-  return getGlobalLeadsFromStore();
+export async function getGlobalLeads(): Promise<LeadGlobal[]> {
+  return getLeadsGlobalPg();
 }

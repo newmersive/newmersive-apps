@@ -8,6 +8,7 @@ type User = {
   email: string;
   role: string;
   sponsorCode?: string;
+  qrCode?: string;
   referredByCode?: string;
   avatarUrl?: string;
   tokens?: number;
@@ -71,7 +72,11 @@ export const useAuthStore = create<AuthState>((set) => ({
     }
   },
   login: async (email, password) => {
-    const res = await apiPost<AuthResponse>("/auth/login", { email, password });
+    const res = await apiPost<AuthResponse>("/auth/login", {
+      email,
+      password,
+      app: "trueqia",
+    });
     await persistAuth(res.token, res.user);
     set({ token: res.token, user: res.user, sessionMessage: null });
   },
@@ -80,6 +85,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       name,
       email,
       password,
+      app: "trueqia",
       ...(sponsorCode ? { sponsorCode } : {}),
     });
     await persistAuth(res.token, res.user);

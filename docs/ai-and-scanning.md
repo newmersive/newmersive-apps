@@ -1,27 +1,23 @@
 # IA y flujo de escaneo
 
 ## Propósito
-- Documentar los módulos de IA demo (contratos y moderación) y el flujo de escaneo/lookup de productos Allwain.
-- Facilitar troubleshooting de endpoints simulados que las apps móviles consumen.
+Explicar los stubs de IA (contratos y moderación) y cómo se conectan con las rutas actuales, junto al flujo de escaneo/lookup de productos Allwain.
 
 ## Componentes
-- **Contratos demo**: `backend/src/ia/contracts.service.ts` genera texto de contrato de trueque para `/trueqia/contracts/preview`.
-- **Moderación demo**: `backend/src/ia/moderation.service.ts` expone eventos ficticios consumidos por `/admin/ai/activity`.
+- **Contratos demo**:
+  - Servicio: `backend/src/services/ai/contracts.ai.service.ts` expone `generateContractText`, que construye el texto de contrato sin depender de un proveedor externo.
+  - Ruta: `/trueqia/contracts/preview` usa `generateContractPreview` (en `services/trueqia.service.ts`) para llamar al stub y guardar el borrador.
+  - Payload esperado: `offerTitle`, `requesterName`, `providerName`, `tokens`.
+- **Moderación demo**: `/admin/ai/activity` devuelve eventos de ejemplo consumidos por el panel admin (no hay scoring real todavía).
 - **Escaneo Allwain**:
-  - Endpoint `/allwain/scan-demo`: armado en `allwain.routes.ts` con `buildAllwainScanDemo` (`services/allwain-demo.service.ts`).
-  - Lookup realista de productos: `/allwain/products/:id` y `/allwain/products?ean=` usan `services/allwain.service.ts`.
-- **Clientes**:
-  - TrueQIA: `ContractPreviewScreen` (POST contrato demo).
-  - Allwain: `ScanScreen` → `ScanResultScreen` para `/scan-demo`; `DealsScreen` y otras pantallas usan productos/ofertas.
+  - `/allwain/scan-demo` y productos (`/allwain/products/:id`, `/allwain/products?ean=`) viven en `routes/allwain.routes.ts` con lógica en `services/allwain.service.ts` y `services/allwain-demo.service.ts`.
 
-## Cómo se despliega
-1. Depende del backend compilado; no requiere dependencias externas.
-2. Exponer `/api/trueqia/contracts/preview`, `/api/admin/ai/activity` y `/api/allwain/*` tras proxy HTTPS.
-3. Ajustar `EXPO_PUBLIC_API_BASE_URL` en apps al host publicado; sin ello las llamadas fallarán en dispositivos móviles.
+## Cómo sustituir por un modelo IA real
+1. Implementar la llamada al proveedor deseado dentro de `services/ai/contracts.ai.service.ts` manteniendo la misma firma y tipos.
+2. No es necesario tocar las rutas: `generateContractPreview` ya abstrae la generación y guarda el resultado en la base de datos demo.
+3. Para moderación, extender el stub de `/admin/ai/activity` o crear un servicio similar que lea de la fuente elegida.
 
-## Cómo se repara (errores típicos)
-- **Contrato vacío o 500**: payload incorrecto en `ContractPreviewScreen`; validar que se envían campos esperados (titulo, partes). Revisar logs del backend.
-- **Eventos IA siempre iguales**: comportamiento esperado (demo). Para más detalle agregar eventos en `moderation.service.ts`.
-- **Escaneo devuelve 401**: falta token; el endpoint exige auth incluso siendo demo.
-- **`PRODUCT_NOT_FOUND`**: EAN/ID inexistente; usar IDs semilla del JSON (`products` en `data.store.ts`).
-- **`INVALID_LOCATION` en ofertas Allwain**: parámetros `lat/lng` no numéricos; probar sin filtros o enviar números válidos.
+## Despliegue y notas
+- No requiere dependencias externas ni claves IA en el estado actual.
+- Exponer `/api/trueqia/contracts/preview`, `/api/admin/ai/activity` y `/api/allwain/*` tras proxy HTTPS.
+- Ajustar `EXPO_PUBLIC_API_BASE_URL` o `NEXT_PUBLIC_API_BASE_URL` para que apps y panel apunten al host correcto.

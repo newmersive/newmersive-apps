@@ -14,7 +14,8 @@ import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { colors } from "../../theme/colors";
 import { useAuthStore } from "../../store/auth.store";
-import { RootStackParamList } from "../../navigation/RootNavigator";
+import { RootStackParamList } from "../../navigation/types";
+import { demoModeEnabled } from "../../config/env";
 
 export default function AuthScreen() {
   const navigation =
@@ -187,6 +188,16 @@ export default function AuthScreen() {
               </Text>
             )}
           </TouchableOpacity>
+
+          {demoModeEnabled ? (
+            <TouchableOpacity
+              style={styles.secondaryButton}
+              onPress={() => navigation.navigate("DemoLanding")}
+              disabled={loading}
+            >
+              <Text style={styles.secondaryButtonText}>Explorar demo sin cuenta</Text>
+            </TouchableOpacity>
+          ) : null}
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>

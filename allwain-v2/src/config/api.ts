@@ -7,24 +7,24 @@ export interface AuthResponse {
   token: string;
   user: {
     id: string;
-    name: string;
     email: string;
     role: string;
+    name?: string;
     sponsorCode?: string;
     referredByCode?: string;
+    tokens?: number;
   };
 }
 
 export interface AllwainOffer {
   id: string;
   title: string;
-  description: string;
-  owner: "allwain";
-  ownerUserId: string;
+  description?: string;
   price?: number;
-  tokens?: number;
-  productId?: string;
-  meta?: Record<string, unknown>;
+  meta?: {
+    distanceKm?: number;
+    [key: string]: unknown;
+  };
 }
 
 export interface ScanDemoResponse {
@@ -33,69 +33,70 @@ export interface ScanDemoResponse {
     name: string;
     description?: string;
     brand?: string;
+    ean?: string;
   };
   offers?: AllwainOffer[];
   message?: string;
 }
 
-export interface SponsorSummaryResponse {
-  invitedCount: number;
-  totalSaved: number;
-  totalCommission: number;
-  balance: number;
-  monthlyHistory: Array<{
-    month: number;
-    year: number;
-    saved: number;
-    commission: number;
-  }>;
-  referrals: Array<{
-    id: string;
-    invitedUserId: string;
-    invitedName?: string;
-    totalSavedByInvited: number;
-    commissionEarned: number;
-  }>;
-}
-
-function handleUnauthorized(status: number, message?: string) {
-  if (status === 401) {
-    useAuthStore.getState().clearAuth();
-    throw new Error(message || "SESSION_EXPIRED");
+async function parseResponse(res: Response) {
+  try {
+    return await res.json();
+  } catch {
+    return null;
   }
 }
 
-async function parseResponse(res: Response) {
-  let data: any = null;
-  try {
-    data = await res.json();
-  } catch {}
-  return data;
+function handleUnauthorized(status: number) {
+  if (status === 401) {
+    useAuthStore.getState().clearAuth();
+    throw new Error("SESSION_EXPIRED");
+  }
+}
+
+function extractErrorMessage(data: any, status: number) {
+  return String(data?.error || data?.message || `API_ERROR_${status}`);
+}
+
+/** PUBLIC (sin token) */
+export async function apiGet<T>(path: string): Promise<T> {
+  const res = await fetch(`${API_BASE_URL}${path}`, {
+    method: "GET",
+    headers: { "Content-Type": "application/json" },
+  });
+
+  const data = await parseResponse(res);
+
+  if (!res.ok) {
+    const msg = extractErrorMessage(data, res.status);
+    throw new Error(msg);
+  }
+
+  return data as T;
 }
 
 export async function apiPost<T>(path: string, body: unknown): Promise<T> {
-  const url = `${API_BASE_URL}${path}`;
-
-  const res = await fetch(url, {
+  const res = await fetch(`${API_BASE_URL}${path}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
 
   const data = await parseResponse(res);
+
   if (!res.ok) {
-    handleUnauthorized(res.status, data?.message || data?.error);
-    throw new Error(data?.error || `API_ERROR_${res.status}`);
+    const msg = extractErrorMessage(data, res.status);
+    throw new Error(msg);
   }
 
   return data as T;
 }
 
+/** AUTH (con token) */
 export async function apiAuthGet<T>(path: string): Promise<T> {
-  const url = `${API_BASE_URL}${path}`;
   const token = useAuthStore.getState().token;
 
-  const res = await fetch(url, {
+  const res = await fetch(`${API_BASE_URL}${path}`, {
     method: "GET",
     headers: {
       "Content-Type": "application/json",
@@ -104,19 +105,20 @@ export async function apiAuthGet<T>(path: string): Promise<T> {
   });
 
   const data = await parseResponse(res);
+
   if (!res.ok) {
-    handleUnauthorized(res.status, data?.message || data?.error);
-    throw new Error(data?.error || `API_ERROR_${res.status}`);
+    handleUnauthorized(res.status);
+    const msg = extractErrorMessage(data, res.status);
+    throw new Error(msg);
   }
 
   return data as T;
 }
 
 export async function apiAuthPost<T>(path: string, body: unknown): Promise<T> {
-  const url = `${API_BASE_URL}${path}`;
   const token = useAuthStore.getState().token;
 
-  const res = await fetch(url, {
+  const res = await fetch(`${API_BASE_URL}${path}`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -126,9 +128,11 @@ export async function apiAuthPost<T>(path: string, body: unknown): Promise<T> {
   });
 
   const data = await parseResponse(res);
+
   if (!res.ok) {
-    handleUnauthorized(res.status, data?.message || data?.error);
-    throw new Error(data?.error || `API_ERROR_${res.status}`);
+    handleUnauthorized(res.status);
+    const msg = extractErrorMessage(data, res.status);
+    throw new Error(msg);
   }
 
   return data as T;

@@ -1,14 +1,19 @@
 export type RootStackParamList = {
+  Splash: undefined;
+  Auth: { mode?: "login" | "register"; sponsorCode?: string } | undefined;
   Login: undefined;
   Register: undefined;
+  SponsorQR: { code?: string } | undefined;
   MainTabs: undefined;
   Scan: undefined;
   ScanResult: undefined;
+  DemoLanding: undefined;
+  DemoScanResult: undefined;
 };
 
 export type MainTabParamList = {
   Inicio: undefined;
-  Patrocinadores: undefined;
-  Contratos: undefined;
+  Ofertas: undefined;
+  ProgramaRecomendados: undefined;
   Perfil: undefined;
 };
