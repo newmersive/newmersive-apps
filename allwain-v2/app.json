@@ -6,8 +6,6 @@
     "orientation": "portrait",
     "entryPoint": "./node_modules/expo/AppEntry.js",
     "assetBundlePatterns": ["**/*"],
-    "web": {
-      "bundler": "webpack"
-    }
+    "web": { "bundler": "metro" }
   }
 }
