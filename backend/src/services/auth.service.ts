@@ -2,12 +2,7 @@ import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import jwt from "jsonwebtoken";
 import { ENV } from "../config/env";
-import {
-  AuthTokenResponse,
-  AuthUser,
-  User,
-  UserRole,
-} from "../shared/types";
+import { AuthTokenResponse, AuthUser, User, UserRole } from "../shared/types";
 
 // JSON driver
 import {
@@ -39,24 +34,14 @@ type SourceApp = "trueqia" | "allwain";
 ========================= */
 
 function toAuthUser(user: User): AuthUser {
-  return {
-    id: user.id,
-    name: user.name,
-    email: user.email,
-    role: user.role,
-    createdAt: user.createdAt,
-    sponsorCode: user.sponsorCode,
-    referredByCode: user.referredByCode,
-    avatarUrl: user.avatarUrl,
-    tokens: user.tokens,
-    allwainBalance: user.allwainBalance,
-  };
+  const { passwordHash, ...rest } = user as any;
+  return rest as AuthUser;
 }
 
 async function getNextUserId(): Promise<string> {
   if (ENV.STORAGE_DRIVER === "postgres") {
     const users = await getUsersPg();
-    const max = users.reduce((m, u) => Math.max(m, Number(u.id) || 0), 0);
+    const max = users.reduce((m: number, u: any) => Math.max(m, Number(u.id) || 0), 0);
     return String(max + 1);
   }
 
@@ -76,7 +61,7 @@ async function validateSponsorCode(code?: string): Promise<string | undefined> {
 
   if (ENV.STORAGE_DRIVER === "postgres") {
     const users = await getUsersPg();
-    return users.find(u => u.sponsorCode === normalized) ? normalized : undefined;
+    return users.find((u: any) => u.sponsorCode === normalized) ? normalized : undefined;
   }
 
   const user = getDatabase().users.find(u => u.sponsorCode === normalized);
@@ -90,6 +75,19 @@ function createAuthTokenResponse(user: User): AuthTokenResponse {
     { expiresIn: "7d" }
   );
   return { token, user: toAuthUser(user) };
+}
+
+/* =========================
+   PUBLIC USERS (ADMIN)
+========================= */
+
+export async function getPublicUsers(): Promise<AuthUser[]> {
+  if (ENV.STORAGE_DRIVER === "postgres") {
+    const users = await getUsersPg();
+    return (users as any[]).map((u) => toAuthUser(u as any));
+  }
+
+  return getDatabase().users.map((u) => toAuthUser(u));
 }
 
 /* =========================
@@ -131,9 +129,8 @@ export async function registerUser(
     allwainBalance: 0,
   };
 
-  ENV.STORAGE_DRIVER === "postgres"
-    ? await upsertUserPg(user)
-    : upsertUser(user);
+  if (ENV.STORAGE_DRIVER === "postgres") await upsertUserPg(user);
+  else upsertUser(user);
 
   return createAuthTokenResponse(user);
 }
@@ -154,11 +151,12 @@ export async function loginUser(
       : getUserByEmail(normalizedEmail);
 
   if (!user) throw new Error("INVALID_CREDENTIALS");
+  if (!user.passwordHash) throw new Error("INVALID_CREDENTIALS");
 
   const match = await bcrypt.compare(password, user.passwordHash);
   if (!match) throw new Error("INVALID_CREDENTIALS");
 
-  return createAuthTokenResponse(user);
+  return createAuthTokenResponse(user as any);
 }
 
 /* =========================
@@ -171,7 +169,7 @@ export async function getUserProfile(userId: string): Promise<AuthUser | null> {
       ? await getUserByIdPg(userId)
       : getUserById(userId);
 
-  return user ? toAuthUser(user) : null;
+  return user ? toAuthUser(user as any) : null;
 }
 
 /* =========================
@@ -191,9 +189,11 @@ export async function requestPasswordReset(email: string) {
   const token = crypto.randomBytes(20).toString("hex");
   const expiresAt = Date.now() + 60 * 60 * 1000;
 
-  ENV.STORAGE_DRIVER === "postgres"
-    ? await savePasswordResetTokenPg(token, user.id, expiresAt)
-    : savePasswordResetToken(token, user.id, expiresAt);
+  if (ENV.STORAGE_DRIVER === "postgres") {
+    await savePasswordResetTokenPg(token, (user as any).id, expiresAt);
+  } else {
+    savePasswordResetToken(token, (user as any).id, expiresAt);
+  }
 
   return token;
 }
@@ -208,18 +208,18 @@ export async function resetPassword(token: string, newPassword: string) {
 
   const user =
     ENV.STORAGE_DRIVER === "postgres"
-      ? await getUserByIdPg(record.userId)
-      : getUserById(record.userId);
+      ? await getUserByIdPg((record as any).userId)
+      : getUserById((record as any).userId);
 
   if (!user) throw new Error("USER_NOT_FOUND");
 
-  user.passwordHash = await bcrypt.hash(newPassword, 10);
+  (user as any).passwordHash = await bcrypt.hash(newPassword, 10);
 
-  ENV.STORAGE_DRIVER === "postgres"
-    ? await upsertUserPg(user)
-    : upsertUser(user);
-  ENV.STORAGE_DRIVER === "postgres"
-    ? await deletePasswordResetTokenPg(token)
-    : deletePasswordResetToken(token);
+  if (ENV.STORAGE_DRIVER === "postgres") {
+    await upsertUserPg(user as any);
+    await deletePasswordResetTokenPg(token);
+  } else {
+    upsertUser(user as any);
+    deletePasswordResetToken(token);
+  }
 }
-

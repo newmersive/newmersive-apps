@@ -5,6 +5,7 @@ import {
   OrderGroup,
   AllwainSavingTransaction,
   ReferralStat,
+  UserRole,
 } from "../shared/types";
 import { ENV } from "../config/env";
 import { getUserByIdPg, upsertUserPg } from "./data.store.pg";
@@ -21,22 +22,22 @@ import {
   getReferralStatsByUserPg,
 } from "./data.store.allwain.pg";
 
+const ALLOWED_ROLES: UserRole[] = ["user", "buyer", "company", "admin"];
+const normalizeRole = (role: any): UserRole =>
+  ALLOWED_ROLES.includes(role) ? role : "user";
+
 /* =========================
    SCAN DEMO (POSTGRES)
 ========================= */
 
 export async function scanDemoProduct(ean?: string) {
-  const product = ean
-    ? await getProductByEANPg(ean)
-    : await getRandomProductPg();
+  const product = ean ? await getProductByEANPg(ean) : await getRandomProductPg();
 
   if (!product) {
     return { product: null, offers: [] };
   }
 
-  const offers = (await getAllwainOffersPg()).filter(
-    o => o.productId === product.id
-  );
+  const offers = (await getAllwainOffersPg()).filter((o) => o.productId === product.id);
 
   return { product, offers };
 }
@@ -95,18 +96,14 @@ export async function createOrderGroup(
   return createOrderGroupPg(group);
 }
 
-export async function joinOrderGroup(
-  groupId: string,
-  userId: string,
-  units: number
-) {
+export async function joinOrderGroup(groupId: string, userId: string, units: number) {
   const groups = await getOrderGroupsPg();
-  const group = groups.find(g => g.id === groupId);
+  const group = groups.find((g) => g.id === groupId);
   if (!group) throw new Error("GROUP_NOT_FOUND");
 
   const participants = group.participants as any[];
 
-  const participant = participants.find(p => p.userId === userId);
+  const participant = participants.find((p) => p.userId === userId);
   if (participant) participant.units += units;
   else participants.push({ userId, units });
 
@@ -136,26 +133,29 @@ export async function registerSaving(
 
   await addSavingPg(saving);
 
-  user.allwainBalance = (user.allwainBalance || 0) + amount;
-  await upsertUserPg(user);
+  user.allwainBalance = ((user as any).allwainBalance || 0) + amount;
+  (user as any).role = normalizeRole((user as any).role);
+  await upsertUserPg(user as any);
 
   let referral: ReferralStat | undefined;
 
-  if (user.referredByCode) {
-    const stats = await getReferralStatsByUserPg(user.referredByCode);
-    const sponsorId = stats?.[0]?.userId;
+  if ((user as any).referredByCode) {
+    const stats = await getReferralStatsByUserPg((user as any).referredByCode);
+    const sponsorId = (stats as any)?.[0]?.userId;
+
     if (sponsorId) {
       const sponsor = await getUserByIdPg(sponsorId);
       if (sponsor) {
         const commission = amount * 0.1;
-        sponsor.allwainBalance =
-          (sponsor.allwainBalance || 0) + commission;
-        await upsertUserPg(sponsor);
+
+        (sponsor as any).allwainBalance = ((sponsor as any).allwainBalance || 0) + commission;
+        (sponsor as any).role = normalizeRole((sponsor as any).role);
+        await upsertUserPg(sponsor as any);
 
         referral = {
           id: randomUUID(),
-          userId: sponsor.id,
-          invitedUserId: user.id,
+          userId: (sponsor as any).id,
+          invitedUserId: (user as any).id,
           totalSavedByInvited: amount,
           commissionEarned: commission,
           monthlyHistory: [],
@@ -173,8 +173,8 @@ export async function getSponsorSummary(userId: string) {
   const stats = await getReferralStatsByUserPg(userId);
 
   const totalInvited = stats.length;
-  const totalSaved = stats.reduce((s, r) => s + r.totalSavedByInvited, 0);
-  const totalCommission = stats.reduce((s, r) => s + r.commissionEarned, 0);
+  const totalSaved = (stats as any[]).reduce((s, r) => s + (r.totalSavedByInvited || 0), 0);
+  const totalCommission = (stats as any[]).reduce((s, r) => s + (r.commissionEarned || 0), 0);
 
   return {
     totalInvited,

@@ -18,6 +18,13 @@ export interface User {
   allwainBalance?: number | null;
 }
 
+export type AuthUser = Omit<User, "passwordHash">;
+
+export interface AuthTokenResponse {
+  token: string;
+  user: AuthUser;
+}
+
 /* =========================
    OFFERS
 ========================= */

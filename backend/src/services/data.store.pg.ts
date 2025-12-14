@@ -160,12 +160,14 @@ export async function addLeadPg(lead: Lead) {
   return getPrisma().lead.create({ data: lead as any });
 }
 
-export async function addLeadGlobalPg(lead: LeadGlobal) {
-  return getPrisma().leadGlobal.create({ data: lead as any });
+export async function addLeadGlobalPg(lead: LeadGlobal): Promise<LeadGlobal> {
+  const created = await getPrisma().leadGlobal.create({ data: lead as any });
+  return created as any;
 }
 
-export async function getLeadsGlobalPg() {
-  return getPrisma().leadGlobal.findMany({ orderBy: { createdAt: "desc" } });
+export async function getLeadsGlobalPg(): Promise<LeadGlobal[]> {
+  const items = await getPrisma().leadGlobal.findMany({ orderBy: { createdAt: "desc" } });
+  return items as any;
 }
 
 /* =========================
@@ -175,3 +177,34 @@ export async function getLeadsGlobalPg() {
 export async function createContractPg(contract: Contract) {
   return getPrisma().contract.create({ data: contract as any });
 }
+
+/* =========================
+   PASSWORD RESET TOKENS
+========================= */
+
+export async function savePasswordResetTokenPg(token: string, userId: string, expiresAt: number) {
+  return getPrisma().passwordResetToken.upsert({
+    where: { token },
+    create: { token, userId, expiresAt: BigInt(expiresAt) },
+    update: { userId, expiresAt: BigInt(expiresAt) },
+  });
+}
+
+export async function getPasswordResetTokenPg(token: string): Promise<{ token: string; userId: string; expiresAt: number } | null> {
+  const rec = await getPrisma().passwordResetToken.findUnique({ where: { token } });
+  if (!rec) return null;
+  return {
+    token: (rec as any).token,
+    userId: (rec as any).userId,
+    expiresAt: Number((rec as any).expiresAt),
+  };
+}
+
+export async function deletePasswordResetTokenPg(token: string) {
+  try {
+    return await getPrisma().passwordResetToken.delete({ where: { token } });
+  } catch {
+    return null;
+  }
+}
+

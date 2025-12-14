@@ -7,7 +7,7 @@ datasource db {
 }
 
 model User {
-  id             String   @id
+  id             String   @id @default(uuid())
   name           String
   email          String   @unique
   passwordHash   String
@@ -21,7 +21,7 @@ model User {
 }
 
 model Offer {
-  id          String   @id
+  id          String   @id @default(uuid())
   title       String
   description String
   owner       String
@@ -35,7 +35,7 @@ model Offer {
 }
 
 model Trade {
-  id         String    @id
+  id         String    @id @default(uuid())
   offerId    String
   fromUserId String
   toUserId   String
@@ -46,7 +46,7 @@ model Trade {
 }
 
 model Product {
-  id          String  @id
+  id          String  @id @default(uuid())
   name        String
   ean         String? @unique
   category    String?
@@ -57,7 +57,7 @@ model Product {
 }
 
 model Lead {
-  id        String   @id
+  id        String   @id @default(uuid())
   name      String?
   email     String?
   phone     String?
@@ -71,7 +71,7 @@ model Lead {
 }
 
 model LeadGlobal {
-  id        String   @id
+  id        String   @id @default(uuid())
   createdAt DateTime @default(now())
   channel   String
   sourceApp String
@@ -84,7 +84,7 @@ model LeadGlobal {
 }
 
 model Contract {
-  id            String   @id
+  id            String   @id @default(uuid())
   app           String
   type          String
   status        String
@@ -95,7 +95,7 @@ model Contract {
 }
 
 model OrderGroup {
-  id                String @id
+  id                String @id @default(uuid())
   productId         String
   totalUnits        Int
   minUnitsPerClient Int
@@ -104,7 +104,7 @@ model OrderGroup {
 }
 
 model ReferralStat {
-  id                  String @id
+  id                  String @id @default(uuid())
   userId              String
   invitedUserId       String
   totalSavedByInvited Float
@@ -113,7 +113,7 @@ model ReferralStat {
 }
 
 model AllwainSavingTransaction {
-  id        String   @id
+  id        String   @id @default(uuid())
   userId    String
   amount    Float
   createdAt DateTime @default(now())

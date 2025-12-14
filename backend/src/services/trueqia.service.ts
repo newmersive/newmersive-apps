@@ -36,21 +36,26 @@ type TrueqiaOfferResponse = Omit<Offer, "owner"> & {
   owner: { id: string; name?: string; avatarUrl?: string; tokens?: number };
 };
 
-export async function listTrueqiaOffers(excludeUserId?: string): Promise<TrueqiaOfferResponse[]> {
+export async function listTrueqiaOffers(
+  excludeUserId?: string
+): Promise<TrueqiaOfferResponse[]> {
   if (ENV.STORAGE_DRIVER === "postgres") {
     const offers = await getOffersByOwnerPg("trueqia");
-    const filtered = excludeUserId ? offers.filter((o: any) => o.ownerUserId !== excludeUserId) : offers;
+    const filtered = excludeUserId
+      ? offers.filter((o: any) => o.ownerUserId !== excludeUserId)
+      : offers;
 
     const out: TrueqiaOfferResponse[] = [];
     for (const offer of filtered as any[]) {
       const owner = await getUserByIdPg(offer.ownerUserId);
+
       out.push({
         ...(offer as any),
         owner: {
           id: owner?.id || offer.ownerUserId,
           name: owner?.name,
-          avatarUrl: (owner as any)?.avatarUrl || undefined,
-          tokens: (owner as any)?.tokens || undefined,
+          avatarUrl: owner?.avatarUrl ?? undefined,
+          tokens: owner?.tokens ?? undefined,
         },
       });
     }
@@ -58,7 +63,9 @@ export async function listTrueqiaOffers(excludeUserId?: string): Promise<Trueqia
   }
 
   const offers = getOffersByOwner("trueqia");
-  const filteredOffers = excludeUserId ? offers.filter((o) => o.ownerUserId !== excludeUserId) : offers;
+  const filteredOffers = excludeUserId
+    ? offers.filter((o) => o.ownerUserId !== excludeUserId)
+    : offers;
 
   return filteredOffers.map((offer): TrueqiaOfferResponse => {
     const owner = getUserById(offer.ownerUserId);
@@ -67,8 +74,8 @@ export async function listTrueqiaOffers(excludeUserId?: string): Promise<Trueqia
       owner: {
         id: owner?.id || offer.ownerUserId,
         name: owner?.name,
-        avatarUrl: owner?.avatarUrl,
-        tokens: owner?.tokens,
+        avatarUrl: owner?.avatarUrl ?? undefined,
+        tokens: owner?.tokens ?? undefined,
       },
     };
   });
@@ -93,7 +100,9 @@ export async function createTrueqiaOffer(
     isUnique,
   };
 
-  return ENV.STORAGE_DRIVER === "postgres" ? (addOfferPg(offer) as any) : addOffer(offer);
+  return ENV.STORAGE_DRIVER === "postgres"
+    ? (addOfferPg(offer) as any)
+    : addOffer(offer);
 }
 
 export async function createTrade(
@@ -102,7 +111,10 @@ export async function createTrade(
   offerId: string,
   tokens?: number
 ): Promise<Trade> {
-  const offer = ENV.STORAGE_DRIVER === "postgres" ? await getOfferByIdPg(offerId) : getOfferById(offerId);
+  const offer =
+    ENV.STORAGE_DRIVER === "postgres"
+      ? await getOfferByIdPg(offerId)
+      : getOfferById(offerId);
   if (!offer) throw new Error("OFFER_NOT_FOUND");
 
   // Si es única: si ya hay un accepted, no se puede crear otro trade
@@ -112,9 +124,11 @@ export async function createTrade(
     if (alreadyAccepted) throw new Error("OFFER_ALREADY_CLAIMED");
   }
 
-  const tokenAmount = typeof tokens === "number" ? tokens : (offer as any).tokens ?? 0;
+  const tokenAmount =
+    typeof tokens === "number" ? tokens : (offer as any).tokens ?? 0;
   const intTokens = Math.floor(Number(tokenAmount));
-  if (!Number.isFinite(intTokens) || intTokens <= 0) throw new Error("INVALID_TOKEN_AMOUNT");
+  if (!Number.isFinite(intTokens) || intTokens <= 0)
+    throw new Error("INVALID_TOKEN_AMOUNT");
 
   const trade: Trade = {
     id: randomUUID(),
@@ -126,28 +140,45 @@ export async function createTrade(
     createdAt: new Date().toISOString(),
   };
 
-  return ENV.STORAGE_DRIVER === "postgres" ? (addTradePg(trade) as any) : addTrade(trade);
+  return ENV.STORAGE_DRIVER === "postgres"
+    ? (addTradePg(trade) as any)
+    : addTrade(trade);
 }
 
 export async function acceptTrade(tradeId: string) {
-  const trade = ENV.STORAGE_DRIVER === "postgres" ? await getTradeByIdPg(tradeId) : getTradeById(tradeId);
+  const trade =
+    ENV.STORAGE_DRIVER === "postgres"
+      ? await getTradeByIdPg(tradeId)
+      : getTradeById(tradeId);
   if (!trade) throw new Error("TRADE_NOT_FOUND");
 
-  const offer = ENV.STORAGE_DRIVER === "postgres" ? await getOfferByIdPg((trade as any).offerId) : getOfferById(trade.offerId);
+  const offer =
+    ENV.STORAGE_DRIVER === "postgres"
+      ? await getOfferByIdPg((trade as any).offerId)
+      : getOfferById(trade.offerId);
   if (!offer) throw new Error("OFFER_NOT_FOUND");
 
   // Oferta única: si ya existe otro accepted para esa oferta, bloquear
   if (ENV.STORAGE_DRIVER === "postgres" && (offer as any).isUnique) {
     const trades = await getTradesByOfferIdPg((trade as any).offerId);
-    const acceptedOther = trades.find((t: any) => t.status === "accepted" && t.id !== (trade as any).id);
+    const acceptedOther = trades.find(
+      (t: any) => t.status === "accepted" && t.id !== (trade as any).id
+    );
     if (acceptedOther) throw new Error("OFFER_ALREADY_CLAIMED");
   }
 
-  const fromUser = ENV.STORAGE_DRIVER === "postgres" ? await getUserByIdPg((trade as any).fromUserId) : getUserById(trade.fromUserId);
-  const toUser = ENV.STORAGE_DRIVER === "postgres" ? await getUserByIdPg((trade as any).toUserId) : getUserById(trade.toUserId);
+  const fromUser =
+    ENV.STORAGE_DRIVER === "postgres"
+      ? await getUserByIdPg((trade as any).fromUserId)
+      : getUserById(trade.fromUserId);
+  const toUser =
+    ENV.STORAGE_DRIVER === "postgres"
+      ? await getUserByIdPg((trade as any).toUserId)
+      : getUserById(trade.toUserId);
   if (!fromUser || !toUser) throw new Error("USER_NOT_FOUND");
 
-  if (((fromUser as any).tokens || 0) < (trade as any).tokens) throw new Error("INSUFFICIENT_TOKENS");
+  if (((fromUser as any).tokens || 0) < (trade as any).tokens)
+    throw new Error("INSUFFICIENT_TOKENS");
 
   (fromUser as any).tokens = ((fromUser as any).tokens || 0) - (trade as any).tokens;
   (toUser as any).tokens = ((toUser as any).tokens || 0) + (trade as any).tokens;
@@ -160,7 +191,10 @@ export async function acceptTrade(tradeId: string) {
 
     // Oferta única => rechaza todos los demás pending de esa oferta automáticamente
     if ((offer as any).isUnique) {
-      await rejectOtherPendingTradesForOfferPg((trade as any).offerId, (trade as any).id);
+      await rejectOtherPendingTradesForOfferPg(
+        (trade as any).offerId,
+        (trade as any).id
+      );
     }
 
     return updated;
@@ -172,7 +206,10 @@ export async function acceptTrade(tradeId: string) {
 }
 
 export async function rejectTrade(tradeId: string) {
-  const trade = ENV.STORAGE_DRIVER === "postgres" ? await getTradeByIdPg(tradeId) : getTradeById(tradeId);
+  const trade =
+    ENV.STORAGE_DRIVER === "postgres"
+      ? await getTradeByIdPg(tradeId)
+      : getTradeById(tradeId);
   if (!trade) throw new Error("TRADE_NOT_FOUND");
 
   return ENV.STORAGE_DRIVER === "postgres"
@@ -189,9 +226,18 @@ export async function listTradesForUser(userId?: string) {
 
   const out: any[] = [];
   for (const trade of filtered) {
-    const offer = ENV.STORAGE_DRIVER === "postgres" ? await getOfferByIdPg(trade.offerId) : getOfferById(trade.offerId);
-    const fromUser = ENV.STORAGE_DRIVER === "postgres" ? await getUserByIdPg(trade.fromUserId) : getUserById(trade.fromUserId);
-    const toUser = ENV.STORAGE_DRIVER === "postgres" ? await getUserByIdPg(trade.toUserId) : getUserById(trade.toUserId);
+    const offer =
+      ENV.STORAGE_DRIVER === "postgres"
+        ? await getOfferByIdPg(trade.offerId)
+        : getOfferById(trade.offerId);
+    const fromUser =
+      ENV.STORAGE_DRIVER === "postgres"
+        ? await getUserByIdPg(trade.fromUserId)
+        : getUserById(trade.fromUserId);
+    const toUser =
+      ENV.STORAGE_DRIVER === "postgres"
+        ? await getUserByIdPg(trade.toUserId)
+        : getUserById(trade.toUserId);
 
     out.push({
       ...trade,
@@ -216,7 +262,9 @@ function fallbackContractText(input: DemoContractInput) {
   ].join("\n");
 }
 
-export async function generateContractPreview(input: DemoContractInput): Promise<Contract> {
+export async function generateContractPreview(
+  input: DemoContractInput
+): Promise<Contract> {
   let generatedText: string;
 
   try {
@@ -242,6 +290,7 @@ export async function generateContractPreview(input: DemoContractInput): Promise
     updatedAt: new Date().toISOString(),
   };
 
-  return ENV.STORAGE_DRIVER === "postgres" ? (createContractPg(contract) as any) : createContract(contract);
+  return ENV.STORAGE_DRIVER === "postgres"
+    ? (createContractPg(contract) as any)
+    : createContract(contract);
 }
-
