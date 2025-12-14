@@ -69,6 +69,7 @@ export default function HomeScreen() {
         <FlatList
           data={items}
           keyExtractor={(item) => item.id}
+          contentContainerStyle={{ paddingBottom: spacing.l, gap: spacing.s }}
           ListEmptyComponent={
             <Text style={styles.statusText}>No hay ofertas disponibles.</Text>
           }
@@ -94,7 +95,6 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: spacing.l,
     backgroundColor: colors.background,
-    justifyContent: "center",
   },
   headerRow: {
     flexDirection: "row",
@@ -126,11 +126,16 @@ const styles = StyleSheet.create({
   card: {
     marginTop: spacing.m,
     padding: spacing.m,
-    borderRadius: 12,
+    borderRadius: 16,
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.surface,
     gap: 6,
+    shadowColor: "#000",
+    shadowOpacity: 0.22,
+    shadowOffset: { width: 0, height: 8 },
+    shadowRadius: 14,
+    elevation: 6,
   },
   cardTitle: {
     fontWeight: "800",
@@ -149,7 +154,7 @@ const styles = StyleSheet.create({
     color: colors.muted,
   },
   errorText: {
-    color: "#B3261E",
+    color: "#ffaba3",
   },
   retryButton: {
     alignSelf: "flex-start",
@@ -159,17 +164,21 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary,
   },
   retryText: {
-    color: "#fff",
+    color: "#0b0c0e",
     fontWeight: "700",
   },
   offerCard: {
     padding: spacing.m,
-    borderRadius: 12,
+    borderRadius: 14,
     borderWidth: 1,
     borderColor: colors.border,
-    backgroundColor: "#fff",
-    marginBottom: spacing.s,
+    backgroundColor: colors.surface,
     gap: 6,
+    shadowColor: "#000",
+    shadowOpacity: 0.18,
+    shadowOffset: { width: 0, height: 6 },
+    shadowRadius: 10,
+    elevation: 4,
   },
   offerTitle: {
     fontWeight: "800",

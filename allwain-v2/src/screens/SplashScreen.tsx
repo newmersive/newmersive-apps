@@ -3,9 +3,10 @@ import { View, StyleSheet, Image, ActivityIndicator } from "react-native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../navigation/types";
 import { useAuthStore } from "../store/auth.store";
+import { colors } from "../theme/colors";
 
-const BACKGROUND_COLOR = "#FF795A";
-const ACCENT_COLOR = "#000000";
+const BACKGROUND_COLOR = colors.background;
+const ACCENT_COLOR = colors.primary;
 
 const LOGO = require("../assets/logos/allwain-logo.png");
 

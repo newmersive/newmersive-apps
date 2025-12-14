@@ -13,10 +13,12 @@ import CreateOfferScreen from "../screens/Offers/CreateOfferScreen";
 import DemoLandingScreen from "../screens/Demo/DemoLandingScreen";
 import DemoOffersScreen from "../screens/Demo/DemoOffersScreen";
 import DemoOfferDetailScreen from "../screens/Demo/DemoOfferDetailScreen";
+import HeaderLogo from "../components/HeaderLogo";
 
 import { useAuthStore } from "../store/auth.store";
 import { colors } from "../config/theme";
 import { demoModeEnabled } from "../config/env";
+import logo from "../assets/logos/trueqia-logo2.png";
 
 export type RootStackParamList = {
   Splash: undefined;
@@ -59,7 +61,11 @@ export default function RootNavigator() {
       screenOptions={{
         headerStyle: { backgroundColor: colors.background },
         headerTitleStyle: { color: colors.text },
+        headerTitleAlign: "center",
+        headerBackTitleVisible: false,
+        headerTintColor: colors.text,
         headerShadowVisible: false,
+        headerTitle: () => <HeaderLogo source={logo} />,
         contentStyle: { backgroundColor: colors.background },
       }}
     >

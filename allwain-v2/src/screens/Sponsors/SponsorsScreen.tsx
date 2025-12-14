@@ -8,6 +8,7 @@ import {
   View,
   TouchableOpacity,
   Alert,
+  Image,
 } from "react-native";
 import { colors } from "../../theme/colors";
 import { useAuthStore } from "../../store/auth.store";
@@ -24,19 +25,6 @@ type SponsorsSnapshot = {
   monthlyHistory: MonthlyHistory[];
 };
 
-function buildLocalQrMatrix(seed: string, size = 15) {
-  const numericSeed = seed
-    .split("")
-    .reduce((acc, char, index) => acc + char.charCodeAt(0) * (index + 3), 0);
-
-  return Array.from({ length: size }, (_, row) =>
-    Array.from({ length: size }, (_, col) => {
-      const value = numericSeed + row * 17 + col * 11 + row * col;
-      return value % 2 === 0;
-    }),
-  );
-}
-
 export default function SponsorsScreen() {
   const user = useAuthStore((s) => s.user);
   const [loading, setLoading] = useState(true);
@@ -48,8 +36,11 @@ export default function SponsorsScreen() {
     return "ALLWAIN-0001";
   }, [user?.email, user?.id]);
 
-  const qrMatrix = useMemo(
-    () => buildLocalQrMatrix(referralCode),
+  const qrUri = useMemo(
+    () =>
+      `https://api.qrserver.com/v1/create-qr-code/?size=420x420&data=${encodeURIComponent(
+        referralCode,
+      )}`,
     [referralCode],
   );
 
@@ -91,24 +82,19 @@ export default function SponsorsScreen() {
 
         <View style={styles.qrSection}>
           <View style={styles.qrBox}>
-            {qrMatrix.map((row, rowIndex) => (
-              <View key={`row-${rowIndex}`} style={styles.qrRow}>
-                {row.map((filled, colIndex) => (
-                  <View
-                    key={`cell-${rowIndex}-${colIndex}`}
-                    style={[styles.qrCell, filled && styles.qrCellFilled]}
-                  />
-                ))}
-              </View>
-            ))}
+            <Image
+              source={{ uri: qrUri }}
+              style={styles.qrImage}
+              resizeMode="contain"
+            />
           </View>
 
           <View style={styles.codeInfo}>
             <Text style={styles.label}>Tu código</Text>
             <Text style={styles.code}>{referralCode}</Text>
             <Text style={styles.helper}>
-              Este QR es estable. Úsalo para que otros se registren con tu
-              recomendación. (demo)
+              QR optimizado para web y móvil. Compártelo para que se registren
+              con tu recomendación. (demo)
             </Text>
 
             <View style={styles.btnRow}>
@@ -187,7 +173,7 @@ export default function SponsorsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.primary },
+  container: { flex: 1, backgroundColor: colors.background },
   content: { padding: 24 },
 
   card: {
@@ -208,15 +194,18 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   qrBox: {
-    backgroundColor: "#fff",
-    padding: 8,
-    borderRadius: 12,
+    backgroundColor: colors.card,
+    padding: 10,
+    borderRadius: 14,
     borderWidth: 1,
     borderColor: colors.cardBorder,
+    shadowColor: "#000",
+    shadowOpacity: 0.08,
+    shadowOffset: { width: 0, height: 6 },
+    shadowRadius: 10,
+    elevation: 2,
   },
-  qrRow: { flexDirection: "row" },
-  qrCell: { width: 10, height: 10, backgroundColor: "#fff" },
-  qrCellFilled: { backgroundColor: "#000" },
+  qrImage: { width: 180, height: 180 },
 
   codeInfo: { flex: 1, marginLeft: 16, gap: 6 },
   label: { color: colors.text, fontWeight: "800" },
@@ -247,7 +236,7 @@ const styles = StyleSheet.create({
   statsRow: { marginTop: 16, flexDirection: "row" },
   statCard: {
     flex: 1,
-    backgroundColor: "#fdf3ef",
+    backgroundColor: colors.highlight,
     borderRadius: 12,
     padding: 12,
     borderWidth: 1,

@@ -51,6 +51,7 @@ export default function ContractPreviewScreen({ route }: ContractPreviewScreenPr
   const [tokens, setTokens] = useState(String(defaultTokens));
   const [notes, setNotes] = useState("");
   const [contractText, setContractText] = useState<string | null>(null);
+  const [finalContract, setFinalContract] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -75,6 +76,7 @@ export default function ContractPreviewScreen({ route }: ContractPreviewScreenPr
   async function generate() {
     setError(null);
     setLoading(true);
+    setFinalContract(null);
     try {
       const res = await apiAuthPost<{ contractText: string }>(
         "/trueqia/contracts/preview",
@@ -91,6 +93,11 @@ export default function ContractPreviewScreen({ route }: ContractPreviewScreenPr
     } finally {
       setLoading(false);
     }
+  }
+
+  function confirmContract() {
+    if (!contractText) return;
+    setFinalContract(contractText);
   }
 
   return (
@@ -146,6 +153,15 @@ export default function ContractPreviewScreen({ route }: ContractPreviewScreenPr
         )}
       </TouchableOpacity>
 
+      {contractText && !loading ? (
+        <TouchableOpacity
+          style={[styles.button, styles.secondaryButton]}
+          onPress={confirmContract}
+        >
+          <Text style={styles.buttonText}>Confirmar y guardar</Text>
+        </TouchableOpacity>
+      ) : null}
+
       {loading && (
         <View style={styles.statusBox}>
           <ActivityIndicator color={colors.primary} />
@@ -162,7 +178,19 @@ export default function ContractPreviewScreen({ route }: ContractPreviewScreenPr
             <Text style={styles.contractText}>{contractText}</Text>
           </ScrollView>
           <Text style={[styles.muted, { marginTop: 8 }]}>
-            Próximamente podrás copiar este contrato.
+            Revisa la vista previa y confírmala para fijar la versión final.
+          </Text>
+        </View>
+      )}
+
+      {finalContract && (
+        <View style={[styles.contractBox, styles.finalBox]}>
+          <Text style={styles.metaTitle}>Contrato final</Text>
+          <ScrollView style={styles.contractScroll}>
+            <Text style={styles.contractText}>{finalContract}</Text>
+          </ScrollView>
+          <Text style={[styles.muted, { marginTop: 8 }]}>
+            Copia y comparte este contrato generado por IA.
           </Text>
         </View>
       )}
@@ -205,7 +233,8 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     borderRadius: 10,
     padding: 10,
-    backgroundColor: "#FFF",
+    backgroundColor: colors.surface,
+    color: colors.text,
   },
   multiline: {
     minHeight: 80,
@@ -224,8 +253,12 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   buttonText: {
-    color: "#FFF",
-    fontWeight: "700",
+    color: "#0b0c0e",
+    fontWeight: "800",
+  },
+  secondaryButton: {
+    backgroundColor: colors.accent,
+    marginTop: 8,
   },
   statusBox: {
     marginTop: 12,
@@ -240,7 +273,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderColor: colors.border,
     borderWidth: 1,
-    backgroundColor: "#FFF",
+    backgroundColor: colors.surface,
     shadowColor: "#000",
     shadowOpacity: 0.05,
     shadowOffset: { width: 0, height: 2 },
@@ -259,5 +292,9 @@ const styles = StyleSheet.create({
   contractText: {
     color: colors.text,
     lineHeight: 20,
+  },
+  finalBox: {
+    borderColor: colors.primary,
+    shadowOpacity: 0.12,
   },
 });

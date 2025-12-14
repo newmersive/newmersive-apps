@@ -92,7 +92,7 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
   card: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: colors.surface,
     borderRadius: 12,
     padding: 14,
     borderWidth: 1,
@@ -129,7 +129,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 10,
-    backgroundColor: colors.primary,
+    backgroundColor: colors.accent,
     shadowColor: "#000",
     shadowOpacity: 0.08,
     shadowOffset: { width: 0, height: 2 },
@@ -137,7 +137,7 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   retryText: {
-    color: "#FFF",
+    color: "#0b0c0e",
     fontWeight: "700",
   },
   badge: {
