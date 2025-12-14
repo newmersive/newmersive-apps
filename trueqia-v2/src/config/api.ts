@@ -1,4 +1,4 @@
-const envBaseUrl =
+﻿const envBaseUrl =
   (typeof globalThis !== "undefined" &&
     (globalThis as any)?.process?.env?.EXPO_PUBLIC_API_BASE_URL) ||
   undefined;
@@ -114,3 +114,4 @@ export async function apiAuthPost<T>(path: string, body: unknown): Promise<T> {
 
   return data as T;
 }
+
