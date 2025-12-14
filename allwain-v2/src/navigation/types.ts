@@ -7,6 +7,8 @@ export type RootStackParamList = {
   MainTabs: undefined;
   Scan: undefined;
   ScanResult: undefined;
+  DemoLanding: undefined;
+  DemoScanResult: undefined;
 };
 
 export type MainTabParamList = {

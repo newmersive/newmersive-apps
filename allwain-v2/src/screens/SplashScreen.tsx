@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { View, StyleSheet, Image } from "react-native";
+import { View, StyleSheet, Image, ActivityIndicator } from "react-native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../navigation/types";
 import { useAuthStore } from "../store/auth.store";
@@ -13,8 +13,14 @@ type Props = NativeStackScreenProps<RootStackParamList, "Splash">;
 
 export default function SplashScreen({ navigation }: Props) {
   const user = useAuthStore((s) => s.user);
+  const hydrated = useAuthStore((s) => s.hydrated);
+  const restoreSession = useAuthStore((s) => s.restoreSession);
 
   useEffect(() => {
+    if (!hydrated) {
+      restoreSession();
+      return;
+    }
     const timer = setTimeout(() => {
       if (user) {
         navigation.replace("MainTabs");
@@ -24,12 +30,13 @@ export default function SplashScreen({ navigation }: Props) {
     }, 1500);
 
     return () => clearTimeout(timer);
-  }, [navigation, user]);
+  }, [hydrated, navigation, restoreSession, user]);
 
   return (
     <View style={styles.container}>
       <View style={styles.logoWrapper}>
         <Image source={LOGO} style={styles.logo} resizeMode="contain" />
+        {!hydrated ? <ActivityIndicator color="#000" /> : null}
       </View>
       <View style={styles.accent} />
     </View>

@@ -5,6 +5,9 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "entryPoint": "./node_modules/expo/AppEntry.js",
-    "assetBundlePatterns": ["**/*"]
+    "assetBundlePatterns": ["**/*"],
+    "web": {
+      "bundler": "webpack"
+    }
   }
 }
