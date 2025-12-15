@@ -12,16 +12,16 @@ import { useOffersStore } from "../../store/offers.store";
 
 type Filter = "all" | "product" | "service";
 
-function guessCategory(item: any): Filter {
+function getCategory(item: any): Filter {
   const raw =
     (item?.category as string | undefined) ||
     (item?.type as string | undefined) ||
     (item?.kind as string | undefined) ||
     (item?.tags as string[] | undefined)?.join(" ");
 
-  const v = (raw || "").toLowerCase();
-  if (v.includes("prod")) return "product";
-  if (v.includes("serv")) return "service";
+  const value = (raw || "").toLowerCase();
+  if (value.includes("prod")) return "product";
+  if (value.includes("serv")) return "service";
   return "all";
 }
 
@@ -37,18 +37,18 @@ export default function OffersListScreen({ navigation }: any) {
     loadOffers();
   }, [loadOffers]);
 
-  const sorted = useMemo(
+  const sortedItems = useMemo(
     () => [...items].sort((a, b) => a.title.localeCompare(b.title)),
     [items],
   );
 
-  const visible = useMemo(() => {
-    if (filter === "all") return sorted;
-    return sorted.filter((it) => {
-      const c = guessCategory(it);
+  const visibleItems = useMemo(() => {
+    if (filter === "all") return sortedItems;
+    return sortedItems.filter((item) => {
+      const c = getCategory(item);
       return c === filter || c === "all";
     });
-  }, [filter, sorted]);
+  }, [filter, sortedItems]);
 
   return (
     <View style={styles.container}>
@@ -77,11 +77,11 @@ export default function OffersListScreen({ navigation }: any) {
         ).map(({ key, label }) => (
           <TouchableOpacity
             key={key}
-            style={[styles.chip, filter === key && styles.chipActive]}
+            style={[styles.filterChip, filter === key && styles.filterChipActive]}
             onPress={() => setFilter(key)}
             activeOpacity={0.9}
           >
-            <Text style={[styles.chipText, filter === key && styles.chipTextActive]}>
+            <Text style={[styles.filterText, filter === key && styles.filterTextActive]}>
               {label}
             </Text>
           </TouchableOpacity>
@@ -109,8 +109,8 @@ export default function OffersListScreen({ navigation }: any) {
       )}
 
       <FlatList
-        style={{ marginTop: 10 }}
-        data={visible}
+        style={{ marginTop: 12 }}
+        data={visibleItems}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
           <TouchableOpacity
@@ -118,13 +118,15 @@ export default function OffersListScreen({ navigation }: any) {
             onPress={() => navigation.navigate("ContractPreview", { offer: item })}
             activeOpacity={0.9}
           >
-            <Text style={styles.cardTitle}>{item.title}</Text>
-            {item.description ? (
-              <Text style={styles.cardDesc}>{item.description}</Text>
-            ) : null}
-            {typeof item.tokens === "number" ? (
-              <Text style={styles.tokens}>{item.tokens} tokens</Text>
-            ) : null}
+            <View style={{ flex: 1, gap: 6 }}>
+              <Text style={styles.cardTitle}>{item.title}</Text>
+              {item.description ? (
+                <Text style={styles.description}>{item.description}</Text>
+              ) : null}
+              {typeof item.tokens === "number" ? (
+                <Text style={styles.tokens}>{item.tokens} tokens</Text>
+              ) : null}
+            </View>
           </TouchableOpacity>
         )}
         ListEmptyComponent={
@@ -132,68 +134,85 @@ export default function OffersListScreen({ navigation }: any) {
             <Text style={styles.statusText}>Aún no hay ofertas disponibles.</Text>
           ) : null
         }
-        contentContainerStyle={{ paddingBottom: 18 }}
       />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 18, backgroundColor: colors.background },
-
-  headerRow: { flexDirection: "row", alignItems: "center", gap: 12 },
-  title: { fontSize: 22, fontWeight: "900", color: colors.text },
-  subtitle: { color: colors.muted, fontWeight: "700", marginTop: 2 },
+  container: { flex: 1, padding: 24, backgroundColor: colors.background },
+  headerRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: 12,
+  },
+  title: { fontSize: 24, marginBottom: 4, color: colors.text, fontWeight: "900" },
+  subtitle: { color: colors.muted, fontWeight: "700" },
 
   createButton: {
     backgroundColor: colors.primary,
     paddingHorizontal: 14,
     paddingVertical: 10,
-    borderRadius: 16,
+    borderRadius: 14,
+    shadowColor: "#000",
+    shadowOpacity: 0.18,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 4,
   },
   createButtonText: { color: "#0b0c0e", fontWeight: "900" },
 
-  filtersRow: { flexDirection: "row", gap: 10, marginTop: 12 },
-  chip: {
+  filtersRow: {
+    flexDirection: "row",
+    gap: 10,
+    marginTop: 12,
+    marginBottom: 6,
+  },
+  filterChip: {
     paddingHorizontal: 12,
     paddingVertical: 8,
-    borderRadius: 14,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.surface,
   },
-  chipActive: { borderColor: colors.primary, backgroundColor: "#1f2428" },
-  chipText: { color: colors.muted, fontWeight: "800" },
-  chipTextActive: { color: colors.text },
-
-  statusBox: { marginTop: 12, gap: 8 },
-  statusText: { color: colors.muted, fontWeight: "700" },
-  errorText: { color: "#ffaba3" },
-  retryButton: {
-    alignSelf: "flex-start",
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
+  filterChipActive: {
+    borderColor: colors.primary,
+    backgroundColor: "#1f2428",
   },
-  retryText: { color: colors.text, fontWeight: "900" },
+  filterText: { color: colors.muted, fontWeight: "800" },
+  filterTextActive: { color: colors.text },
 
   card: {
-    marginBottom: 10,
     padding: 14,
-    borderRadius: 16,
+    marginBottom: 10,
     borderWidth: 1,
     borderColor: colors.border,
+    borderRadius: 14,
     backgroundColor: colors.surface,
     shadowColor: "#000",
-    shadowOpacity: 0.14,
-    shadowOffset: { width: 0, height: 8 },
-    shadowRadius: 14,
-    elevation: 4,
+    shadowOpacity: 0.15,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 3,
   },
-  cardTitle: { color: colors.text, fontWeight: "900", fontSize: 16 },
-  cardDesc: { color: colors.muted, marginTop: 6, fontWeight: "700" },
-  tokens: { color: colors.primary, marginTop: 8, fontWeight: "900" },
+  cardTitle: { fontWeight: "900", color: colors.text, fontSize: 16 },
+  description: { color: colors.muted, fontWeight: "700" },
+  tokens: { color: colors.primary, fontWeight: "900" },
+
+  statusBox: { marginTop: 12, gap: 8 },
+  statusText: { color: colors.muted, marginTop: 2, fontWeight: "700" },
+  errorText: { color: "#ffaba3" },
+  retryButton: {
+    marginTop: 4,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    backgroundColor: colors.surface,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignSelf: "flex-start",
+  },
+  retryText: { color: colors.text, fontWeight: "900" },
 });
