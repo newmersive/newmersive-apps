@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
+  Image,
 } from "react-native";
 import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -16,6 +17,8 @@ import { colors } from "../../config/theme";
 import { useAuthStore } from "../../store/auth.store";
 import { RootStackParamList } from "../../navigation/RootNavigator";
 import { demoModeEnabled } from "../../config/env";
+
+const LOGO = require("../../assets/logos/trueqia-logo.png");
 
 export default function AuthScreen() {
   const navigation =
@@ -78,108 +81,132 @@ export default function AuthScreen() {
         style={styles.container}
       >
         <View style={styles.header}>
-          <Text style={styles.brand}>TRUEQIA</Text>
+          <Image source={LOGO} style={styles.logo} resizeMode="contain" />
           <Text style={styles.subtitle}>Intercambia con confianza</Text>
         </View>
 
-        <View style={styles.modeSwitcher}>
-          <TouchableOpacity
-            style={[styles.modeButton, authMode === "login" && styles.modeButtonActive]}
-            onPress={() => setAuthMode("login")}
-            disabled={loading}
-          >
-            <Text
-              style={[styles.modeText, authMode === "login" && styles.modeTextActive]}
+        <View style={styles.card}>
+          <View style={styles.modeSwitcher}>
+            <TouchableOpacity
+              style={[
+                styles.modeButton,
+                authMode === "login" && styles.modeButtonActive,
+              ]}
+              onPress={() => setAuthMode("login")}
+              disabled={loading}
+              activeOpacity={0.9}
             >
-              Entrar
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.modeButton, authMode === "register" && styles.modeButtonActive]}
-            onPress={() => setAuthMode("register")}
-            disabled={loading}
-          >
-            <Text
-              style={[styles.modeText, authMode === "register" && styles.modeTextActive]}
+              <Text
+                style={[
+                  styles.modeText,
+                  authMode === "login" && styles.modeTextActive,
+                ]}
+              >
+                Entrar
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.modeButton,
+                authMode === "register" && styles.modeButtonActive,
+              ]}
+              onPress={() => setAuthMode("register")}
+              disabled={loading}
+              activeOpacity={0.9}
             >
-              Crear cuenta
-            </Text>
-          </TouchableOpacity>
-        </View>
+              <Text
+                style={[
+                  styles.modeText,
+                  authMode === "register" && styles.modeTextActive,
+                ]}
+              >
+                Crear cuenta
+              </Text>
+            </TouchableOpacity>
+          </View>
 
-        <View style={styles.form}>
-          {authMode === "register" && (
-            <TextInput
-              style={styles.input}
-              placeholder="Nombre"
-              placeholderTextColor={colors.muted}
-              value={name}
-              onChangeText={setName}
-            />
-          )}
-          <TextInput
-            style={styles.input}
-            placeholder="Email"
-            placeholderTextColor={colors.muted}
-            value={email}
-            onChangeText={setEmail}
-            autoCapitalize="none"
-            keyboardType="email-address"
-          />
-          <TextInput
-            style={styles.input}
-            placeholder="Contraseña"
-            placeholderTextColor={colors.muted}
-            secureTextEntry
-            value={password}
-            onChangeText={setPassword}
-          />
-
-          {authMode === "register" && (
-            <>
+          <View style={styles.form}>
+            {authMode === "register" && (
               <TextInput
                 style={styles.input}
-                placeholder="Código de invitación (opcional)"
+                placeholder="Nombre"
                 placeholderTextColor={colors.muted}
-                value={sponsorCode}
-                onChangeText={setSponsorCode}
-                autoCapitalize="characters"
+                value={name}
+                onChangeText={setName}
               />
-              <TouchableOpacity
-                style={styles.secondaryButton}
-                onPress={() => navigation.navigate("SponsorQR")}
-                disabled={loading}
-              >
-                <Text style={styles.secondaryButtonText}>Escanear QR de patrocinador</Text>
-              </TouchableOpacity>
-            </>
-          )}
-
-          {error ? <Text style={styles.error}>{error}</Text> : null}
-
-          <TouchableOpacity
-            style={styles.primaryButton}
-            onPress={handleAuth}
-            disabled={loading}
-          >
-            {loading ? (
-              <ActivityIndicator color="#FFFFFF" />
-            ) : (
-              <Text style={styles.primaryButtonText}>
-                {authMode === "login" ? "Entrar" : "Crear cuenta"}
-              </Text>
             )}
-          </TouchableOpacity>
 
-          {demoModeEnabled ? (
+            <TextInput
+              style={styles.input}
+              placeholder="Email"
+              placeholderTextColor={colors.muted}
+              value={email}
+              onChangeText={setEmail}
+              autoCapitalize="none"
+              keyboardType="email-address"
+            />
+
+            <TextInput
+              style={styles.input}
+              placeholder="Contraseña"
+              placeholderTextColor={colors.muted}
+              secureTextEntry
+              value={password}
+              onChangeText={setPassword}
+            />
+
+            {authMode === "register" && (
+              <>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Código de invitación (opcional)"
+                  placeholderTextColor={colors.muted}
+                  value={sponsorCode}
+                  onChangeText={setSponsorCode}
+                  autoCapitalize="characters"
+                />
+                <TouchableOpacity
+                  style={styles.secondaryButton}
+                  onPress={() => navigation.navigate("SponsorQR")}
+                  disabled={loading}
+                  activeOpacity={0.9}
+                >
+                  <Text style={styles.secondaryButtonText}>
+                    Escanear QR de patrocinador
+                  </Text>
+                </TouchableOpacity>
+              </>
+            )}
+
+            {error ? <Text style={styles.error}>{error}</Text> : null}
+
             <TouchableOpacity
-              style={styles.secondaryButton}
-              onPress={() => navigation.navigate("DemoLanding")}
+              style={[styles.primaryButton, loading && styles.buttonDisabled]}
+              onPress={handleAuth}
               disabled={loading}
+              activeOpacity={0.9}
             >
-              <Text style={styles.secondaryButtonText}>Explorar demo sin registrarse</Text>
+              {loading ? (
+                <ActivityIndicator color="#0b0c0e" />
+              ) : (
+                <Text style={styles.primaryButtonText}>
+                  {authMode === "login" ? "Entrar" : "Crear cuenta"}
+                </Text>
+              )}
             </TouchableOpacity>
-          ) : null}
+
+            {demoModeEnabled ? (
+              <TouchableOpacity
+                style={styles.ghostButton}
+                onPress={() => navigation.navigate("DemoLanding")}
+                disabled={loading}
+                activeOpacity={0.9}
+              >
+                <Text style={styles.ghostText}>Explorar demo sin registrarse</Text>
+              </TouchableOpacity>
+            ) : null}
+          </View>
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -187,40 +214,39 @@ export default function AuthScreen() {
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
+  safeArea: { flex: 1, backgroundColor: colors.background },
   container: {
     flex: 1,
     padding: 24,
     backgroundColor: colors.background,
     justifyContent: "center",
+    gap: 14,
   },
-  header: {
-    marginBottom: 32,
+  header: { alignItems: "center", gap: 8, marginBottom: 6 },
+  logo: { height: 64, width: 220 },
+  subtitle: { color: colors.muted, fontSize: 15, fontWeight: "600" },
+
+  card: {
+    backgroundColor: colors.surface,
+    borderRadius: 18,
+    padding: 18,
+    borderWidth: 1,
+    borderColor: colors.border,
+    shadowColor: "#000",
+    shadowOpacity: 0.28,
+    shadowOffset: { width: 0, height: 12 },
+    shadowRadius: 22,
+    elevation: 8,
   },
-  brand: {
-    fontSize: 28,
-    fontWeight: "bold",
-    color: colors.text,
-  },
-  subtitle: {
-    marginTop: 8,
-    color: colors.muted,
-    fontSize: 16,
-  },
-  form: {
-    gap: 12,
-  },
+
   modeSwitcher: {
     flexDirection: "row",
-    backgroundColor: "#F6F8FF",
-    borderRadius: 12,
+    borderRadius: 14,
     borderWidth: 1,
     borderColor: colors.border,
     overflow: "hidden",
     marginBottom: 12,
+    backgroundColor: "#2c2728",
   },
   modeButton: {
     flex: 1,
@@ -228,49 +254,43 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "transparent",
   },
-  modeButtonActive: {
-    backgroundColor: "#FFFFFF",
-  },
-  modeText: {
-    color: colors.muted,
-    fontWeight: "600",
-  },
-  modeTextActive: {
-    color: colors.text,
-  },
+  modeButtonActive: { backgroundColor: "#3b3536" },
+  modeText: { color: colors.muted, fontWeight: "800" },
+  modeTextActive: { color: colors.text },
+
+  form: { gap: 12 },
+
   input: {
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 10,
+    borderRadius: 14,
     padding: 14,
     color: colors.text,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "#181516",
   },
-  error: {
-    color: "#B3261E",
-    marginTop: 4,
-    marginBottom: 4,
-  },
+
+  error: { color: "#ffaba3", fontWeight: "700" },
+
   primaryButton: {
     backgroundColor: colors.primary,
-    padding: 14,
-    borderRadius: 12,
+    paddingVertical: 14,
+    borderRadius: 14,
     alignItems: "center",
   },
-  primaryButtonText: {
-    color: "#FFFFFF",
-    fontWeight: "600",
-    fontSize: 16,
-  },
+  primaryButtonText: { color: "#0b0c0e", fontWeight: "900", fontSize: 16 },
+
   secondaryButton: {
+    backgroundColor: "#2c2728",
     borderWidth: 1,
-    borderColor: colors.primary,
-    padding: 12,
-    borderRadius: 10,
+    borderColor: colors.border,
+    paddingVertical: 12,
+    borderRadius: 14,
     alignItems: "center",
   },
-  secondaryButtonText: {
-    color: colors.primary,
-    fontWeight: "600",
-  },
+  secondaryButtonText: { color: colors.text, fontWeight: "800" },
+
+  ghostButton: { alignItems: "center", paddingVertical: 10 },
+  ghostText: { color: colors.muted, fontWeight: "700" },
+
+  buttonDisabled: { opacity: 0.65 },
 });
