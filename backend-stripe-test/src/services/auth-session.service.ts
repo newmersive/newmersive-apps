@@ -258,9 +258,10 @@ async function rotatePostgresRefreshSession(
   const prisma = getPrisma() as any;
   return prisma.$transaction(async (tx: any) => {
     const now = new Date();
-    const current = await tx.authSession.findUnique({
-      where: { refreshTokenHash },
-    });
+    let current = await tx.authSession.findUnique({ where: { refreshTokenHash } });
+    if (!current) return { error: "INVALID_REFRESH_TOKEN" };
+    await tx.$queryRaw`SELECT id FROM "User" WHERE id = ${current.userId} FOR UPDATE`;
+    current = await tx.authSession.findUnique({ where: { refreshTokenHash } });
     if (!current) return { error: "INVALID_REFRESH_TOKEN" };
 
     if (current.revokedAt) {
@@ -313,6 +314,8 @@ async function rotatePostgresRefreshSession(
         tokenVersion: current.tokenVersion,
         expiresAt: current.expiresAt,
         rotatedFromId: current.id,
+        adminMfaVersion: current.adminMfaVersion,
+        adminMfaVerifiedUntil: current.adminMfaVerifiedUntil,
       },
     });
     return { user, session: next };

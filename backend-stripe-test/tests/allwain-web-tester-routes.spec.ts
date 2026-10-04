@@ -18,6 +18,11 @@ const messages: any[] = [];
 const auditEvents: any[] = [];
 const appTesterProgress: any[] = [];
 const appTesterActionProgress: any[] = [];
+const adminMfaRows = [
+  { userId: users[0].id, pending: true },
+  { userId: users[1].id, enrolled: true },
+];
+const adminMfaDeleteCalls: Array<{ userId: string }> = [];
 let serial = 0;
 let failNextAuditCreate = false;
 
@@ -246,6 +251,18 @@ const fakePrisma: any = {
   trueqiaTesterAction: emptyDeleteModel,
   trueqiaTesterIncident: emptyDeleteModel,
   authSession: emptyDeleteModel,
+  adminMfa: {
+    deleteMany: async ({ where }: { where: { userId: string } }) => {
+      adminMfaDeleteCalls.push(structuredClone(where));
+      let count = 0;
+      for (let index = adminMfaRows.length - 1; index >= 0; index--) {
+        if (!whereMatches(adminMfaRows[index], where)) continue;
+        adminMfaRows.splice(index, 1);
+        count++;
+      }
+      return { count };
+    },
+  },
   allwainBuyerProfile: emptyDeleteModel,
   allwainSellerProfile: emptyDeleteModel,
   allwainConnectorProfile: emptyDeleteModel,
@@ -269,7 +286,9 @@ const fakePrisma: any = {
         auditEvents: auditEvents.length,
         appTesterProgress: appTesterProgress.length,
         appTesterActionProgress: appTesterActionProgress.length,
+        adminMfaDeleteCalls: adminMfaDeleteCalls.length,
       };
+      const adminMfaBefore = structuredClone(adminMfaRows);
       try {
         return await operation(fakePrisma);
       } catch (error) {
@@ -278,6 +297,8 @@ const fakePrisma: any = {
         auditEvents.splice(lengths.auditEvents);
         appTesterProgress.splice(lengths.appTesterProgress);
         appTesterActionProgress.splice(lengths.appTesterActionProgress);
+        adminMfaRows.splice(0, adminMfaRows.length, ...adminMfaBefore);
+        adminMfaDeleteCalls.splice(lengths.adminMfaDeleteCalls);
         throw error;
       }
     }
@@ -783,9 +804,13 @@ describe("allwain web tester HTTP routes", () => {
       (event) => event.aggregateType === "app_tester_action_request" &&
         event.actorUserId === users[0].id,
     ));
+    assert.ok(adminMfaRows.some((row) => row.userId === users[0].id));
+    assert.deepEqual(adminMfaDeleteCalls, []);
 
     const response = await client.delete("/allwain/account", firstHeaders);
     assert.equal(response.status, 200);
+    assert.deepEqual(adminMfaDeleteCalls, [{ userId: users[0].id }]);
+    assert.deepEqual(adminMfaRows, [{ userId: users[1].id, enrolled: true }], "erase only the deleted actor's pending or enrolled MFA");
     const anonymizedTickets = tickets.filter((ticket) => firstTicketIds.includes(ticket.id));
     assert.ok(anonymizedTickets.every((ticket) => ticket.requesterUserId === null));
     assert.ok(anonymizedTickets.every(

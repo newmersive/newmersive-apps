@@ -230,6 +230,9 @@ describe("Allwain account deletion archives locked publications", () => {
     let writes = 0;
     const histories = [{ id: "contract-history", acceptedRevision: 2 }, { id: "order-history", status: "completed", amount: 400 }];
     const originalHistories = structuredClone(histories);
+    const adminMfaRows = [{ userId: "seller", enrolled: true }, { userId: "buyer", pending: true }];
+    const originalAdminMfaRows = structuredClone(adminMfaRows);
+    const adminMfaDeleteCalls: Array<{ userId: string }> = [];
     const cleanup = { deleteMany: async () => ({ count: 0 }), updateMany: async () => ({ count: 0 }) };
     const tx: any = {
       $executeRaw: async () => 1,
@@ -242,13 +245,24 @@ describe("Allwain account deletion archives locked publications", () => {
       trade: { count: async () => 0 },
       offer: { update: async ({ where, data }: any) => { assert.equal(locked, true); writes++; Object.assign(state.offers.find((row) => row.id === where.id), data); return {}; } },
       allwainSupportTicket: { findMany: async () => [] },
+      adminMfa: { deleteMany: async ({ where }: { where: { userId: string } }) => {
+        assert.equal(locked, true, "erase MFA only after locking account publications");
+        adminMfaDeleteCalls.push(structuredClone(where));
+        let count = 0;
+        for (let index = adminMfaRows.length - 1; index >= 0; index--) {
+          if (adminMfaRows[index].userId !== where.userId) continue;
+          adminMfaRows.splice(index, 1);
+          count++;
+        }
+        return { count };
+      } },
       allwainScanRequest: { updateMany: async ({ where, data }: any) => { writes++; for (const request of state.requests.filter((row) => row.userId === where.userId)) Object.assign(request, data); return {}; } },
     };
     for (const key of ["authIdentity", "authSession", "allwainBuyerProfile", "allwainSellerProfile", "allwainConnectorProfile", "allwainAppTesterProgress", "allwainAppTesterActionProgress", "trueqiaTesterAction", "trueqiaTesterIncident", "allwainBuyerPaymentProfile", "allwainNotification", "chatParticipant", "chatBlock", "trueqiaChatMessage", "passwordResetToken", "allwainAuditEvent", "allwainSellerPaymentAccount"]) tx[key] = cleanup;
     const prisma = { ...fakePrisma(state), $transaction: async (run: any) => run(tx) };
     mock.method(db, "getPrisma", () => prisma as any);
     mock.method(audit, "appendAllwainAuditEventTx", async () => undefined as any);
-    return { state, histories, originalHistories, writes: () => writes };
+    return { state, histories, originalHistories, adminMfaRows, originalAdminMfaRows, adminMfaDeleteCalls, writes: () => writes };
   }
 
   it("closes every allwain publication using current stock, retaining history and leaving Trueqia intact", async () => {
@@ -257,6 +271,8 @@ describe("Allwain account deletion archives locked publications", () => {
     const trueqia = structuredClone(context.state.offers.find((row) => row.id === "trueqia-public"));
     const result = await deleteAllwainAccount("seller");
     assert.equal(result.deleted, true);
+    assert.deepEqual(context.adminMfaDeleteCalls, [{ userId: "seller" }]);
+    assert.deepEqual(context.adminMfaRows, [{ userId: "buyer", pending: true }], "erase only the deleted actor's enrolled or pending MFA");
     for (const row of context.state.offers.filter((offer) => offer.owner === "allwain" && offer.ownerUserId === "seller")) {
       assert.equal(row.allwainStatus, "closed", row.id);
       assert.equal(row.meta.archived, true, row.id);
@@ -280,6 +296,8 @@ describe("Allwain account deletion archives locked publications", () => {
     const before = structuredClone(context.state);
     await assert.rejects(deleteAllwainAccount("seller"), /ACCOUNT_HAS_OPEN_ORDERS/);
     assert.equal(context.writes(), 0);
+    assert.deepEqual(context.adminMfaDeleteCalls, [], "an open order must prevent MFA erasure too");
+    assert.deepEqual(context.adminMfaRows, context.originalAdminMfaRows);
     assert.deepEqual(context.state, before);
   });
 
@@ -296,5 +314,7 @@ describe("Allwain account deletion archives locked publications", () => {
     assert.equal(archived.meta.inventoryRevision, 9);
     assert.equal(archived.meta.availableQuantity, 0);
     assert.equal(archived.allwainStatus, "closed");
+    assert.deepEqual(context.adminMfaDeleteCalls, [{ userId: "seller" }]);
+    assert.deepEqual(context.adminMfaRows, [{ userId: "buyer", pending: true }]);
   });
 });

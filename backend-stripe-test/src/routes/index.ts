@@ -1,3 +1,4 @@
+import adminMfaRoutes from "./admin-mfa.routes";
 import { Router } from "express";
 
 import authRoutes from "./auth.routes";
@@ -25,6 +26,7 @@ import allwainWebTesterRoutes from "./allwain-web-tester.routes";
 import chatRoutes from "./chat.routes";
 
 const router = Router();
+router.use("/auth/admin-mfa", adminMfaRoutes);
 
 /* =========================
    PUBLIC / SYSTEM

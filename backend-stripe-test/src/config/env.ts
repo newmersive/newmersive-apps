@@ -158,7 +158,18 @@ function courseMalwareScanMode() {
   return value as "required" | "best_effort" | "disabled";
 }
 
+function adminMfaEncryptionKey() {
+  const value = process.env.ADMIN_MFA_ENCRYPTION_KEY || "";
+  if ((nodeEnv === "production" || process.env.ADMIN_MFA_REQUIRED === "true") &&
+    (!/^[a-f0-9]{64}$/i.test(value) || value === jwtSecret || value === auditHmacSecret)) {
+    throw new Error("ADMIN_MFA_ENCRYPTION_KEY_INVALID");
+  }
+  return value;
+}
+
 export const ENV = {
+  ADMIN_MFA_REQUIRED: nodeEnv === "production" || process.env.ADMIN_MFA_REQUIRED === "true",
+  ADMIN_MFA_ENCRYPTION_KEY: adminMfaEncryptionKey(),
   PORT: port(),
   HOST: process.env.HOST || "127.0.0.1",
   JWT_SECRET: jwtSecret,

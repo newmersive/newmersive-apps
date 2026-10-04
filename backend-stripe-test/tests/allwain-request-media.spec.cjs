@@ -27,12 +27,26 @@ function harness(uploadDir = "unused-test-upload-dir") {
     ["admin", { id: "admin", name: "Operador", role: "admin", status: "active", deletedAt: null }],
   ]);
   const config = { ENV: { NODE_ENV: "test", STORAGE_DRIVER: "postgres", ALLWAIN_API_URL: "https://fixture.invalid", ALLWAIN_PUBLICATION_IMAGE_DIR: uploadDir } };
+  const adminMfa = { verified: true, checks: [] };
+  const requestLookups = [];
   const files = (relative) => path.join(root, "src", relative);
   const stubs = new Map([
     [files("config/env.ts"), config],
     [files("db/prisma.ts"), { getPrisma: () => { throw new Error("DATABASE_ACCESS_FORBIDDEN_IN_MEDIA_TEST"); } }],
     [files("services/data.store.pg.ts"), { getUserByIdPg: async (id) => users.get(id) || null }],
-    [files("services/data.store.allwain.pg.ts"), { getAllwainScanRequestByIdPg: async (id) => id === request.id ? request : null }],
+    [files("services/data.store.allwain.pg.ts"), { getAllwainScanRequestByIdPg: async (id) => {
+      requestLookups.push(id);
+      return id === request.id ? request : null;
+    } }],
+    [files("services/admin-mfa.service.ts"), { assertAdminMfa: async (identity) => {
+      assert.equal(identity.id, "admin");
+      assert.equal(identity.role, "admin");
+      assert.equal(identity.email, "admin@example.test");
+      assert.equal(identity.sessionId, "fixture-admin");
+      assert.equal(identity.sourceApp, "allwain");
+      adminMfa.checks.push({ ...identity });
+      if (!adminMfa.verified) throw new Error("ADMIN_MFA_REQUIRED");
+    } }],
     [files("services/allwain-money.ts"), { getAllwainDeliveryPricingConfig: () => ({}) }],
     [files("middleware/operation-rate-limit.middleware.ts"), { allwainAiRateLimit: (_req, _res, next) => next(), allwainOcrRateLimit: (_req, _res, next) => next() }],
     [files("services/auth-session.service.ts"), { resolveAccessToken: async (token) => {
@@ -61,11 +75,13 @@ function harness(uploadDir = "unused-test-upload-dir") {
       if (id === "@prisma/client") return { Prisma: {} };
       throw new Error(`Unexpected media test dependency: ${id}`);
     };
-    vm.runInNewContext(javascript, { module, exports: module.exports, require: isolatedRequire, Buffer, Date, URL }, { filename });
+    // Share Error so fixture exceptions follow the real middleware's instanceof
+    // branch and retain the MFA challenge code rather than a VM realm mismatch.
+    vm.runInNewContext(javascript, { module, exports: module.exports, require: isolatedRequire, Buffer, Date, URL, Error }, { filename });
     return module.exports;
   }
   return {
-    request, users,
+    request, users, adminMfa, requestLookups,
     service: load(files("services/allwain.service.ts")),
     images: load(files("services/allwain-card-images.service.ts")),
     router: () => load(files("routes/allwain.routes.ts")).default,
@@ -137,6 +153,18 @@ describe("Allwain source image privacy", () => {
         assert.equal(response.headers.get("cache-control"), "private, no-store");
       }
     }
+    assert.equal(h.adminMfa.checks.length, 7, "the real middleware checks MFA on every admin request");
+    assert.equal(h.requestLookups.length, 21, "verified MFA still runs the real image ownership checks");
+  }));
+
+  it("the real auth middleware rejects an admin awaiting MFA before image lookup", () => httpFixture(async (h) => {
+    h.adminMfa.verified = false;
+    const response = await h.get("admin");
+    assert.equal(response.status, 403);
+    assert.equal(JSON.parse(response.bytes.toString("utf8")).error, "ADMIN_MFA_REQUIRED");
+    assert.equal(response.bytes.equals(imageBytes), false);
+    assert.equal(h.adminMfa.checks.length, 1);
+    assert.deepEqual(h.requestLookups, [], "MFA challenge precedes media access and ownership lookup");
   }));
 
   it("the active owner can read original bytes without reusable HTTP caching, including archived history", () => httpFixture(async (h) => {

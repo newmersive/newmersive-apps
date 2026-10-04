@@ -66,6 +66,8 @@ export async function deleteAllwainAccount(userId: string) {
     const cleanup = [
       tx.authIdentity.deleteMany({ where: { userId } }),
       tx.authSession.deleteMany({ where: { userId } }),
+      // Soft deletion retains User; explicitly erase enrolled and pending MFA secrets.
+      tx.adminMfa.deleteMany({ where: { userId } }),
       tx.allwainBuyerProfile.deleteMany({ where: { userId } }),
       tx.allwainSellerProfile.deleteMany({ where: { userId } }),
       tx.allwainConnectorProfile.deleteMany({ where: { userId } }),

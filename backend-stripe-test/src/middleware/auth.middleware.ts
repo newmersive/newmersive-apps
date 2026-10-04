@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { UserRole } from "../shared/types";
 import { AuthSourceApp, resolveAccessToken } from "../services/auth-session.service";
+import { assertAdminMfa } from "../services/admin-mfa.service";
 
 export interface AuthRequest extends Request {
   user?: {
@@ -35,7 +36,6 @@ export async function authRequired(req: AuthRequest, res: Response, next: NextFu
       sourceApp: identity.sourceApp,
     };
 
-    next();
   } catch {
     return res.status(401).json({
       error: "INVALID_TOKEN",
@@ -43,6 +43,17 @@ export async function authRequired(req: AuthRequest, res: Response, next: NextFu
       message: "Sesión expirada o inválida",
     });
   }
+  // Guard all privileged identities, including shared buyer/seller APIs with admin overrides.
+  const authSelfService = req.baseUrl === "/api/auth" || req.baseUrl === "/api/auth/admin-mfa" || req.baseUrl === "/api/noa/community/auth";
+  if (req.user?.role === "admin" && !authSelfService) {
+    try { await assertAdminMfa(req.user); }
+    catch (error) {
+      const code = error instanceof Error ? error.message : "ADMIN_MFA_UNAVAILABLE";
+      const challenge = ["ADMIN_MFA_REQUIRED", "ADMIN_MFA_ENROLLMENT_REQUIRED", "FORBIDDEN"].includes(code);
+      return res.status(challenge ? 403 : 503).json({ error: challenge ? code : "ADMIN_MFA_UNAVAILABLE" });
+    }
+  }
+  next();
 }
 
 export function adminOnly(req: AuthRequest, res: Response, next: NextFunction) {
