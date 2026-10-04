@@ -1,0 +1,21 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+build/
+
+# Local environment
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Logs and local scratch
+*.log
+*.bak
+*.tmp
+
+# Review/export artifacts
+_BACKEND_REVIEW/
+_BACKEND_REVIEW.zip

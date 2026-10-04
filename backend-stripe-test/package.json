@@ -1,0 +1,59 @@
+{
+  "name": "newmersive-backend",
+  "version": "1.0.0",
+  "main": "dist/src/server.js",
+  "license": "MIT",
+  "scripts": {
+    "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
+    "build": "tsc",
+    "start": "node dist/src/server.js",
+    "migrate": "prisma migrate deploy",
+    "seed": "prisma db seed",
+    "seed:allwain:production-catalog": "ts-node --transpile-only prisma/seed-allwain-production-catalog.ts",
+    "backfill:allwain:card-images": "ts-node --transpile-only prisma/backfill-allwain-card-images.ts",
+    "test": "node ./tests/run-tests.cjs",
+    "test:postgres": "node ./tests/run-postgres-tests.cjs",
+    "test:postgres:isolated": "node ./tests/run-postgres-isolated.cjs"
+  },
+  "dependencies": {
+    "@prisma/adapter-pg": "7.10.0",
+    "@prisma/client": "7.10.0",
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "csv-parse": "^6.2.1",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "google-auth-library": "^11.0.2",
+    "imapflow": "^1.7.8",
+    "jsonwebtoken": "^9.0.2",
+    "livekit-server-sdk": "^2.18.0",
+    "mailparser": "^3.9.22",
+    "multer": "2.2.0",
+    "nodemailer": "9.0.5",
+    "pg": "^8.16.3",
+    "stripe": "^22.6.0"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^4.17.21",
+    "@types/jsonwebtoken": "^9.0.6",
+    "@types/mailparser": "^3.4.6",
+    "@types/multer": "1.4.12",
+    "@types/node": "^22.10.1",
+    "@types/nodemailer": "7.0.1",
+    "@types/pg": "^8.16.0",
+    "prisma": "7.10.0",
+    "ts-node": "^10.9.2",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.6.3"
+  },
+  "prisma": {
+    "seed": "ts-node --transpile-only prisma/seed.ts"
+  },
+  "overrides": {
+    "deepmerge-ts": "8.0.2",
+    "mysql2": "3.24.3",
+    "qs": "6.16.0"
+  }
+}

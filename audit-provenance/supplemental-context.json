@@ -1,0 +1,47 @@
+[
+  {
+    "path": "backend-stripe-test/.gitignore",
+    "sha256": "6a1f71e12b7cc21e60cc541bf1fa7c7f678992028a111e4555a21dc03ee62b88",
+    "provenance": "Current unchanged context; not part of initial 444-file snapshot"
+  },
+  {
+    "path": "backend-stripe-test/app.json",
+    "sha256": "b7c55adf9886178318b9a475422a1a361cb6a3211b82f774104c77e460a1ec88",
+    "provenance": "Current unchanged context; not part of initial 444-file snapshot"
+  },
+  {
+    "path": "backend-stripe-test/prisma.config.ts",
+    "sha256": "6042f4eaa9229505858913df3c14ce97edce2818a4a6a1f0caf86175483f7d0f",
+    "provenance": "Current unchanged context; not part of initial 444-file snapshot"
+  },
+  {
+    "path": "backend-stripe-test/scripts/reset-admin-password.js",
+    "sha256": "64adfb87756aa151f05125725cbfa46001ac076bd676521ecd527b0b7c0a2f0f",
+    "provenance": "Current unchanged context; not part of initial 444-file snapshot"
+  },
+  {
+    "path": "backend-stripe-test/types.d.ts",
+    "sha256": "53d1f4f53761a22f9739594f8e47e57502db8f3295d7620823bb5af05ce207f0",
+    "provenance": "Current unchanged context; not part of initial 444-file snapshot"
+  },
+  {
+    "path": "frontend-stripe-test/.easignore",
+    "sha256": "a9943f69fa8bc6a425c87c8d58a07ac930f3494dec2049bceae70824f9db39bc",
+    "provenance": "Current unchanged context; not part of initial 444-file snapshot"
+  },
+  {
+    "path": "frontend-stripe-test/.gitignore",
+    "sha256": "4f94fab93fed1a916dd194ec06df1aedf018dc3c0075a360c45af48dd85df94c",
+    "provenance": "Current unchanged context; not part of initial 444-file snapshot"
+  },
+  {
+    "path": "frontend-stripe-test/eas.json",
+    "sha256": "2cea7d784617051de0d79155c5cb47a2a089442b98e2e3f1eb64ce0692c47609",
+    "provenance": "Current unchanged context; not part of initial 444-file snapshot"
+  },
+  {
+    "path": "frontend-stripe-test/metro.config.js",
+    "sha256": "e9915790590248f7932a2e9af47ebec1f1ec4ea991d46f3e44dd98a8d1dc4050",
+    "provenance": "Current unchanged context; not part of initial 444-file snapshot"
+  }
+]

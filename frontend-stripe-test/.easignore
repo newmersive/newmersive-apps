@@ -1,0 +1,17 @@
+node_modules/
+.expo/
+dist/
+dist-*/
+.qa-*/
+_review/
+*.log
+*.bak
+.env
+.env.*
+!.env.production
+credentials.json
+*.mobileprovision
+*.p8
+*.p12
+*.pem
+*.key

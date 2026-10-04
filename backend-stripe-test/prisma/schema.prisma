@@ -1,0 +1,2373 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id                        String    @id @default(uuid())
+  name                      String
+  email                     String    @unique
+  passwordHash              String?
+  role                      String
+  sponsorCode               String?   @unique
+  referredByCode            String?
+  avatarUrl                 String?
+  preferredLocale           String?
+  analyticsConsent          Boolean?
+  analyticsConsentVersion   String?
+  analyticsConsentUpdatedAt DateTime?
+  tokens                    Int?
+  allwainBalance            Float?
+  status                    String    @default("active")
+  tokenVersion              Int       @default(0)
+  emailVerifiedAt           DateTime?
+  passwordChangedAt         DateTime?
+  failedLoginCount          Int       @default(0)
+  lastFailedLoginAt         DateTime?
+  lockedUntil               DateTime?
+  lastLoginAt               DateTime?
+  createdAt                 DateTime  @default(now())
+  deletedAt                 DateTime?
+
+  authSessions AuthSession[]
+
+  allwainFiscalProfiles              AllwainFiscalProfile[]
+  allwainProductProfiles             AllwainProductComplianceProfile[]
+  allwainPartySnapshots              AllwainPartySnapshot[]
+  allwainOrderLinesSold              AllwainOrderLine[]
+  allwainTransfersReceived           AllwainTransfer[]
+  allwainDocumentsIssued             AllwainFiscalDocument[]           @relation("AllwainDocumentIssuer")
+  allwainDocumentsReceived           AllwainFiscalDocument[]           @relation("AllwainDocumentRecipient")
+  allwainProductLots                 AllwainProductLot[]
+  allwainIncidentsReported           AllwainIncident[]                 @relation("AllwainIncidentReporter")
+  allwainIncidentsAssigned           AllwainIncident[]                 @relation("AllwainIncidentAssignee")
+  allwainConsentEvidence             AllwainConsentEvidence[]
+  allwainReviewsAuthored             AllwainReview[]                   @relation("AllwainReviewAuthor")
+  allwainReviewsReceived             AllwainReview[]                   @relation("AllwainReviewSubject")
+  allwainReviewsModerated            AllwainReview[]                   @relation("AllwainReviewModerator")
+  allwainReputation                  AllwainReputation?
+  allwainRecallsOwned                AllwainProductRecall[]            @relation("AllwainRecallSeller")
+  allwainRecallsIssued               AllwainProductRecall[]            @relation("AllwainRecallIssuer")
+  allwainExperience                  AllwainExperienceProfile?
+  allwainPublicationReviews          AllwainPublicationReview[]
+  allwainShoppingLists               AllwainShoppingList[]             @relation("AllwainShoppingListBuyer")
+  allwainShoppingListProposalItems   AllwainShoppingListProposalItem[] @relation("AllwainShoppingListProposalSeller")
+  allwainEvidenceDocuments           AllwainEvidenceDocument[]         @relation("AllwainEvidenceOwner")
+  allwainProposalRevisions           AllwainProposalRevision[]         @relation("AllwainProposalRevisionSeller")
+  allwainExpectedDeliveryCheckpoints AllwainDeliveryCheckpoint[]       @relation("AllwainCheckpointExpectedUser")
+  allwainVerifiedDeliveryCheckpoints AllwainDeliveryCheckpoint[]       @relation("AllwainCheckpointVerifier")
+  allwainSupportTicketsRequested     AllwainSupportTicket[]            @relation("AllwainSupportRequester")
+  allwainSupportTicketsAssigned      AllwainSupportTicket[]            @relation("AllwainSupportAssignee")
+  allwainSupportMessagesAuthored     AllwainSupportMessage[]           @relation("AllwainSupportMessageAuthor")
+  allwainSupportControlsUpdated      AllwainSupportControl[]           @relation("AllwainSupportControlUpdater")
+  allwainAppTesterProgress           AllwainAppTesterProgress[]
+  trueqiaTesterActions               TrueqiaTesterAction[]
+  trueqiaTesterIncidents             TrueqiaTesterIncident[]
+  allwainAppTesterActionProgress     AllwainAppTesterActionProgress[]
+
+  @@index([deletedAt])
+  @@index([status, deletedAt])
+  @@index([lockedUntil])
+}
+
+model AuthSession {
+  id               String    @id @default(uuid())
+  userId           String
+  familyId         String
+  refreshTokenHash String    @unique
+  sourceApp        String
+  userAgentHash    String?
+  ipHash           String?
+  tokenVersion     Int
+  createdAt        DateTime  @default(now())
+  lastUsedAt       DateTime  @default(now())
+  expiresAt        DateTime
+  revokedAt        DateTime?
+  revokeReason     String?
+  rotatedFromId    String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, revokedAt, expiresAt])
+  @@index([familyId, revokedAt])
+  @@index([expiresAt])
+}
+
+model AuthIdentity {
+  id              String   @id @default(uuid())
+  userId          String
+  provider        String
+  providerSubject String
+  email           String
+  emailVerified   Boolean  @default(false)
+  profile         Json?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([provider, providerSubject])
+  @@unique([userId, provider])
+  @@index([email])
+}
+
+model AuthLoginChallenge {
+  id            String    @id @default(uuid())
+  provider      String
+  challengeHash String    @unique
+  sourceApp     String
+  expiresAt     DateTime
+  consumedAt    DateTime?
+  createdAt     DateTime  @default(now())
+
+  @@index([provider, sourceApp, expiresAt])
+}
+
+model AllwainBuyerProfile {
+  userId                 String   @id
+  status                 String   @default("active")
+  defaultFiscalProfileId String?
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  @@index([status, updatedAt])
+}
+
+model AllwainSellerProfile {
+  userId                 String    @id
+  status                 String    @default("not_activated")
+  commercialModel        String    @default("marketplace")
+  sellerType             String?
+  displayName            String?
+  fiscalStatus           String    @default("not_started")
+  defaultFiscalProfileId String?
+  locationLabel          String?
+  pickupAddress          String?
+  shippingPostalCode     String?
+  shippingCity           String?
+  shippingCountryCode    String?   @default("ES")
+  shippingPhone          String?
+  locationLatApprox      Float?
+  locationLngApprox      Float?
+  activatedAt            DateTime?
+  verifiedAt             DateTime?
+  restrictedAt           DateTime?
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
+
+  @@index([status, updatedAt])
+  @@index([commercialModel, status])
+}
+
+model AllwainConnectorProfile {
+  userId            String    @id
+  status            String    @default("not_activated")
+  available         Boolean   @default(false)
+  radiusKm          Int       @default(5)
+  locationLabel     String?
+  locationLatApprox Float?
+  locationLngApprox Float?
+  activatedAt       DateTime?
+  restrictedAt      DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@index([status, available, radiusKm])
+}
+
+model AllwainExperienceProfile {
+  userId                String    @id
+  onboardingVersion     Int       @default(0)
+  onboardingCompletedAt DateTime?
+  primaryIntent         String?
+  guidanceEnabled       Boolean   @default(true)
+  lastContext           String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@index([onboardingVersion, updatedAt])
+}
+
+model AllwainAppTesterProgress {
+  id              String   @id @default(uuid())
+  userId          String
+  programId       String
+  stepId          String
+  status          String   @default("completed")
+  platform        String   @default("unknown")
+  appVersion      String?
+  clientReference String
+  completedAt     DateTime @default(now())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, programId, stepId])
+  @@index([userId, programId, updatedAt])
+  @@index([programId, stepId, status])
+}
+
+model AllwainAppTesterActionProgress {
+  id              String    @id @default(uuid())
+  userId          String
+  programId       String
+  stepId          String
+  actionId        String
+  status          String    @default("pending")
+  platform        String    @default("unknown")
+  appVersion      String?
+  clientReference String
+  completedAt     DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, programId, stepId, actionId])
+  @@index([userId, programId, updatedAt])
+  @@index([programId, stepId, actionId, status])
+}
+
+model AllwainPublicationReview {
+  id          String    @id @default(uuid())
+  userId      String
+  entityType  String
+  entityId    String?
+  draftHash   String
+  decision    String
+  score       Int
+  summary     String
+  issues      Json
+  suggestions Json
+  normalized  Json?
+  provider    String    @default("rules")
+  model       String?
+  expiresAt   DateTime?
+  createdAt   DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@index([userId, createdAt])
+  @@index([entityType, entityId])
+  @@index([decision, createdAt])
+  @@index([draftHash, createdAt])
+}
+
+model CourseEntitlement {
+  id          String    @id @default(uuid())
+  userId      String
+  email       String
+  product     String
+  entitlement String
+  source      String
+  metadata    Json?
+  expiresAt   DateTime?
+  revokedAt   DateTime?
+  grantedAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([userId, entitlement])
+  @@index([email])
+  @@index([product, entitlement])
+}
+
+model CourseProgress {
+  id           String    @id @default(uuid())
+  userId       String
+  moduleId     Int
+  lessonIndex  Int       @default(0)
+  status       String    @default("not_started")
+  percent      Int       @default(0)
+  studentState Json?
+  startedAt    DateTime?
+  completedAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@unique([userId, moduleId])
+  @@index([userId, updatedAt])
+}
+
+model CourseSubmission {
+  id           String    @id @default(uuid())
+  userId       String
+  moduleId     Int
+  artifactType String
+  fileName     String?
+  storedName   String?
+  mimeType     String?
+  sizeBytes    Int?
+  textContent  String?
+  status       String    @default("submitted")
+  aiReview     Json?
+  adminNotes   String?
+  reviewedBy   String?
+  reviewedAt   DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([userId, createdAt])
+  @@index([status, createdAt])
+}
+
+model CourseAiMessage {
+  id        String   @id @default(uuid())
+  userId    String
+  agent     String
+  role      String
+  content   String
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+}
+
+model CourseConsent {
+  id         String   @id @default(uuid())
+  userId     String
+  type       String
+  version    String
+  acceptedAt DateTime @default(now())
+  ipHash     String?
+
+  @@unique([userId, type, version])
+  @@index([userId, acceptedAt])
+}
+
+model CourseAuditEvent {
+  id           String   @id @default(uuid())
+  actorUserId  String?
+  targetUserId String?
+  action       String
+  metadata     Json?
+  ipHash       String?
+  createdAt    DateTime @default(now())
+
+  @@index([actorUserId, createdAt])
+  @@index([targetUserId, createdAt])
+  @@index([action, createdAt])
+}
+
+model CourseEmailDelivery {
+  id        String    @id @default(uuid())
+  userId    String?
+  email     String
+  template  String
+  status    String
+  provider  String?
+  error     String?
+  createdAt DateTime  @default(now())
+  sentAt    DateTime?
+
+  @@index([email, createdAt])
+  @@index([status, createdAt])
+}
+
+model CoursePaymentEvent {
+  id              String    @id @default(uuid())
+  providerEventId String    @unique
+  type            String
+  status          String    @default("processing")
+  error           String?
+  metadata        Json?
+  createdAt       DateTime  @default(now())
+  processedAt     DateTime?
+
+  @@index([status, createdAt])
+  @@index([type, createdAt])
+}
+
+model CoursePayment {
+  id                String   @id @default(uuid())
+  provider          String   @default("stripe")
+  checkoutSessionId String   @unique
+  paymentIntentId   String?
+  userId            String?
+  email             String
+  plan              String
+  entitlement       String
+  status            String
+  amountTotal       Int?
+  currency          String?
+  metadata          Json?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([paymentIntentId])
+  @@index([email, createdAt])
+  @@index([status, createdAt])
+}
+
+model CourseCertificate {
+  id               String    @id @default(uuid())
+  userId           String    @unique
+  verificationCode String    @unique
+  studentName      String
+  courseName       String
+  metadata         Json?
+  issuedAt         DateTime  @default(now())
+  revokedAt        DateTime?
+
+  @@index([issuedAt])
+}
+
+model CourseSupportTicket {
+  id         String    @id @default(uuid())
+  userId     String
+  category   String
+  subject    String
+  message    String
+  status     String    @default("open")
+  priority   String    @default("normal")
+  aiTriage   Json?
+  adminNotes String?
+  assignedTo String?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  resolvedAt DateTime?
+
+  @@index([userId, createdAt])
+  @@index([status, priority, createdAt])
+}
+
+model CourseAnalyticsEvent {
+  id        String   @id @default(uuid())
+  userId    String?
+  name      String
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@index([name, createdAt])
+}
+
+model AllwainShoppingList {
+  id                       String    @id @default(uuid())
+  buyerUserId              String
+  sourceShoppingListId     String?
+  sourceEvidenceDocumentId String?
+  sourceOcrExtractionId    String?
+  sourceKind               String    @default("manual")
+  title                    String
+  description              String?
+  demo                     Boolean   @default(false)
+  status                   String    @default("draft")
+  visibility               String    @default("private")
+  currency                 String    @default("EUR")
+  allowSubstitutions       Boolean   @default(false)
+  needByText               String?
+  proposalDeadlineAt       DateTime?
+  preferredDeliveryChannel String?
+  deliveryAddress          Json?
+  deliveryWindow           Json?
+  recurrence               Json?
+  locationLabel            String?
+  locationLatApprox        Float?
+  locationLngApprox        Float?
+  selectedOfferId          String?   @unique
+  selectedAt               DateTime?
+  publishedAt              DateTime?
+  closedAt                 DateTime?
+  version                  Int       @default(1)
+  createdAt                DateTime  @default(now())
+  updatedAt                DateTime  @updatedAt
+
+  buyer               User                              @relation("AllwainShoppingListBuyer", fields: [buyerUserId], references: [id], onDelete: Restrict)
+  items               AllwainShoppingListItem[]
+  offers              Offer[]                           @relation("AllwainShoppingListOffers")
+  contracts           Contract[]                        @relation("AllwainShoppingListContracts")
+  orders              AllwainOrder[]                    @relation("AllwainShoppingListOrders")
+  recurringPlans      AllwainRecurringPlan[]            @relation("AllwainShoppingListRecurringPlans")
+  proposalItems       AllwainShoppingListProposalItem[]
+  selectedOffer       Offer?                            @relation("AllwainShoppingListSelectedOffer", fields: [selectedOfferId], references: [id], onDelete: Restrict)
+  sourceShoppingList  AllwainShoppingList?              @relation("AllwainShoppingListCopies", fields: [sourceShoppingListId], references: [id], onDelete: Restrict)
+  copies              AllwainShoppingList[]             @relation("AllwainShoppingListCopies")
+  sourceEvidence      AllwainEvidenceDocument?          @relation("AllwainEvidenceShoppingLists", fields: [sourceEvidenceDocumentId], references: [id], onDelete: Restrict)
+  sourceOcrExtraction AllwainOcrExtraction?             @relation("AllwainExtractionShoppingLists", fields: [sourceOcrExtractionId], references: [id], onDelete: Restrict)
+
+  @@index([buyerUserId, status, updatedAt])
+  @@index([sourceShoppingListId, createdAt])
+  @@index([sourceEvidenceDocumentId, createdAt])
+  @@index([sourceOcrExtractionId])
+  @@index([visibility, status, publishedAt])
+  @@index([proposalDeadlineAt, status])
+  @@index([locationLabel, status])
+}
+
+model AllwainShoppingListItem {
+  id                    String    @id @default(uuid())
+  shoppingListId        String
+  position              Int
+  productName           String
+  description           String?
+  quantity              Decimal   @db.Decimal(18, 3)
+  unit                  String
+  targetUnitPriceAmount Int?
+  reviewStatus          String    @default("selected")
+  referencePriceSource  String    @default("manual")
+  referencePriceLocked  Boolean   @default(false)
+  referenceCapturedAt   DateTime?
+  referenceDocumentId   String?
+  ocrLineItemId         String?   @unique
+  category              String?
+  subcategory           String?
+  productKind           String?
+  notes                 String?
+  qualityReviewId       String?
+  qualityDecision       String?
+  qualityScore          Int?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  shoppingList      AllwainShoppingList               @relation(fields: [shoppingListId], references: [id], onDelete: Restrict)
+  proposalItems     AllwainShoppingListProposalItem[]
+  orderLines        AllwainOrderLine[]
+  referenceDocument AllwainEvidenceDocument?          @relation("AllwainEvidenceShoppingListItems", fields: [referenceDocumentId], references: [id], onDelete: Restrict)
+  ocrLineItem       AllwainOcrLineItem?               @relation(fields: [ocrLineItemId], references: [id], onDelete: Restrict)
+
+  @@unique([shoppingListId, position])
+  @@index([shoppingListId, productKind, category])
+  @@index([shoppingListId, reviewStatus, position])
+  @@index([referenceDocumentId])
+  @@index([productName])
+}
+
+model AllwainShoppingListProposalItem {
+  id                 String   @id @default(uuid())
+  shoppingListId     String
+  shoppingListItemId String
+  offerId            String
+  sellerUserId       String
+  position           Int
+  productName        String
+  description        String?
+  quantity           Decimal  @db.Decimal(18, 3)
+  unit               String
+  unitPriceAmount    Int
+  subtotalAmount     Int
+  currency           String
+  isSubstitution     Boolean  @default(false)
+  notes              String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  shoppingList     AllwainShoppingList     @relation(fields: [shoppingListId], references: [id], onDelete: Restrict)
+  shoppingListItem AllwainShoppingListItem @relation(fields: [shoppingListItemId], references: [id], onDelete: Restrict)
+  offer            Offer                   @relation(fields: [offerId], references: [id], onDelete: Restrict)
+  seller           User                    @relation("AllwainShoppingListProposalSeller", fields: [sellerUserId], references: [id], onDelete: Restrict)
+  orderLines       AllwainOrderLine[]
+
+  @@unique([offerId, shoppingListItemId])
+  @@index([shoppingListId, sellerUserId])
+  @@index([shoppingListItemId])
+  @@index([offerId, position])
+}
+
+model AllwainEvidenceDocument {
+  id               String    @id @default(uuid())
+  ownerUserId      String
+  sourceType       String
+  documentType     String
+  status           String    @default("active")
+  mimeType         String?
+  storageKey       String?
+  byteSize         Int?
+  contentHash      String
+  rawTextHash      String?
+  originalFileName String?
+  supersededById   String?
+  capturedAt       DateTime  @default(now())
+  annulledAt       DateTime?
+  annulmentReason  String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  owner             User                      @relation("AllwainEvidenceOwner", fields: [ownerUserId], references: [id], onDelete: Restrict)
+  extractions       AllwainOcrExtraction[]
+  scanRequests      AllwainScanRequest[]      @relation("AllwainEvidenceScanRequests")
+  shoppingLists     AllwainShoppingList[]     @relation("AllwainEvidenceShoppingLists")
+  shoppingListItems AllwainShoppingListItem[] @relation("AllwainEvidenceShoppingListItems")
+  supersededBy      AllwainEvidenceDocument?  @relation("AllwainEvidenceSupersession", fields: [supersededById], references: [id], onDelete: Restrict)
+  supersedes        AllwainEvidenceDocument[] @relation("AllwainEvidenceSupersession")
+
+  @@index([ownerUserId, status, createdAt])
+  @@index([ownerUserId, contentHash, status])
+  @@index([supersededById])
+}
+
+model AllwainOcrExtraction {
+  id                 String   @id @default(uuid())
+  evidenceDocumentId String
+  version            Int      @default(1)
+  provider           String
+  model              String
+  status             String   @default("captured")
+  rawText            String?
+  rawData            Json?
+  confidence         Float?
+  extractionHash     String
+  createdAt          DateTime @default(now())
+
+  evidenceDocument AllwainEvidenceDocument @relation(fields: [evidenceDocumentId], references: [id], onDelete: Restrict)
+  lineItems        AllwainOcrLineItem[]
+  scanRequests     AllwainScanRequest[]    @relation("AllwainExtractionScanRequests")
+  shoppingLists    AllwainShoppingList[]   @relation("AllwainExtractionShoppingLists")
+
+  @@unique([evidenceDocumentId, version])
+  @@index([evidenceDocumentId, status, createdAt])
+  @@index([extractionHash])
+}
+
+model AllwainOcrLineItem {
+  id              String   @id @default(uuid())
+  extractionId    String
+  position        Int
+  rawText         String
+  productName     String
+  description     String?
+  quantity        Decimal  @db.Decimal(18, 3)
+  unit            String
+  unitPriceAmount Int
+  lineTotalAmount Int
+  currency        String
+  confidence      Float
+  taxIncluded     Boolean?
+  discountAmount  Int?
+  reviewStatus    String   @default("selected")
+  createdAt       DateTime @default(now())
+
+  extraction       AllwainOcrExtraction     @relation(fields: [extractionId], references: [id], onDelete: Restrict)
+  shoppingListItem AllwainShoppingListItem?
+
+  @@unique([extractionId, position])
+  @@index([extractionId, reviewStatus, position])
+}
+
+model Offer {
+  id                String    @id @default(uuid())
+  title             String
+  description       String
+  owner             String
+  ownerUserId       String
+  tokens            Int?
+  price             Float?
+  productId         String?
+  meta              Json?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @default(now()) @updatedAt
+  isUnique          Boolean   @default(false)
+  allwainType       String?
+  allwainStatus     String?
+  requestId         String?
+  shoppingListId    String?
+  currency          String?
+  unit              String?
+  category          String?
+  subcategory       String?
+  productKind       String?
+  locationLabel     String?
+  commercialModel   String    @default("marketplace")
+  proposalExpiresAt DateTime?
+  proposalRevision  Int       @default(0)
+
+  allwainProductCompliance  AllwainProductComplianceProfile?
+  allwainOrderLines         AllwainOrderLine[]
+  allwainProductLots        AllwainProductLot[]
+  shoppingList              AllwainShoppingList?              @relation("AllwainShoppingListOffers", fields: [shoppingListId], references: [id], onDelete: Restrict)
+  shoppingListProposalItems AllwainShoppingListProposalItem[]
+  selectedForShoppingList   AllwainShoppingList?              @relation("AllwainShoppingListSelectedOffer")
+  proposalRevisions         AllwainProposalRevision[]
+
+  @@unique([shoppingListId, ownerUserId])
+  @@index([owner, allwainType, allwainStatus, createdAt])
+  @@index([ownerUserId, allwainStatus, createdAt])
+  @@index([requestId, allwainStatus, createdAt])
+  @@index([shoppingListId, allwainStatus, createdAt])
+  @@index([category, subcategory, createdAt])
+  @@index([productKind, createdAt])
+  @@index([currency, createdAt])
+  @@index([commercialModel, productKind, createdAt])
+  @@index([proposalExpiresAt, allwainStatus])
+}
+
+model AllwainProposalRevision {
+  id                 String    @id @default(uuid())
+  offerId            String
+  revision           Int
+  sellerUserId       String
+  requestId          String?
+  shoppingListId     String?
+  totalAmount        Int
+  referenceAmount    Int?
+  grossSavingsAmount Int?
+  currency           String
+  validUntil         DateTime
+  description        String
+  deliveryEstimate   String
+  payload            Json
+  snapshotHash       String
+  status             String    @default("current")
+  acceptedAt         DateTime?
+  createdAt          DateTime  @default(now())
+
+  offer             Offer              @relation(fields: [offerId], references: [id], onDelete: Restrict)
+  seller            User               @relation("AllwainProposalRevisionSeller", fields: [sellerUserId], references: [id], onDelete: Restrict)
+  acceptedContracts Contract[]         @relation("AllwainAcceptedContractRevision")
+  acceptedOrders    AllwainOrder[]     @relation("AllwainAcceptedOrderRevision")
+  orderLines        AllwainOrderLine[]
+
+  @@unique([offerId, revision])
+  @@index([requestId, status, validUntil])
+  @@index([shoppingListId, status, validUntil])
+  @@index([sellerUserId, createdAt])
+}
+
+model Trade {
+  id                  String    @id @default(uuid())
+  offerId             String
+  fromUserId          String
+  toUserId            String
+  tokens              Int
+  status              String
+  createdAt           DateTime  @default(now())
+  resolvedAt          DateTime?
+  startedAt           DateTime?
+  tokensTransferredAt DateTime?
+  fromCompletedAt     DateTime?
+  toCompletedAt       DateTime?
+  completedAt         DateTime?
+  trueqiaDetails      Json?
+
+  @@index([status, createdAt])
+  @@index([fromUserId, status])
+  @@index([toUserId, status])
+  @@index([offerId, status])
+}
+
+model TrueqiaProfile {
+  userId    String   @id
+  payload   Json
+  updatedAt DateTime @default(now()) @updatedAt
+}
+
+model TrueqiaTesterAction {
+  id          String   @id
+  userId      String
+  programId   String
+  stepId      String
+  actionId    String
+  platform    String
+  appVersion  String?
+  completedAt DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@unique([userId, programId, stepId, actionId])
+}
+
+model TrueqiaTesterIncident {
+  id              String   @id
+  userId          String
+  programId       String
+  clientReference String
+  contentHash     String
+  payload         Json
+  status          String   @default("open")
+  createdAt       DateTime @default(now())
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@unique([userId, programId, clientReference])
+  @@index([userId, programId, createdAt])
+}
+
+model TrueqiaNeed {
+  id            String   @id
+  userId        String
+  title         String
+  description   String
+  category      String
+  mode          String
+  locationLabel String
+  availability  String
+  status        String   @default("open")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @default(now()) @updatedAt
+  responses     TrueqiaNeedResponse[]
+  @@index([status, category, mode, createdAt])
+  @@index([userId, createdAt])
+}
+
+model TrueqiaNeedResponse {
+  id              String   @id
+  needId          String
+  responderUserId String
+  offerId         String
+  message         String
+  createdAt       DateTime @default(now())
+  need            TrueqiaNeed @relation(fields: [needId], references: [id], onDelete: Restrict)
+  @@unique([needId, responderUserId, offerId])
+  @@index([responderUserId, createdAt])
+}
+
+model Product {
+  id          String  @id @default(uuid())
+  name        String
+  ean         String? @unique
+  category    String?
+  brand       String?
+  description String?
+  imageUrl    String?
+  priceTokens Int?
+  visibility  String  @default("public")
+
+  @@index([visibility, category])
+}
+
+model Lead {
+  id        String   @id @default(uuid())
+  name      String?
+  email     String?
+  phone     String?
+  source    String
+  message   String?
+  offerId   String?
+  userId    String?
+  status    String
+  createdAt DateTime @default(now())
+  notes     String?
+}
+
+model LeadGlobal {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+  channel   String
+  sourceApp String
+  name      String?
+  phone     String?
+  email     String?
+  message   String
+  status    String
+  meta      Json?
+}
+
+model Contract {
+  id                           String    @id @default(uuid())
+  app                          String
+  type                         String
+  status                       String
+  version                      Int       @default(1)
+  replacesId                   String?
+  offerId                      String?
+  requestId                    String?
+  shoppingListId               String?
+  acceptedProposalRevisionId   String?   @unique
+  purchaseKey                  String?   @unique
+  tradeId                      String?
+  requesterUserId              String?
+  providerUserId               String?
+  offerTitle                   String?
+  requesterName                String?
+  providerName                 String?
+  tokens                       Int?
+  quantity                     Float?
+  unit                         String?
+  unitPrice                    Float?
+  totalPrice                   Float?
+  currency                     String?
+  subtotalAmount               Int?
+  shippingAmount               Int?
+  carrierDeliveryAmount        Int?
+  carrierQuoteId               String?
+  platformFeeBps               Int?
+  platformFeeAmount            Int?
+  platformNetFeeAmount         Int?
+  platformRetainedAmount       Int?
+  connectorFeeAmount           Int?
+  connectorPlatformShareAmount Int?
+  connectorDeliveryAmount      Int?
+  sellerAmount                 Int?
+  feeBasis                     String    @default("sale_amount")
+  platformFeePayer             String    @default("seller")
+  referenceAmount              Int?
+  acceptedOfferAmount          Int?
+  grossSavingsAmount           Int?
+  netSavingsAmount             Int?
+  commercialModel              String    @default("marketplace")
+  businessOfRecord             String    @default("seller")
+  buyerCapacity                String    @default("consumer")
+  paymentMode                  String?
+  preorderChargeDeadlineAt     DateTime?
+  paymentStatus                String?
+  inventoryStatus              String?
+  deliveryMethod               String?
+  deliveryChannel              String?
+  deliveryAddress              Json?
+  deliveryNotes                String?
+  deliveryPricingSnapshot      Json?
+  notes                        String?
+  description                  String?
+  templateId                   String?
+  templateVersion              String?
+  requesterAcceptedAt          DateTime?
+  providerAcceptedAt           DateTime?
+  basePdfId                    String?
+  generatedText                String?
+  operationalArchivedAt        DateTime?
+  operationalArchiveReason     String?
+  operationalArchiveBatch      String?
+  createdAt                    DateTime  @default(now())
+  updatedAt                    DateTime  @default(now())
+
+  shoppingList             AllwainShoppingList?     @relation("AllwainShoppingListContracts", fields: [shoppingListId], references: [id], onDelete: Restrict)
+  acceptedProposalRevision AllwainProposalRevision? @relation("AllwainAcceptedContractRevision", fields: [acceptedProposalRevisionId], references: [id], onDelete: Restrict)
+
+  @@index([requesterUserId, createdAt])
+  @@index([carrierQuoteId])
+  @@index([providerUserId, createdAt])
+  @@index([offerId, status])
+  @@index([requestId, status, createdAt])
+  @@index([shoppingListId, status, createdAt])
+  @@index([tradeId, createdAt])
+  @@index([templateId, templateVersion])
+  @@index([app, operationalArchivedAt, createdAt])
+}
+
+model AllwainSellerPaymentAccount {
+  id               String    @id @default(uuid())
+  userId           String    @unique
+  provider         String    @default("stripe")
+  stripeAccountId  String?   @unique
+  country          String    @default("ES")
+  currency         String    @default("eur")
+  status           String    @default("not_started")
+  merchantStatus   String    @default("pending")
+  chargesEnabled   Boolean   @default(false)
+  transfersEnabled Boolean   @default(false)
+  payoutsEnabled   Boolean   @default(false)
+  requirements     Json?
+  lastSyncedAt     DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@index([status, updatedAt])
+}
+
+model AllwainBuyerPaymentProfile {
+  id                       String    @id @default(uuid())
+  userId                   String    @unique
+  stripeCustomerId         String    @unique
+  paymentMethodStatus      String    @default("not_started")
+  defaultPaymentMethodId   String?
+  defaultCardBrand         String?
+  defaultCardLast4         String?
+  defaultCardExpMonth      Int?
+  defaultCardExpYear       Int?
+  stripeSetupIntentId      String?   @unique
+  stripeCheckoutSessionId  String?   @unique
+  setupConsentVersion      String?
+  setupConsentAcceptedAt   DateTime?
+  setupConsentEvidenceHash String?
+  lastSyncedAt             DateTime?
+  createdAt                DateTime  @default(now())
+  updatedAt                DateTime  @updatedAt
+
+  @@index([paymentMethodStatus, updatedAt])
+}
+
+model AllwainRecurringPlan {
+  id                           String    @id @default(uuid())
+  sourceOrderId                String    @unique
+  offerId                      String
+  shoppingListId               String?
+  buyerUserId                  String
+  sellerUserId                 String
+  status                       String    @default("pending_initial_payment")
+  interval                     String
+  intervalCount                Int       @default(1)
+  timezone                     String    @default("Europe/Madrid")
+  quantity                     Float
+  unit                         String
+  unitPriceAmount              Int
+  maximumChargeAmount          Int
+  shippingAmount               Int       @default(0)
+  carrierDeliveryAmount        Int       @default(0)
+  connectorPlatformShareAmount Int       @default(0)
+  connectorDeliveryAmount      Int       @default(0)
+  currency                     String    @default("eur")
+  platformFeeBps               Int
+  commercialModel              String    @default("marketplace")
+  businessOfRecord             String    @default("seller")
+  platformRetainedAmount       Int       @default(0)
+  buyerCapacity                String    @default("consumer")
+  deliveryMethod               String?
+  deliveryChannel              String?
+  deliveryAddress              Json?
+  deliveryNotes                String?
+  deliveryWindow               Json?
+  commercialTermsVersion       String
+  mandateVersion               String
+  mandateAcceptedAt            DateTime
+  mandateEvidenceHash          String
+  mandateSnapshotHash          String
+  stripeCustomerId             String?
+  stripePaymentMethodId        String?
+  nextRunAt                    DateTime?
+  lastRunAt                    DateTime?
+  pausedAt                     DateTime?
+  canceledAt                   DateTime?
+  completedAt                  DateTime?
+  maxOccurrences               Int?
+  completedOccurrences         Int       @default(0)
+  failedOccurrences            Int       @default(0)
+  consecutiveFailures          Int       @default(0)
+  lastFailureCode              String?
+  lastFailureMessage           String?
+  createdAt                    DateTime  @default(now())
+  updatedAt                    DateTime  @updatedAt
+
+  occurrences  AllwainRecurringOccurrence[]
+  shoppingList AllwainShoppingList?         @relation("AllwainShoppingListRecurringPlans", fields: [shoppingListId], references: [id], onDelete: Restrict)
+
+  @@index([buyerUserId, status, nextRunAt])
+  @@index([sellerUserId, status, nextRunAt])
+  @@index([status, nextRunAt])
+  @@index([offerId, status])
+  @@index([shoppingListId, status, nextRunAt])
+}
+
+model AllwainRecurringOccurrence {
+  id                    String    @id @default(uuid())
+  planId                String
+  sequence              Int
+  scheduledFor          DateTime
+  status                String    @default("scheduled")
+  orderId               String?   @unique
+  paymentId             String?   @unique
+  stripePaymentIntentId String?   @unique
+  idempotencyKey        String    @unique
+  attempts              Int       @default(0)
+  nextRetryAt           DateTime?
+  failureCode           String?
+  failureMessage        String?
+  startedAt             DateTime?
+  paidAt                DateTime?
+  completedAt           DateTime?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  plan AllwainRecurringPlan @relation(fields: [planId], references: [id], onDelete: Restrict)
+
+  @@unique([planId, sequence])
+  @@index([status, scheduledFor])
+  @@index([planId, createdAt])
+}
+
+model AllwainOrder {
+  id                             String    @id @default(uuid())
+  contractId                     String    @unique
+  offerId                        String
+  shoppingListId                 String?
+  acceptedProposalRevisionId     String?   @unique
+  buyerUserId                    String
+  sellerUserId                   String
+  connectorUserId                String?
+  paymentMode                    String    @default("immediate")
+  status                         String    @default("awaiting_seller")
+  paymentStatus                  String    @default("not_started")
+  fulfillmentStatus              String    @default("pending")
+  taxStatus                      String    @default("pending_profile")
+  documentStatus                 String    @default("not_started")
+  traceabilityStatus             String    @default("not_required")
+  settlementStatus               String    @default("draft")
+  buyerCapacity                  String    @default("consumer")
+  legalSellerUserId              String?
+  commercialTermsVersion         String    @default("allwain-marketplace-v1")
+  commercialTermsAcceptedAt      DateTime?
+  commercialTermsSnapshotHash    String?
+  disputeStatus                  String?
+  transferStatus                 String    @default("not_started")
+  quantity                       Float
+  unit                           String
+  unitPriceAmount                Int
+  subtotalAmount                 Int
+  shippingAmount                 Int       @default(0)
+  carrierDeliveryAmount          Int       @default(0)
+  carrierQuoteId                 String?   @unique
+  taxAmount                      Int       @default(0)
+  agriculturalCompensationAmount Int       @default(0)
+  totalAmount                    Int       @default(0)
+  currency                       String    @default("eur")
+  platformFeeBps                 Int
+  platformFeeAmount              Int
+  platformNetFeeAmount           Int       @default(0)
+  platformRetainedAmount         Int       @default(0)
+  sellerAmount                   Int
+  feeBasis                       String    @default("sale_amount")
+  platformFeePayer               String    @default("seller")
+  referenceAmount                Int?
+  acceptedOfferAmount            Int?
+  grossSavingsAmount             Int?
+  netSavingsAmount               Int?
+  connectorFeeAmount             Int       @default(0)
+  connectorPlatformShareAmount   Int       @default(0)
+  connectorDeliveryAmount        Int       @default(0)
+  refundedAmount                 Int       @default(0)
+  paymentArchitecture            String    @default("separate_charges_and_transfers")
+  commercialModel                String    @default("marketplace")
+  businessOfRecord               String    @default("seller")
+  processorFeePayer              String    @default("platform")
+  settlementMerchantAccountId    String?
+  settlementPlanVersion          Int?
+  settlementSnapshotHash         String?
+  sellerTransferId               String?
+  connectorTransferId            String?
+  sellerTransferStatus           String    @default("not_started")
+  connectorTransferStatus        String    @default("not_required")
+  inventoryStatus                String    @default("reserved")
+  deliveryMethod                 String?
+  deliveryChannel                String?
+  deliveryAddress                Json?
+  deliveryNotes                  String?
+  deliveryPricingSnapshot        Json?
+  recurringPlanId                String?
+  recurringSequence              Int?
+  scheduledFor                   DateTime?
+  reservationConsentAt           DateTime?
+  reservationExpiresAt           DateTime?
+  preorderChargeDeadlineAt       DateTime?
+  preorderMandateVersion         String?
+  preorderMandateAcceptedAt      DateTime?
+  preorderMandateEvidenceHash    String?
+  preorderReminderStage          String?
+  paidAt                         DateTime?
+  readyAt                        DateTime?
+  dispatchedAt                   DateTime?
+  deliveredAt                    DateTime?
+  completedAt                    DateTime?
+  canceledAt                     DateTime?
+  operationalArchivedAt          DateTime?
+  operationalArchiveReason       String?
+  operationalArchiveBatch        String?
+  createdAt                      DateTime  @default(now())
+  updatedAt                      DateTime  @updatedAt
+
+  partySnapshots           AllwainPartySnapshot[]
+  orderLines               AllwainOrderLine[]
+  taxDetermination         AllwainTaxDetermination?
+  settlementPlans          AllwainSettlementPlan[]
+  ledgerEntries            AllwainLedgerEntry[]
+  transfers                AllwainTransfer[]
+  payoutAllocations        AllwainPayoutAllocation[]
+  fiscalDocuments          AllwainFiscalDocument[]
+  lotAllocations           AllwainOrderLotAllocation[]
+  incidents                AllwainIncident[]
+  consentEvidence          AllwainConsentEvidence[]
+  reviews                  AllwainReview[]
+  deliveryCheckpoints      AllwainDeliveryCheckpoint[]
+  carrierQuote             AllwainCarrierQuote?        @relation(fields: [carrierQuoteId], references: [id], onDelete: Restrict)
+  shipment                 AllwainShipment?
+  shoppingList             AllwainShoppingList?        @relation("AllwainShoppingListOrders", fields: [shoppingListId], references: [id], onDelete: Restrict)
+  acceptedProposalRevision AllwainProposalRevision?    @relation("AllwainAcceptedOrderRevision", fields: [acceptedProposalRevisionId], references: [id], onDelete: Restrict)
+
+  @@unique([recurringPlanId, recurringSequence])
+  @@index([buyerUserId, createdAt])
+  @@index([sellerUserId, createdAt])
+  @@index([connectorUserId, createdAt])
+  @@index([status, createdAt])
+  @@index([paymentStatus, createdAt])
+  @@index([fulfillmentStatus, createdAt])
+  @@index([disputeStatus, createdAt])
+  @@index([offerId, status])
+  @@index([shoppingListId, createdAt])
+  @@index([taxStatus, createdAt])
+  @@index([documentStatus, createdAt])
+  @@index([paymentMode, preorderChargeDeadlineAt])
+  @@index([recurringPlanId, scheduledFor])
+  @@index([operationalArchivedAt, createdAt])
+  @@index([commercialModel, status, createdAt])
+}
+
+model AllwainCarrierQuote {
+  id                     String    @id @default(uuid())
+  quoteRequestId         String
+  offerId                String
+  buyerUserId            String
+  sellerUserId           String
+  provider               String    @default("sendcloud")
+  status                 String    @default("quoted")
+  shippingOptionCode     String
+  providerContractId     Int?
+  carrierCode            String?
+  carrierName            String?
+  serviceName            String
+  amount                 Int
+  currency               String
+  quantity               Float
+  unit                   String
+  requestFingerprint     String
+  originAddressHash      String
+  destinationAddressHash String
+  parcelHash             String
+  requirements           Json?
+  requestSnapshot        Json
+  providerSnapshot       Json
+  expiresAt              DateTime
+  selectedAt             DateTime?
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
+
+  order     AllwainOrder?
+  shipments AllwainShipment[]
+
+  @@index([buyerUserId, offerId, status, expiresAt])
+  @@index([requestFingerprint, status, expiresAt])
+  @@index([sellerUserId, createdAt])
+  @@index([quoteRequestId])
+}
+
+model AllwainShipment {
+  id                  String    @id @default(uuid())
+  orderId             String    @unique
+  quoteId             String?
+  provider            String    @default("sendcloud")
+  status              String    @default("creating")
+  externalShipmentId  String?   @unique
+  externalParcelId    String?
+  externalReferenceId String    @unique
+  shippingOptionCode  String
+  providerContractId  Int?
+  carrierCode         String?
+  carrierName         String?
+  serviceName         String?
+  trackingNumber      String?
+  trackingUrl         String?
+  quotedAmount        Int
+  actualCostAmount    Int?
+  currency            String
+  announcedAt         DateTime?
+  deliveredAt         DateTime?
+  failedAt            DateTime?
+  lastEventAt         DateTime?
+  providerPayloadHash String?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  order  AllwainOrder          @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  quote  AllwainCarrierQuote?  @relation(fields: [quoteId], references: [id], onDelete: Restrict)
+  events AllwainCarrierEvent[]
+
+  @@index([quoteId])
+  @@index([externalParcelId])
+  @@index([status, updatedAt])
+}
+
+model AllwainCarrierEvent {
+  id               String    @id @default(uuid())
+  eventKey         String    @unique
+  provider         String    @default("sendcloud")
+  shipmentId       String?
+  orderId          String?
+  action           String
+  externalParcelId String?
+  statusCode       String?
+  statusMessage    String?
+  payloadHash      String
+  sanitizedPayload Json?
+  occurredAt       DateTime?
+  receivedAt       DateTime  @default(now())
+  processedAt      DateTime?
+  error            String?
+
+  shipment AllwainShipment? @relation(fields: [shipmentId], references: [id], onDelete: Restrict)
+
+  @@index([shipmentId, receivedAt])
+  @@index([orderId, receivedAt])
+  @@index([externalParcelId])
+}
+
+model AllwainPayment {
+  id                           String    @id @default(uuid())
+  orderId                      String
+  provider                     String    @default("stripe")
+  kind                         String    @default("payment")
+  status                       String    @default("created")
+  operationKey                 String?   @unique
+  amount                       Int
+  currency                     String
+  platformFeeAmount            Int
+  platformNetFeeAmount         Int       @default(0)
+  platformRetainedAmount       Int       @default(0)
+  sellerAmount                 Int
+  connectorFeeAmount           Int       @default(0)
+  connectorPlatformShareAmount Int       @default(0)
+  connectorDeliveryAmount      Int       @default(0)
+  carrierDeliveryAmount        Int       @default(0)
+  stripeCheckoutSessionId      String?   @unique
+  stripePaymentIntentId        String?   @unique
+  stripeSetupIntentId          String?   @unique
+  stripeCustomerId             String?
+  stripePaymentMethodId        String?
+  stripeChargeId               String?
+  stripeBalanceTransactionId   String?
+  stripeTransferId             String?
+  sellerTransferId             String?
+  connectorTransferId          String?
+  sellerTransferStatus         String    @default("not_started")
+  connectorTransferStatus      String    @default("not_required")
+  stripeConnectorTransferId    String?   @unique
+  stripeRefundId               String?   @unique
+  transferStatus               String    @default("not_started")
+  checkoutSessionExpiresAt     DateTime?
+  failureCode                  String?
+  failureMessage               String?
+  refundedAmount               Int       @default(0)
+  processorFeeAmount           Int?
+  processorNetAmount           Int?
+  settlementPlanId             String?
+  settlementPlanVersion        Int?
+  settlementSnapshotHash       String?
+  onBehalfOfStripeAccountId    String?
+  commercialModel              String    @default("marketplace")
+  businessOfRecord             String    @default("seller")
+  processorFeePayer            String    @default("platform")
+  metadata                     Json?
+  paidAt                       DateTime?
+  createdAt                    DateTime  @default(now())
+  updatedAt                    DateTime  @updatedAt
+
+  ledgerEntries  AllwainLedgerEntry[]
+  transfers      AllwainTransfer[]
+  settlementPlan AllwainSettlementPlan? @relation(fields: [settlementPlanId], references: [id], onDelete: Restrict)
+
+  @@index([orderId, createdAt])
+  @@index([status, createdAt])
+  @@index([stripeCustomerId])
+  @@index([stripeBalanceTransactionId])
+}
+
+model AllwainDeliveryAssignment {
+  id                 String    @id @default(uuid())
+  orderId            String    @unique
+  connectorUserId    String?
+  status             String    @default("open")
+  feeAmount          Int       @default(0)
+  networkBonusAmount Int       @default(0)
+  currency           String    @default("eur")
+  pickupZone         String?
+  deliveryZone       String?
+  pickupAddress      Json?
+  deliveryAddress    Json?
+  pickupLatApprox    Float?
+  pickupLngApprox    Float?
+  deliveryLatApprox  Float?
+  deliveryLngApprox  Float?
+  routeDistanceKm    Float?
+  maxDistanceKm      Float?
+  acceptedAt         DateTime?
+  pickedUpAt         DateTime?
+  deliveredAt        DateTime?
+  canceledAt         DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  checkpoints AllwainDeliveryCheckpoint[]
+
+  @@index([connectorUserId, status, createdAt])
+  @@index([status, createdAt])
+}
+
+model AllwainDeliveryCheckpoint {
+  id                        String    @id @default(uuid())
+  assignmentId              String
+  orderId                   String
+  checkpointType            String
+  expectedUserId            String
+  verifiedByConnectorUserId String?
+  tokenHash                 String    @unique
+  shortCodeHash             String?
+  status                    String    @default("pending")
+  expiresAt                 DateTime
+  verifiedAt                DateTime?
+  evidence                  Json?
+  createdAt                 DateTime  @default(now())
+  updatedAt                 DateTime  @updatedAt
+
+  assignment   AllwainDeliveryAssignment @relation(fields: [assignmentId], references: [id], onDelete: Restrict)
+  order        AllwainOrder              @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  expectedUser User                      @relation("AllwainCheckpointExpectedUser", fields: [expectedUserId], references: [id], onDelete: Restrict)
+  verifier     User?                     @relation("AllwainCheckpointVerifier", fields: [verifiedByConnectorUserId], references: [id], onDelete: Restrict)
+
+  @@unique([assignmentId, checkpointType])
+  @@index([orderId, checkpointType])
+  @@index([expectedUserId, status, expiresAt])
+  @@index([verifiedByConnectorUserId, verifiedAt])
+}
+
+model AllwainDispute {
+  id                   String    @id @default(uuid())
+  orderId              String
+  paymentId            String?
+  stripeDisputeId      String    @unique
+  stripeChargeId       String?
+  status               String
+  amount               Int
+  currency             String
+  reason               String?
+  evidenceDueAt        DateTime?
+  balanceTransactionId String?
+  metadata             Json?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+  closedAt             DateTime?
+
+  @@index([orderId, createdAt])
+  @@index([status, createdAt])
+}
+
+model AllwainSellerPayout {
+  id                 String    @id @default(uuid())
+  sellerUserId       String?
+  stripeAccountId    String
+  stripePayoutId     String    @unique
+  status             String
+  amount             Int
+  currency           String
+  arrivalAt          DateTime?
+  failureCode        String?
+  failureMessage     String?
+  destinationSummary String?
+  metadata           Json?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  allocations AllwainPayoutAllocation[]
+
+  @@index([sellerUserId, createdAt])
+  @@index([stripeAccountId, createdAt])
+  @@index([status, createdAt])
+}
+
+model AllwainFiscalProfile {
+  id                          String    @id @default(uuid())
+  userId                      String
+  kind                        String
+  status                      String    @default("draft")
+  legalForm                   String?
+  legalName                   String?
+  tradeName                   String?
+  taxIdType                   String?
+  taxId                       String?
+  vatId                       String?
+  countryCode                 String    @default("ES")
+  taxTerritory                String?
+  vatRegime                   String    @default("unknown")
+  reagpActivity               String?
+  ownProduction               Boolean?
+  invoiceEmail                String?
+  billingAddress              Json?
+  attestationVersion          String?
+  attestedAt                  DateTime?
+  documentMandateVersion      String?
+  documentMandateAcceptedAt   DateTime?
+  documentMandateEvidenceHash String?
+  documentMandateRevokedAt    DateTime?
+  verifiedAt                  DateTime?
+  restrictedAt                DateTime?
+  version                     Int       @default(1)
+  createdAt                   DateTime  @default(now())
+  updatedAt                   DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@unique([userId, kind])
+  @@index([userId, status])
+  @@index([countryCode, vatRegime])
+}
+
+model AllwainProductComplianceProfile {
+  id                  String   @id @default(uuid())
+  offerId             String   @unique
+  sellerUserId        String
+  productKind         String   @default("other")
+  foodCategory        String?
+  ownProduction       Boolean?
+  producerName        String?
+  originCountry       String?
+  originRegion        String?
+  responsibleOperator String?
+  registrationNumber  String?
+  ingredients         String?
+  allergens           Json?
+  nutrition           Json?
+  nominalQuantity     Decimal? @db.Decimal(18, 3)
+  nominalUnit         String?
+  storageInstructions String?
+  onlineInfoComplete  Boolean  @default(false)
+  lotTrackingRequired Boolean  @default(false)
+  metadata            Json?
+  version             Int      @default(1)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  offer  Offer @relation(fields: [offerId], references: [id], onDelete: Restrict)
+  seller User  @relation(fields: [sellerUserId], references: [id], onDelete: Restrict)
+
+  @@index([sellerUserId, updatedAt])
+  @@index([productKind, onlineInfoComplete])
+}
+
+model AllwainPartySnapshot {
+  id              String   @id @default(uuid())
+  orderId         String
+  role            String
+  userId          String?
+  fiscalProfileId String?
+  profileVersion  Int?
+  actingCapacity  String
+  countryCode     String?
+  taxTerritory    String?
+  vatRegime       String?
+  displayName     String?
+  snapshot        Json
+  snapshotHash    String
+  createdAt       DateTime @default(now())
+
+  order AllwainOrder @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  user  User?        @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@unique([orderId, role])
+  @@index([userId, createdAt])
+  @@index([orderId, createdAt])
+}
+
+model AllwainOrderLine {
+  id                         String   @id @default(uuid())
+  orderId                    String
+  offerId                    String?
+  shoppingListItemId         String?
+  shoppingListProposalItemId String?
+  proposalRevisionId         String?
+  referenceAmount            Int?
+  grossSavingsAmount         Int?
+  sellerUserId               String
+  productName                String
+  description                String?
+  quantity                   Decimal  @db.Decimal(18, 3)
+  unit                       String
+  unitPriceAmount            Int
+  subtotalAmount             Int
+  currency                   String
+  productSnapshot            Json
+  productSnapshotHash        String
+  createdAt                  DateTime @default(now())
+
+  order                    AllwainOrder                     @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  offer                    Offer?                           @relation(fields: [offerId], references: [id], onDelete: Restrict)
+  shoppingListItem         AllwainShoppingListItem?         @relation(fields: [shoppingListItemId], references: [id], onDelete: Restrict)
+  shoppingListProposalItem AllwainShoppingListProposalItem? @relation(fields: [shoppingListProposalItemId], references: [id], onDelete: Restrict)
+  proposalRevision         AllwainProposalRevision?         @relation(fields: [proposalRevisionId], references: [id], onDelete: Restrict)
+  seller                   User                             @relation(fields: [sellerUserId], references: [id], onDelete: Restrict)
+  lotAllocations           AllwainOrderLotAllocation[]
+
+  @@unique([orderId, shoppingListItemId])
+  @@index([orderId, createdAt])
+  @@index([offerId])
+  @@index([shoppingListProposalItemId])
+  @@index([proposalRevisionId])
+  @@index([sellerUserId, createdAt])
+}
+
+model AllwainTaxRuleVersion {
+  id                         String    @id @default(uuid())
+  code                       String
+  version                    Int
+  status                     String    @default("draft")
+  priority                   Int       @default(100)
+  effectiveFrom              DateTime?
+  effectiveTo                DateTime?
+  conditions                 Json
+  outcome                    Json
+  sourceReferences           Json?
+  requiresProfessionalReview Boolean   @default(true)
+  advisorApprovedAt          DateTime?
+  advisorReference           String?
+  createdByUserId            String?
+  createdAt                  DateTime  @default(now())
+  updatedAt                  DateTime  @updatedAt
+
+  determinations AllwainTaxDetermination[]
+
+  @@unique([code, version])
+  @@index([status, priority, effectiveFrom])
+}
+
+model AllwainTaxDetermination {
+  id                             String    @id @default(uuid())
+  orderId                        String    @unique
+  status                         String    @default("pending_profile")
+  ruleVersionId                  String?
+  treatmentCode                  String?
+  taxableBaseAmount              Int       @default(0)
+  taxAmount                      Int       @default(0)
+  agriculturalCompensationAmount Int       @default(0)
+  currency                       String
+  explanation                    String?
+  inputSnapshot                  Json
+  outputSnapshot                 Json?
+  determinedAt                   DateTime?
+  reviewedByUserId               String?
+  reviewedAt                     DateTime?
+  overrideReason                 String?
+  professionalApprovalReference  String?
+  documentPlan                   Json?
+  createdAt                      DateTime  @default(now())
+  updatedAt                      DateTime  @updatedAt
+
+  order       AllwainOrder           @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  ruleVersion AllwainTaxRuleVersion? @relation(fields: [ruleVersionId], references: [id], onDelete: Restrict)
+
+  @@index([status, createdAt])
+  @@index([ruleVersionId])
+}
+
+model AllwainSettlementPlan {
+  id                             String    @id @default(uuid())
+  orderId                        String
+  version                        Int       @default(1)
+  status                         String    @default("draft")
+  grossAmount                    Int
+  productAmount                  Int
+  shippingAmount                 Int       @default(0)
+  carrierDeliveryAmount          Int       @default(0)
+  taxAmount                      Int       @default(0)
+  agriculturalCompensationAmount Int       @default(0)
+  platformFeeAmount              Int
+  connectorAmount                Int       @default(0)
+  connectorPlatformShareAmount   Int       @default(0)
+  connectorDeliveryAmount        Int       @default(0)
+  platformNetFeeAmount           Int       @default(0)
+  platformRetainedAmount         Int       @default(0)
+  sellerAmount                   Int
+  feeBasis                       String    @default("sale_amount")
+  platformFeePayer               String    @default("seller")
+  referenceAmount                Int?
+  acceptedOfferAmount            Int?
+  grossSavingsAmount             Int?
+  netSavingsAmount               Int?
+  processorFeeAmount             Int?
+  currency                       String
+  commercialModel                String    @default("marketplace")
+  businessOfRecord               String    @default("seller")
+  formulaSnapshot                Json
+  snapshotHash                   String?
+  approvedByUserId               String?
+  professionalApprovalReference  String?
+  approvedAt                     DateTime?
+  lockedAt                       DateTime?
+  createdAt                      DateTime  @default(now())
+  updatedAt                      DateTime  @updatedAt
+
+  order         AllwainOrder         @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  ledgerEntries AllwainLedgerEntry[]
+  payments      AllwainPayment[]
+
+  @@unique([orderId, version])
+  @@index([orderId, status])
+  @@index([status, updatedAt])
+}
+
+model AllwainLedgerEntry {
+  id                String   @id @default(uuid())
+  orderId           String?
+  paymentId         String?
+  settlementPlanId  String?
+  accountCode       String
+  direction         String
+  amount            Int
+  currency          String
+  referenceType     String
+  referenceId       String
+  idempotencyKey    String   @unique
+  reversalOfEntryId String?
+  metadata          Json?
+  occurredAt        DateTime @default(now())
+  createdAt         DateTime @default(now())
+
+  order          AllwainOrder?          @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  payment        AllwainPayment?        @relation(fields: [paymentId], references: [id], onDelete: Restrict)
+  settlementPlan AllwainSettlementPlan? @relation(fields: [settlementPlanId], references: [id], onDelete: Restrict)
+  reversalOf     AllwainLedgerEntry?    @relation("AllwainLedgerReversal", fields: [reversalOfEntryId], references: [id], onDelete: Restrict)
+  reversals      AllwainLedgerEntry[]   @relation("AllwainLedgerReversal")
+
+  @@index([orderId, occurredAt])
+  @@index([paymentId, occurredAt])
+  @@index([accountCode, occurredAt])
+  @@index([referenceType, referenceId])
+}
+
+model AllwainTransfer {
+  id               String    @id @default(uuid())
+  orderId          String
+  paymentId        String?
+  recipientUserId  String
+  recipientRole    String
+  stripeAccountId  String?
+  stripeTransferId String?   @unique
+  status           String    @default("planned")
+  amount           Int
+  reversedAmount   Int       @default(0)
+  currency         String
+  releaseTrigger   String
+  idempotencyKey   String    @unique
+  failureCode      String?
+  failureMessage   String?
+  transferredAt    DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  order             AllwainOrder              @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  payment           AllwainPayment?           @relation(fields: [paymentId], references: [id], onDelete: Restrict)
+  recipient         User                      @relation(fields: [recipientUserId], references: [id], onDelete: Restrict)
+  payoutAllocations AllwainPayoutAllocation[]
+
+  @@index([orderId, recipientRole])
+  @@index([recipientUserId, status, createdAt])
+  @@index([status, createdAt])
+}
+
+model AllwainPayoutAllocation {
+  id             String   @id @default(uuid())
+  sellerPayoutId String
+  transferId     String
+  orderId        String
+  amount         Int
+  currency       String
+  source         String
+  createdAt      DateTime @default(now())
+
+  sellerPayout AllwainSellerPayout @relation(fields: [sellerPayoutId], references: [id], onDelete: Restrict)
+  transfer     AllwainTransfer     @relation(fields: [transferId], references: [id], onDelete: Restrict)
+  order        AllwainOrder        @relation(fields: [orderId], references: [id], onDelete: Restrict)
+
+  @@unique([sellerPayoutId, transferId])
+  @@index([orderId, createdAt])
+}
+
+model AllwainReconciliationRun {
+  id              String    @id @default(uuid())
+  provider        String    @default("stripe")
+  status          String    @default("running")
+  periodStart     DateTime
+  periodEnd       DateTime
+  summary         Json?
+  error           String?
+  startedByUserId String?
+  startedAt       DateTime  @default(now())
+  completedAt     DateTime?
+
+  @@index([status, startedAt])
+  @@index([periodStart, periodEnd])
+}
+
+model AllwainDocumentSequence {
+  id           String   @id @default(uuid())
+  documentType String
+  series       String
+  year         Int
+  nextNumber   Int      @default(1)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([documentType, series, year])
+}
+
+model AllwainFiscalDocument {
+  id                 String    @id @default(uuid())
+  orderId            String
+  documentType       String
+  status             String    @default("draft")
+  issuerUserId       String?
+  recipientUserId    String?
+  documentNumber     String?
+  series             String?
+  sourceReference    String?
+  currency           String
+  subtotalAmount     Int       @default(0)
+  taxAmount          Int       @default(0)
+  totalAmount        Int
+  templateVersion    String
+  contentSnapshot    Json
+  contentHash        String
+  storageKey         String?
+  mimeType           String    @default("application/pdf")
+  replacesDocumentId String?
+  signatureRequired  Boolean   @default(false)
+  signatureStatus    String    @default("not_required")
+  signedByUserId     String?
+  signedAt           DateTime?
+  signatureEvidence  Json?
+  signatureHash      String?
+  issuedAt           DateTime?
+  voidedAt           DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  order        AllwainOrder            @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  issuer       User?                   @relation("AllwainDocumentIssuer", fields: [issuerUserId], references: [id], onDelete: Restrict)
+  recipient    User?                   @relation("AllwainDocumentRecipient", fields: [recipientUserId], references: [id], onDelete: Restrict)
+  replaces     AllwainFiscalDocument?  @relation("AllwainDocumentReplacement", fields: [replacesDocumentId], references: [id], onDelete: Restrict)
+  replacements AllwainFiscalDocument[] @relation("AllwainDocumentReplacement")
+
+  @@unique([documentType, documentNumber])
+  @@unique([orderId, documentType, sourceReference])
+  @@index([orderId, createdAt])
+  @@index([documentType, status, createdAt])
+}
+
+model AllwainProductLot {
+  id                  String    @id @default(uuid())
+  sellerUserId        String
+  offerId             String?
+  code                String
+  status              String    @default("active")
+  originCountry       String?
+  originRegion        String?
+  harvestOrProducedAt DateTime?
+  bestBeforeAt        DateTime?
+  expiresAt           DateTime?
+  availableQuantity   Decimal?  @db.Decimal(18, 3)
+  unit                String?
+  traceabilityData    Json?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  seller           User                        @relation(fields: [sellerUserId], references: [id], onDelete: Restrict)
+  offer            Offer?                      @relation(fields: [offerId], references: [id], onDelete: Restrict)
+  orderAllocations AllwainOrderLotAllocation[]
+  recall           AllwainProductRecall?
+
+  @@unique([sellerUserId, code])
+  @@index([offerId, status])
+  @@index([status, expiresAt])
+}
+
+model AllwainProductRecall {
+  id                 String    @id @default(uuid())
+  lotId              String    @unique
+  sellerUserId       String
+  issuedByUserId     String
+  status             String    @default("active")
+  reason             String
+  instructions       String?
+  affectedOrderCount Int       @default(0)
+  affectedBuyerCount Int       @default(0)
+  affectedOrderIds   Json
+  affectedBuyerIds   Json
+  createdAt          DateTime  @default(now())
+  resolvedAt         DateTime?
+  updatedAt          DateTime  @updatedAt
+
+  lot    AllwainProductLot @relation(fields: [lotId], references: [id], onDelete: Restrict)
+  seller User              @relation("AllwainRecallSeller", fields: [sellerUserId], references: [id], onDelete: Restrict)
+  issuer User              @relation("AllwainRecallIssuer", fields: [issuedByUserId], references: [id], onDelete: Restrict)
+
+  @@index([sellerUserId, status, createdAt])
+  @@index([status, createdAt])
+}
+
+model AllwainOrderLotAllocation {
+  id          String   @id @default(uuid())
+  orderId     String
+  orderLineId String
+  lotId       String
+  quantity    Decimal  @db.Decimal(18, 3)
+  unit        String
+  createdAt   DateTime @default(now())
+
+  order     AllwainOrder      @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  orderLine AllwainOrderLine  @relation(fields: [orderLineId], references: [id], onDelete: Restrict)
+  lot       AllwainProductLot @relation(fields: [lotId], references: [id], onDelete: Restrict)
+
+  @@unique([orderLineId, lotId])
+  @@index([orderId, createdAt])
+  @@index([lotId, createdAt])
+}
+
+model AllwainIncident {
+  id                  String    @id @default(uuid())
+  orderId             String
+  reporterUserId      String
+  type                String
+  status              String    @default("open")
+  reason              String
+  requestedResolution String?
+  refundAmount        Int?
+  currency            String?
+  evidence            Json?
+  resolution          Json?
+  assignedToUserId    String?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  resolvedAt          DateTime?
+
+  order    AllwainOrder @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  reporter User         @relation("AllwainIncidentReporter", fields: [reporterUserId], references: [id], onDelete: Restrict)
+  assignee User?        @relation("AllwainIncidentAssignee", fields: [assignedToUserId], references: [id], onDelete: Restrict)
+
+  @@index([orderId, createdAt])
+  @@index([status, createdAt])
+  @@index([reporterUserId, createdAt])
+}
+
+model AllwainConsentEvidence {
+  id              String   @id @default(uuid())
+  userId          String
+  orderId         String?
+  consentType     String
+  documentVersion String
+  granted         Boolean
+  evidence        Json?
+  idempotencyKey  String?  @unique
+  evidenceHash    String?
+  occurredAt      DateTime @default(now())
+
+  user  User          @relation(fields: [userId], references: [id], onDelete: Restrict)
+  order AllwainOrder? @relation(fields: [orderId], references: [id], onDelete: Restrict)
+
+  @@index([userId, consentType, occurredAt])
+  @@index([orderId, occurredAt])
+}
+
+model AllwainReview {
+  id                String    @id @default(uuid())
+  orderId           String
+  authorUserId      String
+  subjectUserId     String
+  subjectRole       String
+  rating            Int
+  comment           String?
+  status            String    @default("published")
+  response          String?
+  respondedAt       DateTime?
+  reportedAt        DateTime?
+  reportReason      String?
+  moderatedByUserId String?
+  moderationReason  String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  order     AllwainOrder @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  author    User         @relation("AllwainReviewAuthor", fields: [authorUserId], references: [id], onDelete: Restrict)
+  subject   User         @relation("AllwainReviewSubject", fields: [subjectUserId], references: [id], onDelete: Restrict)
+  moderator User?        @relation("AllwainReviewModerator", fields: [moderatedByUserId], references: [id], onDelete: Restrict)
+
+  @@unique([orderId, authorUserId, subjectUserId])
+  @@index([subjectUserId, status, createdAt])
+  @@index([authorUserId, createdAt])
+  @@index([orderId, createdAt])
+  @@index([status, reportedAt])
+}
+
+model AllwainReputation {
+  userId          String    @id
+  averageRating   Decimal   @default(0) @db.Decimal(3, 2)
+  reviewCount     Int       @default(0)
+  completedOrders Int       @default(0)
+  lastReviewAt    DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@index([averageRating, reviewCount])
+  @@index([completedOrders])
+}
+
+model AllwainAuditEvent {
+  id              String   @id @default(uuid())
+  aggregateType   String
+  aggregateId     String
+  orderId         String?
+  sequence        Int
+  eventType       String
+  actorUserId     String?
+  actorRole       String?
+  source          String
+  requestId       String?
+  providerEventId String?
+  occurredAt      DateTime @default(now())
+  payload         Json
+  previousHash    String?
+  eventHash       String   @unique
+  hashAlgorithm   String   @default("hmac-sha256")
+
+  @@unique([aggregateType, aggregateId, sequence])
+  @@index([orderId, occurredAt])
+  @@index([aggregateType, aggregateId, occurredAt])
+  @@index([eventType, occurredAt])
+  @@index([providerEventId])
+}
+
+model AllwainOrderStatusEvent {
+  id          String   @id @default(uuid())
+  orderId     String
+  fromStatus  String?
+  toStatus    String
+  actorUserId String?
+  source      String
+  metadata    Json?
+  createdAt   DateTime @default(now())
+
+  @@index([orderId, createdAt])
+  @@index([toStatus, createdAt])
+}
+
+model AllwainStripeEvent {
+  id              String    @id @default(uuid())
+  providerEventId String    @unique
+  type            String
+  status          String    @default("processing")
+  livemode        Boolean
+  accountId       String?
+  error           String?
+  metadata        Json?
+  createdAt       DateTime  @default(now())
+  processedAt     DateTime?
+
+  @@index([status, createdAt])
+  @@index([type, createdAt])
+}
+
+model AllwainNotification {
+  id          String    @id @default(uuid())
+  userId      String
+  type        String
+  title       String
+  body        String
+  route       String?
+  routeParams Json?
+  dedupeKey   String?   @unique
+  readAt      DateTime?
+  archivedAt  DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([userId, readAt, createdAt])
+  @@index([userId, archivedAt, createdAt])
+  @@index([userId, createdAt])
+}
+
+model AllwainEmailDelivery {
+  id             String    @id @default(uuid())
+  notificationId String    @unique
+  userId         String
+  email          String
+  template       String
+  subject        String
+  status         String    @default("queued")
+  provider       String?
+  attempts       Int       @default(0)
+  error          String?
+  lastAttemptAt  DateTime?
+  createdAt      DateTime  @default(now())
+  sentAt         DateTime?
+
+  @@index([status, createdAt])
+  @@index([userId, createdAt])
+  @@index([email, createdAt])
+}
+
+model AllwainSupportTicket {
+  id                    String    @id @default(uuid())
+  requesterUserId       String?
+  requesterEmail        String
+  requesterName         String?
+  subject               String
+  category              String    @default("other")
+  priority              String    @default("normal")
+  riskLevel             String    @default("low")
+  status                String    @default("open")
+  source                String    @default("email")
+  assignedAdminUserId   String?
+  aiSummary             String?
+  aiTriage              Json?
+  automationDisposition String    @default("human_review")
+  lastMessageAt         DateTime  @default(now())
+  autoResolvedAt        DateTime?
+  resolvedAt            DateTime?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  requester User?                   @relation("AllwainSupportRequester", fields: [requesterUserId], references: [id], onDelete: Restrict)
+  assignee  User?                   @relation("AllwainSupportAssignee", fields: [assignedAdminUserId], references: [id], onDelete: Restrict)
+  messages  AllwainSupportMessage[]
+
+  @@index([status, priority, lastMessageAt])
+  @@index([requesterUserId, createdAt])
+  @@index([requesterEmail, createdAt])
+  @@index([assignedAdminUserId, status])
+}
+
+model AllwainSupportMessage {
+  id                String    @id @default(uuid())
+  ticketId          String
+  direction         String
+  channel           String    @default("email")
+  authorUserId      String?
+  fromEmail         String
+  toEmail           String
+  subject           String?
+  bodyText          String
+  providerMessageId String?   @unique
+  inReplyTo         String?
+  references        Json?
+  status            String    @default("received")
+  aiGenerated       Boolean   @default(false)
+  requiresApproval  Boolean   @default(false)
+  createdAt         DateTime  @default(now())
+  sentAt            DateTime?
+
+  ticket AllwainSupportTicket @relation(fields: [ticketId], references: [id], onDelete: Restrict)
+  author User?                @relation("AllwainSupportMessageAuthor", fields: [authorUserId], references: [id], onDelete: Restrict)
+
+  @@index([ticketId, createdAt])
+  @@index([direction, status, createdAt])
+  @@index([fromEmail, createdAt])
+}
+
+model AllwainSupportSyncRun {
+  id          String   @id @default(uuid())
+  status      String
+  provider    String   @default("imap")
+  discovered  Int      @default(0)
+  imported    Int      @default(0)
+  autoReplied Int      @default(0)
+  ignored     Int      @default(0)
+  error       String?
+  startedAt   DateTime
+  completedAt DateTime
+  createdAt   DateTime @default(now())
+
+  @@index([status, createdAt])
+  @@index([completedAt])
+}
+
+model AllwainSupportControl {
+  id               String   @id @default("primary")
+  automationPaused Boolean  @default(true)
+  updatedByUserId  String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  updatedBy User? @relation("AllwainSupportControlUpdater", fields: [updatedByUserId], references: [id], onDelete: Restrict)
+}
+
+model ChatThread {
+  id              String    @id
+  app             String
+  contextType     String
+  contextId       String
+  title           String?
+  status          String    @default("active")
+  createdByUserId String?
+  acceptedAt      DateTime?
+  rejectedAt      DateTime?
+  lastMessageAt   DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@unique([app, contextType, contextId])
+  @@index([app, lastMessageAt])
+  @@index([app, contextType, createdByUserId, createdAt])
+}
+
+model ChatParticipant {
+  threadId   String
+  userId     String
+  joinedAt   DateTime  @default(now())
+  lastReadAt DateTime?
+  archivedAt DateTime?
+
+  @@id([threadId, userId])
+  @@index([userId, archivedAt])
+}
+
+model ChatBlock {
+  app           String
+  blockerUserId String
+  blockedUserId String
+  createdAt     DateTime @default(now())
+
+  @@id([app, blockerUserId, blockedUserId])
+  @@index([app, blockedUserId])
+}
+
+model TrueqiaChatMessage {
+  id         String   @id @default(uuid())
+  threadId   String
+  userId     String
+  tradeId    String?
+  senderId   String?
+  senderName String
+  senderRole String
+  text       String
+  createdAt  DateTime @default(now())
+
+  translations ChatMessageTranslation[]
+
+  @@index([userId, createdAt])
+  @@index([threadId, createdAt])
+  @@index([tradeId, createdAt])
+  @@index([threadId, senderId, createdAt])
+}
+
+model ChatMessageTranslation {
+  id             String   @id @default(uuid())
+  app            String
+  threadId       String
+  messageId      String
+  targetLocale   String
+  sourceLocale   String?
+  translatedText String
+  provider       String   @default("openai")
+  model          String?
+  createdAt      DateTime @default(now())
+
+  message TrueqiaChatMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, targetLocale])
+  @@index([threadId, targetLocale, createdAt])
+  @@index([app, createdAt])
+}
+
+model OrderGroup {
+  id                String @id @default(uuid())
+  productId         String
+  totalUnits        Int
+  minUnitsPerClient Int
+  status            String
+  participants      Json
+}
+
+model ReferralStat {
+  id                  String   @id @default(uuid())
+  userId              String
+  invitedUserId       String
+  totalSavedByInvited Float    @default(0)
+  commissionEarned    Float    @default(0)
+  monthlyHistory      Json     @default("[]")
+  source              String   @default("legacy")
+  status              String   @default("registered")
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@unique([userId, invitedUserId])
+  @@index([userId, createdAt])
+  @@index([invitedUserId])
+}
+
+model AllwainSavingTransaction {
+  id        String   @id @default(uuid())
+  userId    String
+  amount    Float
+  createdAt DateTime @default(now())
+}
+
+model AllwainScanRequest {
+  id                             String    @id @default(uuid())
+  userId                         String
+  sourceType                     String
+  status                         String
+  visibility                     String    @default("public")
+  title                          String
+  description                    String
+  extracted                      Json
+  product                        Json?
+  offers                         Json
+  imageMeta                      Json?
+  ai                             Json
+  selectedOfferId                String?
+  selectedAt                     DateTime?
+  closedAt                       DateTime?
+  publicationReviewId            String?
+  qualityDecision                String?
+  qualityScore                   Int?
+  qualityReviewedAt              DateTime?
+  paymentGuaranteeStatus         String    @default("not_started")
+  paymentGuaranteeConsentVersion String?
+  paymentGuaranteeAcceptedAt     DateTime?
+  paymentGuaranteeEvidenceHash   String?
+  referencePriceSource           String    @default("manual")
+  referencePriceLocked           Boolean   @default(false)
+  referenceDocumentId            String?
+  ocrExtractionId                String?
+  referenceCapturedAt            DateTime?
+  category                       String?
+  subcategory                    String?
+  productKind                    String?
+  unit                           String?
+  currency                       String?
+  locationLabel                  String?
+  locationLatApprox              Float?
+  locationLngApprox              Float?
+  createdAt                      DateTime  @default(now())
+  updatedAt                      DateTime  @updatedAt
+
+  referenceDocument AllwainEvidenceDocument? @relation("AllwainEvidenceScanRequests", fields: [referenceDocumentId], references: [id], onDelete: Restrict)
+  ocrExtraction     AllwainOcrExtraction?    @relation("AllwainExtractionScanRequests", fields: [ocrExtractionId], references: [id], onDelete: Restrict)
+
+  @@index([userId, createdAt])
+  @@index([status, createdAt])
+  @@index([visibility, status, createdAt])
+  @@index([userId, status, createdAt])
+  @@index([category, status, createdAt])
+  @@index([productKind, status, createdAt])
+  @@index([selectedOfferId])
+  @@index([referenceDocumentId])
+  @@index([ocrExtractionId])
+}
+
+model AllwainAiUsageEvent {
+  id              String   @id @default(uuid())
+  userId          String?
+  feature         String
+  operation       String
+  provider        String
+  model           String?
+  sourceType      String?
+  requestRecordId String?
+  status          String
+  inputBytes      Int?
+  category        String?
+  productKind     String?
+  confidence      Float?
+  detectedFields  Int?
+  latencyMs       Int?
+  errorCode       String?
+  createdAt       DateTime @default(now())
+
+  @@index([feature, createdAt])
+  @@index([provider, operation, status, createdAt])
+  @@index([userId, createdAt])
+  @@index([requestRecordId])
+}
+
+model AllwainAgentControl {
+  agentKey             String   @id
+  enabled              Boolean  @default(true)
+  mode                 String   @default("standard")
+  operatorInstructions String?
+  version              Int      @default(1)
+  updatedByUserId      String?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  @@index([enabled, updatedAt])
+  @@index([updatedByUserId, updatedAt])
+}
+
+model PasswordResetToken {
+  token     String @id
+  userId    String
+  expiresAt BigInt
+}
