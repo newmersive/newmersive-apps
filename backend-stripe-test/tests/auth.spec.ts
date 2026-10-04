@@ -5,6 +5,7 @@ import jwt from "jsonwebtoken";
 import { app } from "../src/server";
 import { requestPasswordReset } from "../src/services/auth.service";
 import { TestClient } from "./helpers/test-client";
+import { createSyntheticAdmin } from "./helpers/synthetic-admin";
 
 const client = new TestClient(app);
 
@@ -484,11 +485,8 @@ describe("auth middleware", () => {
     });
     memberToken = registerRes.body.token;
 
-    const adminLogin = await client.post("/auth/login", {
-      email: "admin@newmersive.local",
-      password: "HighAssuranceTestOnly!2026"
-    });
-    adminToken = adminLogin.body.token;
+    const adminLogin = await createSyntheticAdmin(client, "auth-admin");
+    adminToken = adminLogin.token;
   });
 
   it("should reject missing tokens", async () => {

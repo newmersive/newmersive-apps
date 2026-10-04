@@ -1,14 +1,12 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
-  ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
-import { ArrowRight, CalendarDays, ClipboardList, ListChecks, MapPin, MessageCircle, Search } from "lucide-react-native";
+import { ArrowRight, CalendarDays, ClipboardList, ListChecks, MapPin, MessageCircle } from "lucide-react-native";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 
@@ -24,8 +22,21 @@ import { colors } from "../../theme/colors";
 import { formatCurrency } from "../../utils/format";
 import { useAppTranslation } from "../../i18n/useAppTranslation";
 import type { TranslationKey } from "../../i18n";
+import type { AppLocale } from "../../i18n";
+import { shoppingProposalLifecycle } from "../../utils/shoppingProposalLifecycle";
+import { shoppingProposalCopy } from "../../utils/shoppingProposalCopy";
+import { captureAuthSession } from "../../store/authSessionBridge";
+import DiscoveryFilters from "../../components/DiscoveryFilters";
+import { captureAnalyticsGuard, createDiscoveryAnalyticsState, recordAppliedFilters, recordDiscoveryResults } from "../../analytics/purchaseAnalytics";
+import VirtualizedResults from "../../components/VirtualizedResults";
+import DemandFilterFields from "../../components/DemandFilterFields";
+import { discoveryPageUrl, discoveryQueryKey, useDiscoveryQuery } from "../../utils/discoveryFilters";
+import { discoveryFilterCopy } from "../../i18n/discoveryFilterCopy";
+import { demandFilterSummary } from "../../i18n/demandFilterCopy";
+import { createDiscoveryReadGuard, discoveryPageCursor, mergeDiscoveryPage, MARKET_REQUEST_FILTERS, MARKET_LIST_FILTERS, type DiscoveryPageInfo } from "../../utils/marketDiscovery";
 
-type PageInfo = { hasNextPage?: boolean; nextCursor?: string | null };
+type PageInfo = DiscoveryPageInfo;
+type MarketRow = { kind: "list"; id: string; value: AllwainShoppingList } | { kind: "request"; id: string; value: AllwainMarketRequest } | { kind: "lists-header" | "requests-header" | "lists-more" | "requests-more"; id: string };
 
 type Translate = (
   key: TranslationKey,
@@ -47,112 +58,119 @@ function recurrenceLabel(
   return t("market.recurrence.monthly");
 }
 
+function requestResponseLabel(item: AllwainMarketRequest, sellerEnabled: boolean, locale: AppLocale, t: Translate) {
+  if (!sellerEnabled) return t("market.activateSeller");
+  if (item.myOffer) {
+    const c = shoppingProposalCopy(locale);
+    if (item.myOffer.allwainStatus === "selected" || item.selectedOfferId === item.myOffer.id) return c.orders;
+    if (["withdrawn", "closed", "not_selected"].includes(item.myOffer.allwainStatus || "")) return c.viewHistory;
+    return t("market.editProposal");
+  }
+  return t("market.prepareOffer");
+}
+
 export default function MarketRequestsScreen() {
-  const { t } = useAppTranslation();
+  const { locale, t } = useAppTranslation();
+  const filterCopy = discoveryFilterCopy[locale];
   const navigation =
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const sellerEnabled = useAuthStore(
     (state) => state.user?.participation?.seller?.enabled === true,
   );
   const userId = useAuthStore((state) => state.user?.id);
+  const appMode = useAuthStore((state) => state.appMode);
   const setAppMode = useAuthStore((state) => state.setAppMode);
-  const [query, setQuery] = useState("");
+  const { query, setQuery, ready } = useDiscoveryQuery(userId || "", "market-requests");
+  const appliedKey = discoveryQueryKey(query);
+  const scope = `${userId || ""}:${appMode}`;
+  const session = captureAuthSession();
+  const actorSession = useMemo(() => session, [session.owner, session.generation]);
+  const guard = useRef(createDiscoveryReadGuard(scope)).current;
+  guard.apply(scope, appliedKey);
+  const mounted = useRef(true);
+  const pageFlights = useRef(new Set<string>());
+  const failedPages = useRef<{ requests?: string | null; lists?: string | null }>({});
+  const analyticsState = useRef(createDiscoveryAnalyticsState()).current;
   const [items, setItems] = useState<AllwainMarketRequest[]>([]);
   const [shoppingLists, setShoppingLists] = useState<AllwainShoppingList[]>([]);
   const [page, setPage] = useState<PageInfo>({});
   const [shoppingPage, setShoppingPage] = useState<PageInfo>({});
-  const [loading, setLoading] = useState(true);
-  const [moreBusy, setMoreBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [requestLoading, setRequestLoading] = useState(false);
+  const [listLoading, setListLoading] = useState(false);
+  const [requestMoreBusy, setRequestMoreBusy] = useState(false);
+  const [listMoreBusy, setListMoreBusy] = useState(false);
+  const [requestError, setRequestError] = useState<string | null>(null);
+  const [listError, setListError] = useState<string | null>(null);
+  const loading = requestLoading || listLoading || !ready;
 
-  const load = useCallback(async (search = "") => {
-    setLoading(true);
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; guard.invalidate(); }; }, [guard]);
+  useLayoutEffect(() => {
+    guard.invalidate();
+    pageFlights.current.clear();
+    failedPages.current = {};
+    setItems([]); setShoppingLists([]); setPage({}); setShoppingPage({});
+    setRequestError(null); setListError(null);
+    setRequestLoading(false); setListLoading(false); setRequestMoreBusy(false); setListMoreBusy(false);
+  }, [scope, appliedKey, actorSession, guard]);
+
+  const loadStream = useCallback(async (stream: "requests" | "lists", cursor?: string | null) => {
+    if (!ready || !userId || !actorSession.isCurrent()) return;
+    const append = Boolean(cursor);
+    const flightKey = `${scope}:${appliedKey}:${stream}`;
+    if (append && pageFlights.current.has(flightKey)) return;
+    pageFlights.current.add(flightKey);
+    const ticket = guard.start(stream);
+    const current = () => mounted.current && actorSession.isCurrent() && useAuthStore.getState().user?.id === userId && useAuthStore.getState().appMode === appMode && guard.isCurrent(ticket);
+    const analyticsCurrent = captureAnalyticsGuard(current);
+    const setLoading = stream === "requests" ? setRequestLoading : setListLoading;
+    const setMoreBusy = stream === "requests" ? setRequestMoreBusy : setListMoreBusy;
+    const setError = stream === "requests" ? setRequestError : setListError;
+    if (append) setMoreBusy(true); else setLoading(true);
     setError(null);
     try {
-      const suffix = search.trim() ? `&q=${encodeURIComponent(search.trim())}` : "";
-      const [requestsResult, listsResult] = await Promise.allSettled([
-        apiAuthGet<{ items: AllwainMarketRequest[]; pageInfo?: PageInfo }>(
-          `/allwain/market/requests?limit=30${suffix}`,
-        ),
-        apiAuthGet<{ items: AllwainShoppingList[]; pageInfo?: PageInfo }>(
-          `/allwain/shopping-lists/market?limit=25${suffix}`,
-        ),
-      ]);
-      if (requestsResult.status === "fulfilled") {
-        setItems(requestsResult.value.items || []);
-        setPage(requestsResult.value.pageInfo || {});
+      if (stream === "requests") {
+        const result = await apiAuthGet<{ items: AllwainMarketRequest[]; pageInfo?: PageInfo }>(discoveryPageUrl("/allwain/market/requests", query, { limit: 30, cursor: cursor || undefined, allowed: MARKET_REQUEST_FILTERS }));
+        if (!current()) return;
+        setItems(previous => append ? mergeDiscoveryPage(previous, result.items || []) : result.items || []);
+        setPage({ ...result.pageInfo, queryKey: appliedKey });
+        if (Array.isArray(result.items)) void recordDiscoveryResults({state:analyticsState,scope:`${scope}:${actorSession.generation}`,queryKey:appliedKey,query,surface:"market_requests",appMode,current:analyticsCurrent,stream:"requests",expectedStreams:["requests","lists"],resultCount:result.items.length,append,allowed:MARKET_REQUEST_FILTERS});
       } else {
-        setItems([]);
-        setPage({});
-      }
-      if (listsResult.status === "fulfilled") {
-        setShoppingLists(listsResult.value.items || []);
-        setShoppingPage(listsResult.value.pageInfo || {});
-      } else {
-        setShoppingLists([]);
-        setShoppingPage({});
-      }
-      if (requestsResult.status === "rejected" && listsResult.status === "rejected") {
-        throw requestsResult.reason;
-      }
-      if (requestsResult.status === "rejected" || listsResult.status === "rejected") {
-        setError(t("market.partialLoadError"));
+        const result = await apiAuthGet<{ items: AllwainShoppingList[]; pageInfo?: PageInfo }>(discoveryPageUrl("/allwain/shopping-lists/market", query, { limit: 25, cursor: cursor || undefined, allowed: MARKET_LIST_FILTERS }));
+        if (!current()) return;
+        setShoppingLists(previous => append ? mergeDiscoveryPage(previous, result.items || []) : result.items || []);
+        setShoppingPage({ ...result.pageInfo, queryKey: appliedKey });
+        if (Array.isArray(result.items)) void recordDiscoveryResults({state:analyticsState,scope:`${scope}:${actorSession.generation}`,queryKey:appliedKey,query,surface:"market_requests",appMode,current:analyticsCurrent,stream:"lists",expectedStreams:["requests","lists"],resultCount:result.items.length,append,allowed:MARKET_LIST_FILTERS});
       }
     } catch (loadError: any) {
-      setError(loadError?.message || t("market.loadError"));
+      if (current()) { failedPages.current[stream] = cursor || null; setError(loadError?.message || t(append ? "market.loadMoreError" : "market.loadError")); }
     } finally {
-      setLoading(false);
+      if (current()) { pageFlights.current.delete(flightKey); setLoading(false); setMoreBusy(false); }
     }
-  }, [t]);
+  }, [ready, userId, appMode, actorSession, scope, appliedKey, query, guard, t]);
 
   useEffect(() => {
-    void load();
-  }, [load]);
+    void loadStream("requests");
+    void loadStream("lists");
+  }, [loadStream]);
 
   async function loadMore() {
-    if (!page.nextCursor) return;
-    setMoreBusy(true);
-    try {
-      const response = await apiAuthGet<{
-        items: AllwainMarketRequest[];
-        pageInfo?: PageInfo;
-      }>(`/allwain/market/requests?limit=30&cursor=${encodeURIComponent(page.nextCursor)}${query.trim() ? `&q=${encodeURIComponent(query.trim())}` : ""}`);
-      const merged = new Map(items.map((item) => [item.id, item]));
-      (response.items || []).forEach((item) => merged.set(item.id, item));
-      setItems(Array.from(merged.values()));
-      setPage(response.pageInfo || {});
-    } catch (loadError: any) {
-      setError(loadError?.message || t("market.loadMoreError"));
-    } finally {
-      setMoreBusy(false);
-    }
+    const cursor = discoveryPageCursor(page, appliedKey);
+    if (cursor && !requestLoading) await loadStream("requests", cursor);
   }
 
   async function loadMoreShoppingLists() {
-    if (!shoppingPage.nextCursor) return;
-    setMoreBusy(true);
-    try {
-      const response = await apiAuthGet<{
-        items: AllwainShoppingList[];
-        pageInfo?: PageInfo;
-      }>(`/allwain/shopping-lists/market?limit=25&cursor=${encodeURIComponent(shoppingPage.nextCursor)}${query.trim() ? `&q=${encodeURIComponent(query.trim())}` : ""}`);
-      const merged = new Map(shoppingLists.map((item) => [item.id, item]));
-      (response.items || []).forEach((item) => merged.set(item.id, item));
-      setShoppingLists(Array.from(merged.values()));
-      setShoppingPage(response.pageInfo || {});
-    } catch (loadError: any) {
-      setError(loadError?.message || t("market.loadMoreListsError"));
-    } finally {
-      setMoreBusy(false);
-    }
+    const cursor = discoveryPageCursor(shoppingPage, appliedKey);
+    if (cursor && !listLoading) await loadStream("lists", cursor);
   }
 
   async function operate(item: AllwainMarketRequest) {
+    if (!actorSession.isCurrent() || useAuthStore.getState().user?.id !== userId) return;
     if (!sellerEnabled) {
       navigation.navigate("ActivateSeller", { requestId: item.id });
       return;
     }
     await setAppMode("sell");
+    if (!actorSession.isCurrent() || useAuthStore.getState().user?.id !== userId || useAuthStore.getState().appMode !== "sell") return;
     navigation.navigate("MainTabs", {
       screen: "Ofertas",
       params: { requestId: item.id },
@@ -160,79 +178,26 @@ export default function MarketRequestsScreen() {
   }
 
   async function operateShoppingList(item: AllwainShoppingList) {
+    if (!actorSession.isCurrent() || useAuthStore.getState().user?.id !== userId) return;
     if (!sellerEnabled) {
       navigation.navigate("ActivateSeller", { shoppingListId: item.id });
       return;
     }
     await setAppMode("sell");
+    if (!actorSession.isCurrent() || useAuthStore.getState().user?.id !== userId || useAuthStore.getState().appMode !== "sell") return;
     navigation.navigate("ShoppingLists", {
       shoppingListId: item.id,
       mode: "sell",
     });
   }
 
-  return (
-    <ScrollView
-      style={styles.screen}
-      contentContainerStyle={styles.content}
-      keyboardShouldPersistTaps="handled"
-    >
-      <Text style={styles.eyebrow}>{t("market.eyebrow")}</Text>
-      <Text style={styles.title}>{t("market.title")}</Text>
-      <Text style={styles.subtitle}>
-        {t("market.subtitle")}
-      </Text>
-
-      <View style={styles.searchRow}>
-        <Search size={19} color={colors.mutedText} />
-        <TextInput
-          style={styles.searchInput}
-          value={query}
-          onChangeText={setQuery}
-          placeholder={t("market.searchPlaceholder")}
-          placeholderTextColor={colors.mutedText}
-          returnKeyType="search"
-          onSubmitEditing={() => void load(query)}
-        />
-        <TouchableOpacity style={styles.searchButton} onPress={() => void load(query)}>
-          <ArrowRight size={20} color="#FFFFFF" />
-        </TouchableOpacity>
-      </View>
-
-      {loading ? (
-        <View style={styles.state}>
-          <ActivityIndicator color={colors.primary} />
-          <Text style={styles.stateText}>{t("market.loading")}</Text>
-        </View>
-      ) : null}
-      {error ? <Text style={styles.error}>{error}</Text> : null}
-      {!loading && !error && items.length === 0 && shoppingLists.length === 0 ? (
-        <EmptyState
-          icon={<ClipboardList size={25} color={colors.primary} />}
-          title={t("market.emptyTitle")}
-          body={t("market.emptyBody")}
-          demo={{
-            title: query.trim()
-              ? t("market.demoQuery", { query: query.trim() })
-              : t("market.demoTitle"),
-            meta: t("market.demoMeta"),
-            detail: t("market.demoDetail"),
-            leading: <ClipboardList size={20} color={colors.primary} />,
-          }}
-        />
-      ) : null}
-
-      {shoppingLists.length ? (
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>{t("market.shoppingLists")}</Text>
-          <Text style={styles.sectionCount}>{shoppingLists.length}</Text>
-        </View>
-      ) : null}
-      {shoppingLists.map((list) => {
+  function renderShoppingList(list: AllwainShoppingList) {
         const firstItem = list.items[0];
         const firstImage = firstItem?.imageMeta;
+        const proposalState = shoppingProposalLifecycle(list, list.myProposal);
+        const proposalCopy = shoppingProposalCopy(locale);
         return (
-        <View key={list.id} style={styles.card}>
+        <View testID="market-list-card" style={styles.card}>
           <View style={styles.cardHeader}>
             {firstImage?.url ? (
               <View style={styles.publicationImageFrame}>
@@ -277,7 +242,7 @@ export default function MarketRequestsScreen() {
           ) : null}
           <View style={styles.footer}>
             <Text style={styles.offersCount}>
-              {list.myProposal ? t("market.sentProposal") : t("market.offerScope")}
+              {proposalState.retired ? proposalCopy.withdrawn : list.myProposal ? t("market.sentProposal") : t("market.offerScope")}
             </Text>
             <View style={styles.cardActions}>
               {list.buyer.id !== userId ? (
@@ -295,7 +260,7 @@ export default function MarketRequestsScreen() {
               ) : null}
               <TouchableOpacity style={styles.action} onPress={() => void operateShoppingList(list)}>
                 <Text style={styles.actionText}>
-                  {sellerEnabled ? (list.myProposal ? t("market.editProposal") : t("market.setPrice")) : t("market.activateSeller")}
+                  {sellerEnabled ? (proposalState.selected ? proposalCopy.orders : proposalState.retired ? proposalCopy.viewHistory : list.myProposal ? t("market.editProposal") : t("market.setPrice")) : t("market.activateSeller")}
                 </Text>
                 <ArrowRight size={17} color="#FFFFFF" />
               </TouchableOpacity>
@@ -303,22 +268,9 @@ export default function MarketRequestsScreen() {
           </View>
         </View>
         );
-      })}
-      {shoppingPage.hasNextPage ? (
-        <TouchableOpacity style={styles.more} onPress={() => void loadMoreShoppingLists()} disabled={moreBusy}>
-          {moreBusy ? <ActivityIndicator color={colors.primary} /> : <Text style={styles.moreText}>{t("market.moreLists")}</Text>}
-        </TouchableOpacity>
-      ) : null}
-
-      {items.length ? (
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>{t("market.individualRequests")}</Text>
-          <Text style={styles.sectionCount}>{items.length}</Text>
-        </View>
-      ) : null}
-
-      {items.map((item) => (
-        <View key={item.id} style={styles.card}>
+  }
+  function renderRequest(item: AllwainMarketRequest) { return (
+        <View testID="market-request-card" style={styles.card}>
           <View style={styles.cardHeader}>
             <View style={styles.publicationImageFrame}>
               <PublicationImage
@@ -384,25 +336,92 @@ export default function MarketRequestsScreen() {
               ) : null}
               <TouchableOpacity style={styles.action} onPress={() => void operate(item)}>
                 <Text style={styles.actionText}>
-                  {sellerEnabled ? t("market.prepareOffer") : t("market.activateSeller")}
+                  {requestResponseLabel(item, sellerEnabled, locale, t)}
                 </Text>
                 <ArrowRight size={17} color="#FFFFFF" />
               </TouchableOpacity>
             </View>
           </View>
         </View>
-      ))}
+  ); }
+  const rows = useMemo<MarketRow[]>(() => [
+    ...(shoppingLists.length ? [{ kind: "lists-header" as const, id: "lists-header" }, ...shoppingLists.map(value => ({ kind: "list" as const, id: `list:${value.id}`, value }))] : []),
+    ...(shoppingPage.hasNextPage ? [{ kind: "lists-more" as const, id: "lists-more" }] : []),
+    ...(items.length ? [{ kind: "requests-header" as const, id: "requests-header" }, ...items.map(value => ({ kind: "request" as const, id: `request:${value.id}`, value }))] : []),
+    ...(page.hasNextPage ? [{ kind: "requests-more" as const, id: "requests-more" }] : []),
+  ], [shoppingLists, items, shoppingPage.hasNextPage, page.hasNextPage]);
+  function renderRow(row: MarketRow) {
+    if (row.kind === "list") return renderShoppingList(row.value);
+    if (row.kind === "request") return renderRequest(row.value);
+    if (row.kind === "lists-header" || row.kind === "requests-header") return <View style={styles.sectionHeader}><Text style={styles.sectionTitle}>{t(row.kind === "lists-header" ? "market.shoppingLists" : "market.individualRequests")}</Text><Text style={styles.sectionCount}>{row.kind === "lists-header" ? shoppingLists.length : items.length}</Text></View>;
+    if (row.kind === "lists-more") return <TouchableOpacity style={styles.more} onPress={() => void loadMoreShoppingLists()} disabled={listMoreBusy || listLoading}>{listMoreBusy ? <ActivityIndicator color={colors.primary} /> : <Text style={styles.moreText}>{t("market.moreLists")}</Text>}</TouchableOpacity>;
+    return <TouchableOpacity style={styles.more} onPress={() => void loadMore()} disabled={requestMoreBusy || requestLoading}>{requestMoreBusy ? <ActivityIndicator color={colors.primary} /> : <Text style={styles.moreText}>{t("market.showMore")}</Text>}</TouchableOpacity>;
+  }
+  return (
+    <VirtualizedResults
+      testID="market-results"
+      restoreKey={`${scope}:market:${appliedKey}`}
+      style={styles.screen}
+      contentContainerStyle={styles.content}
+      data={rows}
+      keyExtractor={row => row.id}
+      renderItem={({ item }) => renderRow(item)}
+      ListHeaderComponent={<View style={styles.overviewHeader}>
+      <Text style={styles.eyebrow}>{t("market.eyebrow")}</Text>
+      <Text style={styles.title}>{t("market.title")}</Text>
+      <Text style={styles.subtitle}>
+        {t("market.subtitle")}
+      </Text>
 
-      {page.hasNextPage ? (
-        <TouchableOpacity style={styles.more} onPress={() => void loadMore()} disabled={moreBusy}>
-          {moreBusy ? <ActivityIndicator color={colors.primary} /> : <Text style={styles.moreText}>{t("market.showMore")}</Text>}
-        </TouchableOpacity>
+      <DiscoveryFilters value={query} onApply={next => { const current = captureAnalyticsGuard(() => mounted.current && actorSession.isCurrent() && useAuthStore.getState().user?.id === userId && useAuthStore.getState().appMode === appMode); void recordAppliedFilters({state:analyticsState,scope:`${scope}:${actorSession.generation}`,queryKey:discoveryQueryKey(next),query:next,surface:"market_requests",appMode,current,allowed:MARKET_REQUEST_FILTERS},appliedKey); setQuery(next); }} kind="requests" allowed={MARKET_REQUEST_FILTERS} disabled={!ready} extra={(draft, setDraft) => <DemandFilterFields value={draft} onChange={setDraft} />} extraSummary={value => demandFilterSummary(locale, value)} />
+
+      {loading ? (
+        <View style={styles.state}>
+          <ActivityIndicator color={colors.primary} />
+          <Text style={styles.stateText}>{t("market.loading")}</Text>
+        </View>
       ) : null}
-    </ScrollView>
+      {!loading && !requestError && !listError && items.length === 0 && shoppingLists.length === 0 ? (
+        <EmptyState
+          icon={<ClipboardList size={25} color={colors.primary} />}
+          title={t("market.emptyTitle")}
+          body={t("market.emptyBody")}
+          demo={{
+            title: query.q.trim()
+              ? t("market.demoQuery", { query: query.q.trim() })
+              : t("market.demoTitle"),
+            meta: t("market.demoMeta"),
+            detail: t("market.demoDetail"),
+            leading: <ClipboardList size={20} color={colors.primary} />,
+          }}
+        />
+      ) : null}
+
+      {listError ? (
+        <View style={styles.failure}>
+          <Text style={styles.sectionTitle}>{t("market.shoppingLists")}</Text>
+          <Text style={styles.error}>{listError}</Text>
+          <TouchableOpacity style={styles.more} disabled={listLoading || listMoreBusy} onPress={() => void loadStream("lists", failedPages.current.lists)} accessibilityRole="button">
+            <Text style={styles.moreText}>{filterCopy.retry}</Text>
+          </TouchableOpacity>
+        </View>
+      ) : null}
+      {requestError ? (
+        <View style={styles.failure}>
+          <Text style={styles.sectionTitle}>{t("market.individualRequests")}</Text>
+          <Text style={styles.error}>{requestError}</Text>
+          <TouchableOpacity style={styles.more} disabled={requestLoading || requestMoreBusy} onPress={() => void loadStream("requests", failedPages.current.requests)} accessibilityRole="button">
+            <Text style={styles.moreText}>{filterCopy.retry}</Text>
+          </TouchableOpacity>
+        </View>
+      ) : null}
+      </View>}
+    />
   );
 }
 
 const styles = StyleSheet.create({
+  overviewHeader: { gap: 11 },
   screen: { flex: 1, backgroundColor: colors.background },
   content: { width: "100%", maxWidth: 720, alignSelf: "center", padding: 16, paddingBottom: 40, gap: 11 },
   eyebrow: { color: colors.primary, fontSize: 11, fontWeight: "900" },
@@ -414,6 +433,7 @@ const styles = StyleSheet.create({
   state: { minHeight: 90, alignItems: "center", justifyContent: "center", gap: 8 },
   stateText: { color: colors.mutedText, fontSize: 13, lineHeight: 18, fontWeight: "600", textAlign: "center" },
   error: { color: colors.danger, fontWeight: "700", lineHeight: 19 },
+  failure: { gap: 8, padding: 12, borderWidth: 1, borderColor: colors.cardBorder, borderRadius: 8, backgroundColor: colors.card },
   card: { borderWidth: 1, borderColor: colors.cardBorder, borderRadius: 8, padding: 14, backgroundColor: colors.card, gap: 10 },
   cardHeader: { flexDirection: "row", alignItems: "flex-start", gap: 10 },
   cardCopy: { flex: 1, minWidth: 0, gap: 3 },

@@ -11,7 +11,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { useNavigation } from "@react-navigation/native";
+import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import {
   apiAuthGet,
@@ -46,6 +46,11 @@ import { openExternalUrl } from "../../utils/openExternalUrl";
 import { trackAnalyticsEvent } from "../../analytics";
 import { useAppTranslation } from "../../i18n/useAppTranslation";
 import { allwainWebAppReturnUrl } from "../../utils/webAppUrl";
+import DiscoveryFilters, { CATALOG_DISCOVERY_FIELDS } from "../../components/DiscoveryFilters";
+import { captureAnalyticsGuard, createDiscoveryAnalyticsState, recordAppliedFilters, recordDiscoveryResults } from "../../analytics/purchaseAnalytics";
+import { discoveryPageUrl, discoveryQueryKey, useDiscoveryQuery } from "../../utils/discoveryFilters";
+import { discoveryFilterCopy } from "../../i18n/discoveryFilterCopy";
+import { captureAuthSession } from "../../store/authSessionBridge";
 
 function analyticsDeliveryMethod(value?: string | null) {
   if (
@@ -119,7 +124,11 @@ export default function SearchScreen() {
     (state) => state.user?.participation?.seller?.enabled,
   );
   const setAppMode = useAuthStore((state) => state.setAppMode);
-  const [query, setQuery] = useState("");
+  const appMode = useAuthStore(state => state.appMode);
+  const { query: appliedQuery, setQuery: setAppliedQuery, ready } = useDiscoveryQuery(userId, "catalog");
+  const query = appliedQuery.q;
+  const setQuery = (q: string) => setAppliedQuery({ ...appliedQuery, q });
+  const filterCopy = discoveryFilterCopy[locale];
   const searchInput = useRef<TextInput>(null);
   const [offers, setOffers] = useState<AllwainOffer[]>([]);
   const [contracts, setContracts] = useState<AllwainContract[]>([]);
@@ -133,41 +142,39 @@ export default function SearchScreen() {
   const [selectedOffer, setSelectedOffer] = useState<AllwainOffer | null>(null);
   const [discovery, setDiscovery] = useState<DiscoveryResponse | null>(null);
   const [discoveryLoading, setDiscoveryLoading] = useState(false);
-  const [filtersOpen, setFiltersOpen] = useState(false);
-  const [category, setCategory] = useState("");
-  const [unit, setUnit] = useState("");
-  const [sort, setSort] = useState<"newest" | "price_asc" | "price_desc">(
-    "newest",
-  );
+  const category = appliedQuery.category, unit = appliedQuery.unit;
+  const [resultsKey, setResultsKey] = useState("");
+  const [catalogError, setCatalogError] = useState<string | null>(null);
+  const [discoveryKey, setDiscoveryKey] = useState("");
+  const failedCursor = useRef<string | undefined>(undefined);
+  const focused = useRef(false);
   // Invalidate responses as soon as the query changes, including its debounce.
   const searchRevision = useRef(0);
-  const searchKey = `${userId || ""}:${query}:${category}:${unit}:${sort}`;
+  const searchKey = `${userId || ""}:${appMode}:${discoveryQueryKey(appliedQuery)}`;
   const currentSearchKey = useRef(searchKey);
   currentSearchKey.current = searchKey;
   const pageInFlight = useRef<string | null>(null);
+  const analyticsState = useRef(createDiscoveryAnalyticsState()).current;
+  const supplementaryDiscovery = query.trim().length >= 2 && !CATALOG_DISCOVERY_FIELDS.some(field => field !== "q" && field !== "sort" && Boolean((appliedQuery as any)[field])) && appliedQuery.sort === "newest";
 
-  const loadOffers = useCallback(async (search: string, cursor?: string) => {
-    const key = `${userId || ""}:${search}:${category}:${unit}:${sort}`;
-    if (key !== currentSearchKey.current) return;
+  const loadOffers = useCallback(async (_search?: string, cursor?: string) => {
+    const key = searchKey;
+    if (!ready || !focused.current || key !== currentSearchKey.current) return;
     if (cursor && pageInFlight.current === `${key}:${cursor}`) return;
     const revision = cursor ? searchRevision.current : ++searchRevision.current;
-    const current = () => key === currentSearchKey.current && revision === searchRevision.current;
+    const session = captureAuthSession();
+    const current = () => focused.current && session.isCurrent() && key === currentSearchKey.current && revision === searchRevision.current;
+    const analyticsCurrent = captureAnalyticsGuard(current);
     const pageKey = `${key}:${cursor || ""}`;
     pageInFlight.current = pageKey;
     if (cursor) setLoadingMore(true);
-    else setLoading(true);
-    setError(null);
+    else { setLoading(true); setOffers([]); setResultsKey(""); setHasNextPage(false); setNextCursor(null); }
+    setCatalogError(null); failedCursor.current = undefined;
     try {
-      const params = new URLSearchParams({ scope: "market", limit: "30" });
-      if (search.trim()) params.set("q", search.trim());
-      if (category) params.set("category", category);
-      if (unit) params.set("unit", unit);
-      if (sort !== "newest") params.set("sort", sort);
-      if (cursor) params.set("cursor", cursor);
       const response = await apiAuthGet<{
         items: AllwainOffer[];
         pageInfo?: { hasNextPage?: boolean; nextCursor?: string | null };
-      }>(`/allwain/offers?${params.toString()}`);
+      }>(discoveryPageUrl("/allwain/offers", appliedQuery, { fixed: { scope: "market" }, cursor, allowed: CATALOG_DISCOVERY_FIELDS }));
       if (!current()) return;
       setOffers((current) => {
         if (!cursor) return response.items || [];
@@ -175,14 +182,15 @@ export default function SearchScreen() {
         for (const item of response.items || []) byId.set(item.id, item);
         return [...byId.values()];
       });
+      setResultsKey(key);
       setHasNextPage(response.pageInfo?.hasNextPage === true);
       setNextCursor(response.pageInfo?.nextCursor || null);
+      if (Array.isArray(response.items)) void recordDiscoveryResults({state:analyticsState,scope:`${userId || ""}:${appMode}:${session.generation}`,queryKey:key,query:appliedQuery,surface:"search",appMode,current:analyticsCurrent,stream:"catalog",expectedStreams:supplementaryDiscovery ? ["catalog","discovery"] : ["catalog"],resultCount:response.items.filter(item => item.ownerUserId !== userId && item.provider?.id !== userId).length,append:Boolean(cursor),allowed:CATALOG_DISCOVERY_FIELDS});
     } catch (err: any) {
       if (!current()) return;
-      setError(
-        err?.message ||
-          t("search.catalogError"),
-      );
+      if (/CURSOR/i.test(String(err?.code || err?.message || ""))) { setOffers([]); setResultsKey(""); setHasNextPage(false); setNextCursor(null); failedCursor.current = undefined; }
+      else failedCursor.current = cursor;
+      setCatalogError(filterCopy.error);
     } finally {
       if (pageInFlight.current === pageKey) pageInFlight.current = null;
       if (current()) {
@@ -190,63 +198,72 @@ export default function SearchScreen() {
         setLoadingMore(false);
       }
     }
-  }, [category, sort, t, unit, userId]);
+  }, [searchKey, ready, filterCopy.error]);
 
   useEffect(() => {
+    const session = captureAuthSession(); let active = true;
     void apiAuthGet<{ items: AllwainContract[] }>("/allwain/contracts")
-      .then((response) => setContracts(response.items || []))
-      .catch(() =>
-        setError(t("search.ordersPartialError")),
-      );
-  }, [t]);
+      .then((response) => { if (active && session.isCurrent()) setContracts(response.items || []); })
+      .catch(() => { if (active && session.isCurrent()) setContracts([]); });
+    return () => { active = false; setContracts([]); };
+  }, [userId]);
 
-  useEffect(() => {
+  useFocusEffect(useCallback(() => {
+    focused.current = true;
     setHasNextPage(false);
     setNextCursor(null);
     setLoadingMore(false);
+    setDiscoveryLoading(false);
     setLoading(true);
-    const timer = setTimeout(() => void loadOffers(query, undefined), 250);
-    return () => { clearTimeout(timer); searchRevision.current++; };
-  }, [loadOffers, query]);
+    setSelectedOffer(null); setCatalogError(null);
+    const timer = setTimeout(() => void loadOffers(query, undefined), 0);
+    return () => { focused.current = false; clearTimeout(timer); searchRevision.current++; pageInFlight.current = null; };
+  }, [loadOffers, query]));
 
   useEffect(() => {
     const clean = query.trim();
-    if (clean.length < 2) {
+    const additionalFilters = CATALOG_DISCOVERY_FIELDS.some(field => field !== "q" && field !== "sort" && Boolean((appliedQuery as any)[field])) || appliedQuery.sort !== "newest";
+    if (!ready || clean.length < 2 || additionalFilters) {
       setDiscovery(null);
       setDiscoveryLoading(false);
       return;
     }
-    let active = true;
+    let active = true; const key = searchKey, session = captureAuthSession();
+    const analyticsCurrent = captureAnalyticsGuard(() => active && focused.current && session.isCurrent() && currentSearchKey.current === key);
+    setDiscovery(null); setDiscoveryKey("");
     const timer = setTimeout(async () => {
       setDiscoveryLoading(true);
       try {
         const result = await apiAuthGet<DiscoveryResponse>(
           `/allwain/search?q=${encodeURIComponent(clean)}&limit=6`,
         );
-        if (active) setDiscovery(result);
+        if (active && focused.current && session.isCurrent() && currentSearchKey.current === key) {
+          setDiscovery(result); setDiscoveryKey(key);
+          if ([result.requests,result.sellers,result.products].every(Array.isArray)) void recordDiscoveryResults({state:analyticsState,scope:`${userId || ""}:${appMode}:${session.generation}`,queryKey:key,query:appliedQuery,surface:"search",appMode,current:analyticsCurrent,stream:"discovery",expectedStreams:["catalog","discovery"],resultCount:result.requests.length+result.sellers.length+result.products.length,allowed:CATALOG_DISCOVERY_FIELDS});
+        }
       } catch {
-        if (active) setDiscovery(null);
+        if (active && focused.current && session.isCurrent() && currentSearchKey.current === key) setDiscovery(null);
       } finally {
-        if (active) setDiscoveryLoading(false);
+        if (active && focused.current && session.isCurrent() && currentSearchKey.current === key) setDiscoveryLoading(false);
       }
     }, 280);
     return () => {
       active = false;
       clearTimeout(timer);
     };
-  }, [query]);
+  }, [searchKey, ready]);
 
   const filteredResults = useMemo(() => {
-    const availableOffers = offers.filter(
+    const availableOffers = resultsKey === searchKey ? offers.filter(
       (item) => item.ownerUserId !== userId && item.provider?.id !== userId,
-    );
+    ) : [];
     return availableOffers;
-  }, [offers, userId]);
+  }, [offers, userId, resultsKey, searchKey]);
 
   const hasDiscovery = Boolean(
-    discovery?.requests.length ||
+    discoveryKey === searchKey && (discovery?.requests.length ||
       discovery?.sellers.length ||
-      discovery?.products.length,
+      discovery?.products.length),
   );
 
   async function openRequest(request: DiscoveryRequest) {
@@ -286,6 +303,8 @@ export default function SearchScreen() {
     delivery: OfferDeliveryDraft,
     purchaseKey: string,
   ): Promise<boolean> {
+    const session = captureAuthSession();
+    if (!focused.current || !session.isCurrent() || resultsKey !== currentSearchKey.current || useAuthStore.getState().user?.id !== userId) return false;
     setBusyId(offer.id);
     setError(null);
     setNotice(null);
@@ -294,6 +313,7 @@ export default function SearchScreen() {
         `/allwain/offers/${offer.id}/accept`,
         { quantity, ...delivery, purchaseKey },
       );
+      if (!session.isCurrent()) return false;
       if (
         !contract.id ||
         contract.offerId !== offer.id ||
@@ -315,10 +335,11 @@ export default function SearchScreen() {
       });
       return true;
     } catch (err: any) {
+      if (!session.isCurrent()) return false;
       setError(err?.message || t("search.orderError"));
       return false;
     } finally {
-      setBusyId(null);
+      if (session.isCurrent()) setBusyId(null);
     }
   }
 
@@ -342,7 +363,7 @@ export default function SearchScreen() {
         status={t("home.status.available")}
         statusTone="neutral"
         actionLabel={previousOrders ? t("offers.orderAgain") : t("home.buyer.chooseQuantity")}
-        onPress={() => setSelectedOffer(item)}
+        onPress={() => { if (resultsKey === currentSearchKey.current && focused.current && useAuthStore.getState().user?.id === userId) setSelectedOffer(item); }}
         onContact={
           item.provider?.id && item.provider.id !== userId
             ? () => openPrivateMessage(item.provider?.id, item.provider?.name)
@@ -364,114 +385,7 @@ export default function SearchScreen() {
     <View style={styles.container}>
       <Text style={styles.eyebrow}>{t("search.eyebrow")}</Text>
       <Text style={styles.heading}>{t("search.title")}</Text>
-      <View style={styles.card}>
-        <Search size={20} color={colors.primary} />
-        <TextInput
-          ref={searchInput}
-          accessibilityLabel={t("search.accessibility")}
-          style={styles.input}
-          placeholder={t("search.placeholder")}
-          placeholderTextColor={colors.mutedText}
-          value={query}
-          onChangeText={setQuery}
-          autoCapitalize="none"
-          autoFocus
-        />
-        {query.length > 0 ? (
-          <TouchableOpacity
-            style={styles.filterButton}
-            accessibilityRole="button"
-            accessibilityLabel={t("search.clear")}
-            onPress={() => { setQuery(""); searchInput.current?.focus(); }}
-          >
-            <X size={19} color={colors.text} />
-          </TouchableOpacity>
-        ) : null}
-        <TouchableOpacity
-          style={styles.filterButton}
-          accessibilityRole="button"
-          accessibilityLabel={t("search.filters")}
-          accessibilityState={{ expanded: filtersOpen }}
-          onPress={() => setFiltersOpen((current) => !current)}
-        >
-          <SlidersHorizontal
-            size={20}
-            color={category || unit || sort !== "newest" ? colors.primary : colors.text}
-          />
-        </TouchableOpacity>
-      </View>
-
-      {filtersOpen ? (
-        <Modal visible transparent animationType="fade" onRequestClose={() => setFiltersOpen(false)} accessibilityLabel={t("search.filters")}>
-          <View style={styles.filterBackdrop}>
-            <View style={styles.filterDialog}>
-              <View style={styles.filterHeader}>
-                <Text accessibilityRole="header" style={styles.filterTitle}>{t("search.filters")}</Text>
-                <TouchableOpacity accessibilityRole="button" accessibilityLabel={t("common.close")} style={styles.filterButton} onPress={() => setFiltersOpen(false)}>
-                  <X size={22} color={colors.text} />
-                </TouchableOpacity>
-              </View>
-              <ScrollView style={styles.filterScroll} contentContainerStyle={styles.filters} keyboardShouldPersistTaps="handled">
-          <Text style={styles.filterLabel}>{t("search.category")}</Text>
-          <View style={styles.filterOptions}>
-            {[
-              ["", t("search.categoryAll")],
-              ["alimentacion", t("search.categoryFood")],
-              ["hogar", t("search.categoryHome")],
-              ["electronica", t("search.categoryTech")],
-              ["vehiculos", t("search.categoryVehicles")],
-              ["servicios", t("search.categoryServices")],
-            ].map(([value, label]) => (
-              <FilterChip
-                key={value || "all"}
-                label={label}
-                selected={category === value}
-                onPress={() => setCategory(value)}
-              />
-            ))}
-          </View>
-          <Text style={styles.filterLabel}>{t("search.quantity")}</Text>
-          <View style={styles.filterOptions}>
-            {[
-              ["", t("search.quantityAny")],
-              ["kg", "kg"],
-              ["ud", t("search.units")],
-              ["caja", t("search.boxes")],
-              ["l", t("search.liters")],
-            ].map(([value, label]) => (
-              <FilterChip
-                key={value || "any"}
-                label={label}
-                selected={unit === value}
-                onPress={() => setUnit(value)}
-              />
-            ))}
-          </View>
-          <Text style={styles.filterLabel}>{t("search.sort")}</Text>
-          <View style={styles.filterOptions}>
-            {[
-              ["newest", t("search.sortNewest")],
-              ["price_asc", t("search.sortPriceAsc")],
-              ["price_desc", t("search.sortPriceDesc")],
-            ].map(([value, label]) => (
-              <FilterChip
-                key={value}
-                label={label}
-                selected={sort === value}
-                onPress={() =>
-                  setSort(value as "newest" | "price_asc" | "price_desc")
-                }
-              />
-            ))}
-          </View>
-              </ScrollView>
-              <View style={styles.filterFooter}>
-                <BigActionButton label={t("search.viewResults")} onPress={() => setFiltersOpen(false)} />
-              </View>
-            </View>
-          </View>
-        </Modal>
-      ) : null}
+      <DiscoveryFilters value={appliedQuery} onApply={next => { const session = captureAuthSession(); const current = captureAnalyticsGuard(() => focused.current && session.isCurrent() && useAuthStore.getState().user?.id === userId && useAuthStore.getState().appMode === appMode); void recordAppliedFilters({state:analyticsState,scope:`${userId || ""}:${appMode}:${session.generation}`,queryKey:`${userId || ""}:${appMode}:${discoveryQueryKey(next)}`,query:next,surface:"search",appMode,current,allowed:CATALOG_DISCOVERY_FIELDS},searchKey); setAppliedQuery(next); }} kind="catalog" disabled={Boolean(busyId)} />
 
       {loading && filteredResults.length === 0 ? (
         <View style={styles.stateBox}>
@@ -480,12 +394,11 @@ export default function SearchScreen() {
         </View>
       ) : null}
 
-      {error ? (
-        <Text style={styles.error}>{error}</Text>
-      ) : null}
+      {catalogError ? <View style={styles.stateBox}><Text accessibilityRole="alert" style={styles.error}>{catalogError}</Text><BigActionButton tone="light" label={filterCopy.retry} onPress={() => void loadOffers(query, failedCursor.current)} /></View> : null}
+      {error ? <Text style={styles.error}>{error}</Text> : null}
       {notice ? <Text style={styles.notice}>{notice}</Text> : null}
 
-      {!loading && !discoveryLoading && !error && filteredResults.length === 0 && !hasDiscovery ? (
+      {!loading && !discoveryLoading && !catalogError && !error && filteredResults.length === 0 && !hasDiscovery ? (
         <EmptyState
           title={t(query.trim() || category || unit ? "search.emptyTitle" : "search.startTitle")}
           body={t(query.trim() || category || unit ? "search.emptyBody" : "search.startBody")}
@@ -609,7 +522,7 @@ export default function SearchScreen() {
           ) : null
         }
         onEndReached={() => {
-          if (hasNextPage && nextCursor && !loadingMore) {
+          if (resultsKey === searchKey && !catalogError && hasNextPage && nextCursor && !loadingMore && !loading) {
             void loadOffers(query, nextCursor);
           }
         }}
@@ -619,7 +532,7 @@ export default function SearchScreen() {
         }
       />
       <OfferPurchaseWizard
-        visible={Boolean(selectedOffer)}
+        visible={Boolean(selectedOffer && resultsKey === searchKey)}
         offer={selectedOffer}
         busy={Boolean(selectedOffer && busyId === selectedOffer.id)}
         error={error}

@@ -9,7 +9,14 @@ function load(relative, replacements = {}) {
   const source = path.resolve(__dirname, relative); const compiled = new Module(source, module);
   compiled.filename = source; compiled.paths = Module._nodeModulePaths(path.dirname(source));
   const originalRequire = compiled.require.bind(compiled);
-  compiled.require = name => Object.hasOwn(replacements, name) ? replacements[name] : originalRequire(name);
+  compiled.require = name => {
+    if (Object.hasOwn(replacements, name)) return replacements[name];
+    if (name.startsWith('.')) {
+      const candidate = path.resolve(path.dirname(source), `${name}.ts`);
+      if (fs.existsSync(candidate)) return load(candidate, replacements);
+    }
+    return originalRequire(name);
+  };
   compiled._compile(ts.transpileModule(fs.readFileSync(source, 'utf8'), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, esModuleInterop: true },
   }).outputText, source);
@@ -62,7 +69,7 @@ function nativeFixture(setConsent = async () => {}) {
     resetAnalyticsData: async () => { calls.push(['reset']); },
     logEvent: async () => { calls.push(['event']); }, logScreenView: async () => { calls.push(['screen']); },
     setUserProperties: async () => { calls.push(['context']); } };
-  const runtime = load('../src/analytics/analyticsRuntime.native.ts', { '@react-native-firebase/analytics': sdk });
+  const runtime = load('../src/analytics/analyticsRuntime.native.ts', { '@react-native-firebase/analytics': sdk, 'react-native': {Platform:{OS:'android'}} });
   return { runtime, calls, imports: () => imports };
 }
 it('never initializes native Firebase for an undecided or denied user', async () => {

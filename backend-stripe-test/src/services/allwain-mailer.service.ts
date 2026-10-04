@@ -249,9 +249,11 @@ function ruleFor(notification: NotificationSnapshot): EmailRule {
 
 export function renderAllwainNotificationEmail(notification: NotificationSnapshot) {
   const rule = ruleFor(notification);
-  const appUrl = ENV.ALLWAIN_APP_URL.replace(/\/$/, "");
+  const baseUrl = new URL(ENV.ALLWAIN_APP_URL);
+  const appPath = baseUrl.pathname.replace(/\/$/, "").replace(/\/web$/, "/app");
+  const appUrl = `${baseUrl.origin}${appPath.endsWith("/app") ? appPath : `${appPath}/app`}`;
   const actionUrl = `${appUrl}/avisos`;
-  const logoUrl = `${appUrl}/email/allwain-logo.png`;
+  const logoUrl = `${baseUrl.origin}/email/allwain-logo.png`;
   const title = escapeHtml(notification.title);
   const body = escapeHtml(notification.body);
   const subject = cleanHeader(rule.subject);

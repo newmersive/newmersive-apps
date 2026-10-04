@@ -1,4 +1,6 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import { useFocusEffect } from "@react-navigation/native";
+import { randomUUID } from "expo-crypto";
 import {
   KeyboardAvoidingView,
   ScrollView,
@@ -14,64 +16,99 @@ import { ArrowRight, MessageSquareText, Sparkles } from "lucide-react-native";
 import type { RootStackParamList } from "../../navigation/types";
 import { colors } from "../../theme/colors";
 import { interpretDeliveryWindow } from "../../utils/deliveryIntelligence";
-import { rememberScanCapture } from "../../utils/scanCaptureMemory";
+import { apiAuthPost, type AllwainScanRequest } from "../../config/api";
 import { useAuthStore } from "../../store/auth.store";
-import { clearJourneyDraft, readJourneyDraft, writeJourneyDraft } from "../../utils/journeyDrafts";
+import { captureAuthSession } from "../../store/authSessionBridge";
+import { clearManualRequestDraft, readManualRequestDraft, saveManualRequestDraft, type ManualRequestDraft } from "../../utils/manualRequestContinuity";
 import { useRequestKeyboardLayout } from "../../components/useRequestKeyboardLayout";
+import { buyerContinuityCopy, buyerDraftReadError } from "../../i18n/buyerContinuityCopy";
+import { useAppTranslation } from "../../i18n/useAppTranslation";
 
 type Props = NativeStackScreenProps<RootStackParamList, "ManualRequest">;
 
 export default function ManualRequestScreen({ navigation }: Props) {
   const accountId = useAuthStore((state) => state.user?.id);
+  const { locale } = useAppTranslation();
+  const copy = buyerContinuityCopy[locale];
   const { keyboardAvoidingProps, footerPaddingBottom } = useRequestKeyboardLayout();
   const [requestText, setRequestText] = useState("");
+  const [attempt, setAttempt] = useState<ManualRequestDraft | null>(null);
+  const [busy, setBusy] = useState(false);
+  const ledger = useRef<ManualRequestDraft>({ requestText: "" });
+  const creating = useRef(false);
+  const screen = useRef({ focused: true, generation: 0 });
   const edited = useRef(false);
   const [draftReady, setDraftReady] = useState(false);
+  const [hydrateRevision, setHydrateRevision] = useState(0);
   const [draftNotice, setDraftNotice] = useState("");
-  useEffect(() => {
-    let active = true;
+  function currentActor() { const session = captureAuthSession(), actor = accountId; return () => Boolean(actor) && session.isCurrent() && useAuthStore.getState().user?.id === actor; }
+  function currentScreen() { const actor = currentActor(), generation = screen.current.generation; return () => actor() && screen.current.focused && screen.current.generation === generation; }
+  useFocusEffect(useCallback(() => {
+    screen.current.focused = true; screen.current.generation++;
+    const current = currentScreen();
     setDraftReady(false);
+    creating.current = false; setBusy(false);
     edited.current = false;
-    setRequestText("");
-    if (!accountId) return;
-    void readJourneyDraft<{ requestText: string }>(accountId, "manual-request").then((draft) => {
-      if (!active) return;
-      if (typeof draft?.requestText === "string") {
-        setRequestText(draft.requestText.slice(0, 1000));
-        setDraftNotice("Borrador recuperado.");
-      }
+    setRequestText(""); setAttempt(null); ledger.current = { requestText: "" }; setDraftNotice("");
+    if (accountId) void readManualRequestDraft(accountId).then((draft) => {
+      if (!current()) return;
+      ledger.current = draft || { requestText: "" };
+      setRequestText(ledger.current.requestText); setAttempt(draft);
+      if (draft) setDraftNotice(draft.requestId ? copy.linked : copy.recovered);
       setDraftReady(true);
-    });
-    return () => { active = false; };
-  }, [accountId]);
+    }).catch(() => { if (current()) setDraftNotice(buyerDraftReadError[locale]); });
+    return () => { screen.current.focused = false; screen.current.generation++; };
+  }, [accountId, copy.linked, copy.recovered, copy.saveError, locale, hydrateRevision]));
   useEffect(() => {
     if (!draftReady || !accountId || !edited.current) return;
-    void writeJourneyDraft(accountId, "manual-request", { requestText }).then((saved) => {
-      if (!saved) setDraftNotice("No se ha podido guardar en este dispositivo. Mantén abierta la petición.");
+    const current = currentScreen();
+    void saveManualRequestDraft(accountId, ledger.current, currentActor()).then((saved) => {
+      if (current() && !saved) setDraftNotice(copy.saveError);
     });
-  }, [accountId, draftReady, requestText]);
+  }, [accountId, draftReady, requestText, copy.saveError]);
   const cleanText = requestText.trim();
   const understoodWindow = interpretDeliveryWindow(requestText);
 
-  function continueRequest() {
-    if (cleanText.length < 2) return;
-    navigation.navigate("ScanResult", rememberScanCapture({
-      rawText: cleanText,
-      sourceType: "text",
-    }));
+  async function continueRequest() {
+    const current = currentScreen();
+    if (!accountId || !draftReady || !current() || creating.current || (!ledger.current.requestId && cleanText.length < 2)) return;
+    if (ledger.current.requestId) { navigation.navigate("ScanResult", { requestId: ledger.current.requestId }); return; }
+    creating.current = true; setBusy(true); setDraftNotice("");
+    const next = ledger.current.creationKey ? ledger.current : { requestText, creationKey: randomUUID(), submittedText: cleanText };
+    ledger.current = next; setAttempt(next); edited.current = false;
+    try {
+      if (!await saveManualRequestDraft(accountId, next, currentActor())) throw new Error(copy.saveError);
+      if (!current()) return;
+      const created = await apiAuthPost<AllwainScanRequest>("/allwain/scan-requests", { sourceType: "text", rawText: next.submittedText, creationKey: next.creationKey });
+      if (!current()) return;
+      if (!created?.id || created.userId !== accountId) throw new Error(copy.createError);
+      const linked = { ...next, requestId: created.id };
+      ledger.current = linked; setAttempt(linked);
+      await saveManualRequestDraft(accountId, linked, currentActor());
+      if (current()) navigation.navigate("ScanResult", { requestId: created.id });
+    } catch (error: any) { if (current()) setDraftNotice(error?.message === copy.saveError ? copy.saveError : copy.createError); }
+    finally { if (current()) { creating.current = false; setBusy(false); } }
   }
 
   async function discard() {
+    const current = currentScreen();
+    if (!accountId || !current() || creating.current) return;
     edited.current = false;
-    if (accountId) await clearJourneyDraft(accountId, "manual-request");
+    const removed = await clearManualRequestDraft(accountId, currentActor());
+    if (!current()) return;
+    if (!removed) { setDraftNotice(copy.saveError); return; }
+    ledger.current = { requestText: "" }; setAttempt(null);
     setRequestText("");
     setDraftNotice("Borrador descartado.");
   }
 
   async function saveAndExit() {
+    const current = currentScreen();
+    if (!accountId || !current() || creating.current) return;
     if (accountId && edited.current) {
-      const saved = await writeJourneyDraft(accountId, "manual-request", { requestText });
-      if (!saved) { setDraftNotice("No pudimos guardar. Inténtalo de nuevo antes de salir."); return; }
+      const saved = await saveManualRequestDraft(accountId, ledger.current, currentActor());
+      if (!current()) return;
+      if (!saved) { setDraftNotice(copy.saveError); return; }
     }
     navigation.canGoBack() ? navigation.goBack() : navigation.navigate("MainTabs");
   }
@@ -96,8 +133,8 @@ export default function ManualRequestScreen({ navigation }: Props) {
           <TextInput
             style={styles.input}
             value={requestText}
-            editable={draftReady}
-            onChangeText={(value) => { edited.current = true; setRequestText(value); }}
+            editable={draftReady && !busy && !attempt?.creationKey && !attempt?.requestId}
+            onChangeText={(value) => { if (!currentScreen()() || creating.current || ledger.current.creationKey || ledger.current.requestId) return; edited.current = true; ledger.current = { requestText: value }; setRequestText(value); }}
             placeholder="Ej. Necesito 15 kg de naranjas para la próxima semana"
             placeholderTextColor={colors.mutedText}
             multiline
@@ -128,18 +165,20 @@ export default function ManualRequestScreen({ navigation }: Props) {
       </ScrollView>
       <View style={[styles.footer, { paddingBottom: footerPaddingBottom }]}>
         {draftNotice ? <Text accessibilityLiveRegion="polite" style={styles.understandingText}>{draftNotice}</Text> : null}
+        {!draftReady && draftNotice ? <TouchableOpacity accessibilityRole="button" style={styles.backButton} onPress={() => setHydrateRevision(value => value + 1)}><Text style={styles.backText}>{copy.retry}</Text></TouchableOpacity> : null}
+        {attempt?.creationKey && !attempt.requestId ? <Text style={styles.understandingText}>{copy.ambiguous}</Text> : null}
         <TouchableOpacity
-          style={[styles.continueButton, cleanText.length < 2 && styles.disabled]}
-          onPress={continueRequest}
-          disabled={cleanText.length < 2}
+          style={[styles.continueButton, ((!attempt?.requestId && cleanText.length < 2) || busy || !draftReady) && styles.disabled]}
+          onPress={() => void continueRequest()}
+          disabled={(!attempt?.requestId && cleanText.length < 2) || busy || !draftReady}
           accessibilityRole="button"
         >
-          <Text style={styles.continueText}>Preparar petición</Text>
+          <Text style={styles.continueText}>{busy ? copy.preparing : attempt?.requestId ? copy.continue : attempt?.creationKey ? copy.retry : copy.prepare}</Text>
           <ArrowRight size={20} color={colors.buttonText} />
         </TouchableOpacity>
         <View style={styles.footerLinks}>
-          <TouchableOpacity accessibilityRole="button" style={styles.backButton} onPress={() => void saveAndExit()}><Text style={styles.backText}>Guardar y salir</Text></TouchableOpacity>
-          <TouchableOpacity accessibilityRole="button" style={styles.backButton} onPress={() => void discard()}><Text style={styles.backText}>Descartar</Text></TouchableOpacity>
+          <TouchableOpacity accessibilityRole="button" disabled={busy || !draftReady} style={styles.backButton} onPress={() => void saveAndExit()}><Text style={styles.backText}>Guardar y salir</Text></TouchableOpacity>
+          <TouchableOpacity accessibilityRole="button" disabled={busy || !draftReady} style={styles.backButton} onPress={() => void discard()}><Text style={styles.backText}>Descartar</Text></TouchableOpacity>
         </View>
       </View>
     </KeyboardAvoidingView>

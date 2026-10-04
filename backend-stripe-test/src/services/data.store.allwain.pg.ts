@@ -1,4 +1,6 @@
 import { Prisma } from "@prisma/client";
+import { discoveryCursor, discoveryWhere, validateDiscovery, matchesResponse, type AllwainDiscoveryInput } from "./allwain-discovery";
+import { normalizeRequestProposalPage, type RequestProposalPageInput } from "./allwain-request-work";
 import { randomUUID } from "crypto";
 import { ENV } from "../config/env";
 import { getPrisma } from "../db/prisma";
@@ -39,6 +41,19 @@ import {
   listActiveAllwainShoppingListAwardLines,
   refreshAllwainShoppingListAwardStateTx,
 } from "./allwain-shopping-list-awards";
+import { refreshAllwainIllustrativeImageMeta } from "./allwain-card-images.service";
+import { allwainAttemptHasFinancialRisk, recoverAllwainRequestAfterUnpaidAttemptTx } from "./allwain-request-recovery";
+import {
+  allwainCatalogEditPatch,
+  allwainProposalAggregate,
+  assertAllwainOfferVersion,
+  type AllwainOfferEditInput,
+} from "./allwain-offer-lifecycle";
+import {
+  allwainCatalogWhere,
+  allwainPublicCatalogWhere,
+  isCatalogOffer,
+} from "./allwain-publication-policy";
 
 /* =========================
    PRODUCTS
@@ -123,7 +138,7 @@ export async function getAllwainOffersPg(): Promise<Offer[]> {
   return offers.filter((offer) => !isAllwainOfferArchived(offer)) as any;
 }
 
-export interface AllwainOfferPageInput {
+export interface AllwainOfferPageInput extends AllwainDiscoveryInput {
   limit: number;
   cursor?: string | null;
   query?: string | null;
@@ -139,18 +154,33 @@ export interface AllwainOfferPageInput {
   maxPrice?: number | null;
   sort?: "newest" | "price_asc" | "price_desc";
   searchOwnerUserIds?: string[] | null;
+  type?: "catalog" | "proposal" | "all";
+  view?: "active" | "history";
 }
 
 export async function getAllwainOfferPagePg(input: AllwainOfferPageInput) {
+  validateDiscovery(input, input.sort);
+  if (input.radiusKm != null) throw new Error("INVALID_DISCOVERY_LOCATION");
+  const pageCursor = discoveryCursor(input, "offers", input.ownerUserId || input.excludeOwnerUserId || "market");
   const prisma = getPrisma();
+  const ownProposals = Boolean(input.ownerUserId && input.type === "proposal");
+  const ownAll = Boolean(input.ownerUserId && input.type === "all");
+  const deletedOwners = input.ownerUserId
+    ? []
+    : await prisma.user.findMany({
+        where: { deletedAt: { not: null } },
+        select: { id: true },
+      });
   const activeStatus = input.status
-    ? { allwainStatus: input.status }
+    ? input.status === "active" ? { OR: [{ allwainStatus: "active" }, { allwainStatus: null }] } : { allwainStatus: input.status }
+    : input.ownerUserId && input.view === "history"
+    ? { allwainStatus: { in: ownProposals ? ["selected", "not_selected", "withdrawn", "closed"] : ownAll ? ["selected", "not_selected", "withdrawn", "closed"] : ["closed"] } }
     : {
         OR: [
           {
             allwainStatus: {
               in: input.ownerUserId
-                ? ["active", "paused", "sold_out"]
+                ? ["active", "paused", "sold_out", ...((ownProposals || ownAll) && !input.view ? ["selected", "not_selected"] : [])]
                 : ["active"],
             },
           },
@@ -159,10 +189,16 @@ export async function getAllwainOfferPagePg(input: AllwainOfferPageInput) {
       };
   const where: Prisma.OfferWhereInput = {
     owner: "allwain",
-    requestId: null,
-    shoppingListId: null,
     AND: [
+      ...(input.ownerUserId
+        ? ownAll ? [] : ownProposals ? [{ NOT: allwainCatalogWhere() }]
+        : [allwainCatalogWhere()]
+        : [allwainPublicCatalogWhere(deletedOwners.map((user) => user.id))]),
       activeStatus,
+      ...(input.ownerUserId && input.view ? [input.view === "history" ? { allwainStatus: { in: ownProposals || ownAll ? ["selected", "not_selected", "withdrawn", "closed"] : ["closed"] } } : { OR: [{ allwainStatus: { in: ["active", "paused", "sold_out"] } }, { allwainStatus: null }] }] : []),
+      ...discoveryWhere(input, { jsonField: "meta", priceField: "price" }),
+      pageCursor.where(input.sort),
+      ...(input.sort === "price_asc" || input.sort === "price_desc" ? [{ price: { not: null } }] : []),
       input.query
         ? {
             OR: [
@@ -178,17 +214,6 @@ export async function getAllwainOfferPagePg(input: AllwainOfferPageInput) {
           }
         : {},
     ],
-    ...(input.category
-      ? { category: { equals: input.category, mode: "insensitive" } }
-      : {}),
-    ...(input.subcategory
-      ? { subcategory: { equals: input.subcategory, mode: "insensitive" } }
-      : {}),
-    ...(input.productKind ? { productKind: input.productKind } : {}),
-    ...(input.currency ? { currency: input.currency.toUpperCase() } : {}),
-    ...(input.unit
-      ? { unit: { equals: input.unit, mode: "insensitive" } }
-      : {}),
     ...(input.ownerUserId ? { ownerUserId: input.ownerUserId } : {}),
     ...(input.excludeOwnerUserId
       ? { NOT: { ownerUserId: input.excludeOwnerUserId } }
@@ -213,7 +238,6 @@ export async function getAllwainOfferPagePg(input: AllwainOfferPageInput) {
     where,
     orderBy,
     take: input.limit + 1,
-    ...(input.cursor ? { cursor: { id: input.cursor }, skip: 1 } : {}),
   });
   const hasNextPage = rows.length > input.limit;
   const pageRows = hasNextPage ? rows.slice(0, input.limit) : rows;
@@ -222,7 +246,7 @@ export async function getAllwainOfferPagePg(input: AllwainOfferPageInput) {
     pageInfo: {
       hasNextPage,
       nextCursor: hasNextPage
-        ? pageRows[pageRows.length - 1]?.id || null
+        ? pageCursor.encode(pageRows[pageRows.length - 1], input.sort)
         : null,
     },
   };
@@ -230,7 +254,7 @@ export async function getAllwainOfferPagePg(input: AllwainOfferPageInput) {
 
 export async function getAllwainSellerIdsMatchingPg(
   query: string,
-  limit = 100,
+  limit?: number,
 ) {
   const prisma = getPrisma();
   const users = await prisma.user.findMany({
@@ -239,7 +263,7 @@ export async function getAllwainSellerIdsMatchingPg(
       name: { contains: query, mode: "insensitive" },
     },
     select: { id: true },
-    take: limit,
+    ...(limit ? { take: limit } : {}),
   });
   const profiles = await prisma.allwainSellerProfile.findMany({
     where: {
@@ -251,14 +275,24 @@ export async function getAllwainSellerIdsMatchingPg(
       ],
     },
     select: { userId: true },
-    take: limit,
+    ...(limit ? { take: limit } : {}),
   });
   return [
     ...new Set([
       ...users.map((item) => item.id),
       ...profiles.map((item) => item.userId),
     ]),
-  ].slice(0, limit);
+  ];
+}
+
+export async function getAllwainCatalogCommittedOfferIdsPg(offerIds: string[]) {
+  if (!offerIds.length) return new Set<string>();
+  const prisma = getPrisma();
+  const [contracts, orders] = await Promise.all([
+    prisma.contract.findMany({ where: { app: "allwain", offerId: { in: offerIds } }, select: { offerId: true } }),
+    prisma.allwainOrder.findMany({ where: { offerId: { in: offerIds } }, select: { offerId: true } }),
+  ]);
+  return new Set<string>([...contracts, ...orders].map((row) => row.offerId).filter((id): id is string => Boolean(id)));
 }
 
 export async function getAllwainOfferProviderSummariesPg(userIds: string[]) {
@@ -312,6 +346,77 @@ export async function getAllwainOffersForRequestPg(
     orderBy: [{ createdAt: "desc" }, { id: "desc" }],
   });
   return offers.map(mapOfferRow);
+}
+
+function requestProposalLinkSql(requestId: string) { return Prisma.sql`COALESCE("O"."requestId", "O"."meta"->>'requestId') = ${requestId}`; }
+
+/** Legacy JSON deadlines are parsed only after checking their ISO/calendar shape. */
+function requestProposalActiveSql(now: Date) {
+  const legacy = Prisma.sql`("O"."meta"->>'validUntil')`;
+  const isoPattern = "^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])T([01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9](\\.[0-9]+)?Z$";
+  const validCalendar = Prisma.sql`SUBSTRING(${legacy}, 1, 4)::integer > 0 AND SUBSTRING(${legacy}, 9, 2)::integer <=
+    CASE SUBSTRING(${legacy}, 6, 2)::integer
+      WHEN 2 THEN CASE WHEN SUBSTRING(${legacy}, 1, 4)::integer % 400 = 0 OR (SUBSTRING(${legacy}, 1, 4)::integer % 4 = 0 AND SUBSTRING(${legacy}, 1, 4)::integer % 100 <> 0) THEN 29 ELSE 28 END
+      WHEN 4 THEN 30 WHEN 6 THEN 30 WHEN 9 THEN 30 WHEN 11 THEN 30 ELSE 31 END`;
+  return Prisma.sql`COALESCE("O"."allwainStatus", 'active') = 'active' AND
+    CASE WHEN "O"."proposalExpiresAt" IS NOT NULL THEN "O"."proposalExpiresAt" > ${now}
+      WHEN ${legacy} IS NULL THEN TRUE
+      WHEN ${legacy} ~ ${isoPattern} THEN CASE WHEN ${validCalendar} THEN ${legacy}::timestamptz > ${now} ELSE FALSE END
+      ELSE FALSE END`;
+}
+
+export async function getAllwainBuyerRequestPendingSummaryPg(userId: string, requestedLimit = 3) {
+  const limit = Math.min(10, Math.max(1, Math.trunc(requestedLimit || 3))), now = new Date();
+  const rows = await getPrisma().$queryRaw<Array<{ total: bigint; draft: bigint; ready: bigint; withProposals: bigint; items: any }>>(Prisma.sql`
+    WITH "active_proposals" AS (
+      SELECT COALESCE("O"."requestId", "O"."meta"->>'requestId') AS "requestId", COUNT(*) AS "proposalCount"
+      FROM "Offer" "O" WHERE "O"."owner" = 'allwain' AND ${requestProposalActiveSql(now)}
+      AND COALESCE("O"."requestId", "O"."meta"->>'requestId') IN (SELECT "id" FROM "AllwainScanRequest" WHERE "userId" = ${userId} AND "status" = 'submitted')
+      GROUP BY COALESCE("O"."requestId", "O"."meta"->>'requestId')
+    ), "pending" AS (
+      SELECT "R"."id", "R"."title", "R"."status", jsonb_build_object('productName', "R"."extracted"->>'productName') AS "extracted",
+        COALESCE("P"."proposalCount", 0) AS "proposalCount", "R"."createdAt", "R"."updatedAt"
+      FROM "AllwainScanRequest" "R" LEFT JOIN "active_proposals" "P" ON "P"."requestId" = "R"."id"
+      WHERE "R"."userId" = ${userId} AND ("R"."status" IN ('draft', 'ready') OR ("R"."status" = 'submitted' AND COALESCE("P"."proposalCount", 0) > 0))
+    )
+    SELECT COUNT(*) AS "total", COUNT(*) FILTER (WHERE "status" = 'draft') AS "draft",
+      COUNT(*) FILTER (WHERE "status" = 'ready') AS "ready", COUNT(*) FILTER (WHERE "status" = 'submitted') AS "withProposals",
+      (SELECT COALESCE(jsonb_agg("preview" ORDER BY "preview"."updatedAt" DESC, "preview"."id" DESC), '[]'::jsonb)
+       FROM (SELECT "id", "title", "status", "extracted", "proposalCount", to_char("createdAt", 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') AS "createdAt", to_char("updatedAt", 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') AS "updatedAt" FROM "pending" ORDER BY "updatedAt" DESC, "id" DESC LIMIT ${limit}) "preview") AS "items"
+    FROM "pending"`);
+  const row = rows[0];
+  return { total: Number(row?.total || 0), counts: { draft: Number(row?.draft || 0), ready: Number(row?.ready || 0), withProposals: Number(row?.withProposals || 0) }, items: Array.isArray(row?.items) ? row.items : [] };
+}
+
+export async function getAllwainRequestProposalSummaryPg(requestId: string, selectedOfferId?: string | null) {
+  const prisma = getPrisma(), now = new Date();
+  const [counts, selected] = await Promise.all([
+    prisma.$queryRaw<Array<{ total: bigint; active: bigint }>>(Prisma.sql`SELECT COUNT(*) AS "total", COUNT(*) FILTER (WHERE ${requestProposalActiveSql(now)}) AS "active" FROM "Offer" "O" WHERE "O"."owner" = 'allwain' AND ${requestProposalLinkSql(requestId)}`),
+    selectedOfferId ? prisma.$queryRaw<any[]>(Prisma.sql`SELECT "O".* FROM "Offer" "O" WHERE "O"."owner" = 'allwain' AND "O"."id" = ${selectedOfferId} AND ${requestProposalLinkSql(requestId)} LIMIT 1`) : Promise.resolve([]),
+  ]);
+  return { summary: { total: Number(counts[0]?.total || 0), active: Number(counts[0]?.active || 0) }, selectedOffer: selected[0] ? mapOfferRow(selected[0]) : null };
+}
+
+export async function getAllwainRequestProposalPagePg(userId: string, requestId: string, rawInput: RequestProposalPageInput) {
+  const input = normalizeRequestProposalPage(rawInput), now = new Date();
+  const cursor = discoveryCursor({ ...input, requestId }, "request-proposals", userId);
+  const active = requestProposalActiveSql(now);
+  const score = Prisma.sql`COALESCE("RP"."averageRating", 0)`;
+  const price = Prisma.sql`COALESCE("O"."price", 1e100)`;
+  const key = input.sort === "rating" ? score : input.sort === "price" ? price : Prisma.sql`"O"."createdAt"`;
+  const after = !cursor.row ? Prisma.sql`TRUE` : input.sort === "price"
+    ? Prisma.sql`(${key} > ${Number(cursor.row.value)} OR (${key} = ${Number(cursor.row.value)} AND "O"."id" > ${cursor.row.id}))`
+    : input.sort === "rating" ? Prisma.sql`(${key} < ${Number(cursor.row.value)} OR (${key} = ${Number(cursor.row.value)} AND "O"."id" < ${cursor.row.id}))`
+    : Prisma.sql`(${key} < ${new Date(cursor.row.value)} OR (${key} = ${new Date(cursor.row.value)} AND "O"."id" < ${cursor.row.id}))`;
+  const direction = input.sort === "price" ? Prisma.sql`ASC` : Prisma.sql`DESC`;
+  const rows = await getPrisma().$queryRaw<any[]>(Prisma.sql`
+    SELECT "O".*, ${score} AS "__proposalRating" FROM "Offer" "O"
+    LEFT JOIN "AllwainReputation" "RP" ON "RP"."userId" = "O"."ownerUserId"
+    WHERE "O"."owner" = 'allwain' AND ${requestProposalLinkSql(requestId)}
+    AND ${input.view === "all" ? Prisma.sql`TRUE` : input.view === "active" ? active : Prisma.sql`NOT (${active})`} AND ${after}
+    ORDER BY ${key} ${direction}, "O"."id" ${direction} LIMIT ${input.limit + 1}`);
+  const hasNextPage = rows.length > input.limit, pageRows = rows.slice(0, input.limit), last = pageRows.at(-1);
+  return { items: pageRows.map(({ __proposalRating, ...row }) => mapOfferRow(row)), pageInfo: { hasNextPage, nextCursor: hasNextPage && last ? cursor.encode({ ...last, price: input.sort === "rating" ? Number(last.__proposalRating) : last.price ?? 1e100 }, input.sort === "newest" ? "newest" : input.sort === "price" ? "price_asc" : "price_desc") : null } };
 }
 
 export async function addAllwainOfferPg(
@@ -370,7 +475,7 @@ export async function upsertAllwainRequestProposalPg(input: {
     const existing = existingRows[0] || null;
     if (
       existing &&
-      !["active", "paused", "withdrawn"].includes(
+      !["active", "paused"].includes(
         String(existing.allwainStatus || "active"),
       )
     ) {
@@ -807,11 +912,17 @@ async function lockAllwainShoppingList(tx: any, shoppingListId: string) {
   return rows[0] || null;
 }
 
+async function lockAllwainOrderForContract(tx: any, contractId: string) {
+  const rows = await tx.$queryRaw(Prisma.sql`SELECT * FROM "AllwainOrder" WHERE "contractId" = ${contractId} FOR UPDATE`);
+  return rows[0] || null;
+}
+
 export async function createAllwainAgreementWithStockPg(input: {
   offerId: string;
   userId: string;
   quantity: number;
   contract: Contract;
+  expectedUpdatedAt?: unknown;
 }): Promise<Contract> {
   const prisma = getPrisma() as any;
   return prisma.$transaction(async (tx: any) => {
@@ -874,6 +985,8 @@ export async function createAllwainAgreementWithStockPg(input: {
         return mapContractRow(existingAfterLock);
       }
     }
+
+    assertAllwainOfferVersion(offer, input.expectedUpdatedAt);
 
     const requestId =
       input.contract.requestId ||
@@ -1116,15 +1229,11 @@ export async function createAllwainAgreementWithStockPg(input: {
         where: { id: offer.id },
         data: { allwainStatus: "selected" },
       });
-      await tx.offer.updateMany({
-        where: {
-          owner: "allwain",
-          requestId,
-          id: { not: offer.id },
-          allwainStatus: { in: ["active", "paused"] },
-        },
-        data: { allwainStatus: "not_selected" },
-      });
+      // Preserve the previous state, so recovery never unpauses a seller's
+      // proposal or revives an unrelated terminal publication.
+      await tx.$executeRaw(Prisma.sql`UPDATE "Offer" SET "allwainStatus" = 'not_selected',
+        "meta" = jsonb_set(COALESCE("meta", '{}'::jsonb), '{selectionClosure}', jsonb_build_object('selectedOfferId', ${offer.id}::text, 'previousStatus', "allwainStatus", 'closedAt', ${now.toISOString()}::text)), "updatedAt" = ${now}
+        WHERE "owner" = 'allwain' AND COALESCE("requestId", "meta"->>'requestId') = ${requestId} AND "id" <> ${offer.id} AND "allwainStatus" IN ('active', 'paused')`);
       await appendAllwainAuditEventTx(tx, {
         aggregateType: "market_request",
         aggregateId: requestId,
@@ -1247,6 +1356,7 @@ export async function updateAllwainOfferInventoryPg(input: {
     ) {
       throw new Error("OFFER_NOT_FOUND");
     }
+    if (!isCatalogOffer(offer)) throw new Error("INVENTORY_NOT_EDITABLE");
     const meta = updateAllwainInventoryLimits(offer, input);
     const nextInventory = readAllwainInventory({ meta });
     const updated = await tx.offer.update({
@@ -1276,15 +1386,10 @@ export async function updateAllwainOfferInventoryPg(input: {
   });
 }
 
-export async function updateAllwainOfferDetailsPg(input: {
+export async function updateAllwainOfferDetailsPg(input: AllwainOfferEditInput & {
   offerId: string;
   userId: string;
   allowAnyOwner: boolean;
-  title?: string;
-  description?: string;
-  price?: number;
-  status?: "active" | "paused" | "closed";
-  meta?: Record<string, unknown>;
 }): Promise<Offer> {
   const prisma = getPrisma() as any;
   return prisma.$transaction(async (tx: any) => {
@@ -1295,23 +1400,68 @@ export async function updateAllwainOfferDetailsPg(input: {
     ) {
       throw new Error("OFFER_NOT_FOUND");
     }
-    if (offerRequestIdPg(offer)) throw new Error("OFFER_EDIT_NOT_ALLOWED");
+    if (!isCatalogOffer(offer)) {
+      throw new Error("OFFER_EDIT_NOT_ALLOWED");
+    }
+    const hasCommitments = Boolean(await tx.contract.findFirst({
+      where: { app: "allwain", offerId: offer.id }, select: { id: true },
+    }) || await tx.allwainOrder.findFirst({ where: { offerId: offer.id }, select: { id: true } }));
+    const edit = allwainCatalogEditPatch(offer, input, hasCommitments);
     const previousStatus = offer.allwainStatus || "active";
     const nextStatus = input.status || previousStatus;
-    const currentMeta = input.meta || offer.meta;
+    const allowed: Record<string, string[]> = {
+      active: ["paused", "closed"],
+      paused: ["active", "closed"],
+      sold_out: ["active", "closed"],
+      closed: [],
+    };
+    if (
+      nextStatus !== previousStatus &&
+      !allowed[previousStatus]?.includes(nextStatus)
+    ) {
+      throw new Error("INVALID_OFFER_TRANSITION");
+    }
+    if (
+      input.status === "active" &&
+      previousStatus === "sold_out" &&
+      (readAllwainInventory(offer).availableQuantity || 0) <= 0
+    ) {
+      throw new Error("INSUFFICIENT_STOCK");
+    }
+    if (isAllwainOfferArchived(offer) && previousStatus !== "closed") {
+      throw new Error("OFFER_EDIT_NOT_ALLOWED");
+    }
+    if (
+      input.status === "closed" && previousStatus === "closed" &&
+      isAllwainOfferArchived(offer) &&
+      input.title === undefined && input.description === undefined &&
+      input.price === undefined && !edit.metaChanged
+    ) {
+      return { ...offer, meta: { ...(offer.meta || {}), catalogTermsLocked: hasCommitments || readAllwainInventory(offer).reservedQuantity > 0 || readAllwainInventory(offer).soldQuantity > 0 } };
+    }
+    // Refresh only from the locked row: its metadata may include reservations,
+    // sales or inventory limits committed after the service read the offer.
+    const refreshImage = input.title !== undefined || input.description !== undefined || input.category !== undefined || input.subcategory !== undefined;
+    const currentMeta = refreshImage
+      ? refreshAllwainIllustrativeImageMeta(edit.meta, {
+          title: input.title ?? offer.title,
+          description: input.description ?? offer.description,
+          category: edit.columns.category ?? offer.category ?? offer.meta?.category,
+          subcategory: edit.columns.subcategory ?? offer.subcategory ?? offer.meta?.subcategory,
+          productKind: offer.productKind || offer.meta?.productKind,
+        })
+      : edit.meta;
     const meta =
       nextStatus === "closed"
-        ? archiveAllwainOfferMeta(currentMeta)
+        ? isAllwainOfferArchived(offer)
+          ? { ...(currentMeta || {}), archived: true, status: "archived", availableQuantity: 0 }
+          : archiveAllwainOfferMeta(currentMeta)
         : { ...(currentMeta || {}), archived: false, status: nextStatus };
     const updated = await tx.offer.update({
       where: { id: offer.id },
       data: {
-        ...(input.title !== undefined ? { title: input.title } : {}),
-        ...(input.description !== undefined
-          ? { description: input.description }
-          : {}),
-        ...(input.price !== undefined ? { price: input.price } : {}),
-        ...(input.status !== undefined || input.meta !== undefined
+        ...edit.columns,
+        ...(input.status !== undefined || refreshImage || edit.metaChanged
           ? { allwainStatus: nextStatus, meta }
           : {}),
       },
@@ -1331,17 +1481,53 @@ export async function updateAllwainOfferDetailsPg(input: {
           input.description !== undefined &&
           input.description !== offer.description,
         priceChanged: input.price !== undefined && input.price !== offer.price,
+        fields: Object.keys(edit.columns).concat(edit.metaChanged ? ["commercial_terms"] : []),
+        previousUpdatedAt: offer.updatedAt || offer.createdAt || null,
       },
     });
-    return mapOfferRow(updated);
+    return mapOfferRow({ ...updated, meta: { ...(updated.meta || {}), catalogTermsLocked: hasCommitments || readAllwainInventory(updated).reservedQuantity > 0 || readAllwainInventory(updated).soldQuantity > 0 } });
   });
 }
 
-function offerRequestIdPg(offer: Offer) {
-  return (
-    offer.requestId ||
-    (typeof offer.meta?.requestId === "string" ? offer.meta.requestId : null)
-  );
+export async function withdrawAllwainProposalPg(input: {
+  userId: string; offerId: string; expectedUpdatedAt?: unknown;
+}): Promise<Offer> {
+  const prisma = getPrisma() as any;
+  return prisma.$transaction(async (tx: any) => {
+    const preview = await tx.offer.findFirst({ where: { id: input.offerId, owner: "allwain", ownerUserId: input.userId } });
+    if (!preview) throw new Error("OFFER_NOT_FOUND");
+    const initial = allwainProposalAggregate(preview);
+    if (!initial.requestId && !initial.shoppingListId) throw new Error("PROPOSAL_REQUIRED");
+    const request = initial.requestId ? await lockAllwainScanRequest(tx, initial.requestId) : null;
+    if (initial.shoppingListId) {
+      await tx.$executeRaw(Prisma.sql`SELECT pg_advisory_xact_lock(hashtext(${`shopping_list:${initial.shoppingListId}`}))`);
+    }
+    const list = initial.shoppingListId ? await lockAllwainShoppingList(tx, initial.shoppingListId) : null;
+    const offer = await lockAllwainOffer(tx, input.offerId);
+    if (!offer || offer.ownerUserId !== input.userId) throw new Error("OFFER_NOT_FOUND");
+    const aggregate = allwainProposalAggregate(offer);
+    if (aggregate.requestId !== initial.requestId || aggregate.shoppingListId !== initial.shoppingListId) throw new Error("OFFER_NOT_AVAILABLE");
+    if (offer.allwainStatus === "withdrawn") return offer;
+    assertAllwainOfferVersion(offer, input.expectedUpdatedAt);
+    const hasOrder = await tx.allwainOrder.findFirst({ where: { offerId: offer.id }, select: { id: true } });
+    const hasContract = await tx.contract.findFirst({ where: { app: "allwain", offerId: offer.id }, select: { id: true } });
+    if (offer.allwainStatus === "selected" || request?.selectedOfferId === offer.id || list?.selectedOfferId === offer.id || hasOrder || hasContract) {
+      throw new Error("PROPOSAL_LOCKED");
+    }
+    if (!["active", "paused", "not_selected"].includes(offer.allwainStatus || "active")) throw new Error("PROPOSAL_NOT_EDITABLE");
+    const now = new Date();
+    const updated = await tx.offer.update({ where: { id: offer.id }, data: {
+      allwainStatus: "withdrawn", meta: { ...(offer.meta || {}), withdrawnAt: now.toISOString(), status: "withdrawn" },
+    } });
+    await tx.allwainProposalRevision.updateMany({ where: { offerId: offer.id, status: "current" }, data: { status: "withdrawn" } });
+    await appendAllwainAuditEventTx(tx, {
+      aggregateType: aggregate.shoppingListId ? "shopping_list" : "market_request",
+      aggregateId: aggregate.shoppingListId || aggregate.requestId!, eventType: "proposal.withdrawn",
+      actorUserId: input.userId, actorRole: "seller", source: "allwain_proposal_withdrawal",
+      payload: { offerId: offer.id, proposalRevision: offer.proposalRevision || null, previousStatus: offer.allwainStatus || "active", nextStatus: "withdrawn", withdrawnAt: now.toISOString() },
+    });
+    return mapOfferRow(updated);
+  });
 }
 
 export async function acceptAllwainContractWithInventoryPg(
@@ -1353,6 +1539,8 @@ export async function acceptAllwainContractWithInventoryPg(
     const preview = await tx.contract.findUnique({ where: { id: contractId } });
     if (!preview || preview.app !== "allwain")
       throw new Error("CONTRACT_NOT_FOUND");
+    if (preview.requestId) await lockAllwainScanRequest(tx, preview.requestId);
+    const existingOrder = await lockAllwainOrderForContract(tx, contractId);
     const offer = preview.offerId
       ? await lockAllwainOffer(tx, preview.offerId)
       : null;
@@ -1371,6 +1559,7 @@ export async function acceptAllwainContractWithInventoryPg(
     ) {
       throw new Error("INVALID_CONTRACT_STATUS");
     }
+    if (existingOrder && ["canceled", "expired"].includes(existingOrder.paymentStatus)) throw new Error("INVALID_CONTRACT_STATUS");
 
     const now = new Date();
     const requesterAcceptedAt =
@@ -1452,6 +1641,8 @@ export async function rejectAllwainContractWithInventoryPg(
     const preview = await tx.contract.findUnique({ where: { id: contractId } });
     if (!preview || preview.app !== "allwain")
       throw new Error("CONTRACT_NOT_FOUND");
+    if (preview.requestId) await lockAllwainScanRequest(tx, preview.requestId);
+    const order = await lockAllwainOrderForContract(tx, contractId);
     const offer = preview.offerId
       ? await lockAllwainOffer(tx, preview.offerId)
       : null;
@@ -1463,9 +1654,14 @@ export async function rejectAllwainContractWithInventoryPg(
     ) {
       throw new Error("CONTRACT_NOT_FOUND");
     }
-    if (contract.status === "rejected") return contract;
+    if (contract.status === "rejected") {
+      await recoverAllwainRequestAfterUnpaidAttemptTx(tx, { contract, reason: "contract_rejected", actorUserId: userId, actorRole: contract.providerUserId === userId ? "seller" : "buyer" });
+      return contract;
+    }
     if (contract.status === "accepted")
       throw new Error("INVALID_CONTRACT_STATUS");
+    const payments = order ? await tx.allwainPayment.findMany({ where: { orderId: order.id } }) : [];
+    if (allwainAttemptHasFinancialRisk(contract, order ? [order] : [], payments)) throw new Error("INVALID_CONTRACT_STATUS");
 
     let inventoryStatus = contract.inventoryStatus;
     if (
@@ -1491,9 +1687,6 @@ export async function rejectAllwainContractWithInventoryPg(
           : contract.paymentStatus,
         updatedAt: new Date(),
       },
-    });
-    const order = await tx.allwainOrder.findUnique({
-      where: { contractId: contract.id },
     });
     if (
       order &&
@@ -1530,6 +1723,7 @@ export async function rejectAllwainContractWithInventoryPg(
         },
       });
     }
+    await recoverAllwainRequestAfterUnpaidAttemptTx(tx, { contract: updated, reason: "contract_rejected", actorUserId: userId, actorRole: contract.providerUserId === userId ? "seller" : "buyer" });
     return mapContractRow(updated);
   });
 }
@@ -1800,7 +1994,7 @@ export async function getAllwainProposalBySellerPg(
   return item ? mapOfferRow(item) : null;
 }
 
-export interface AllwainRequestPageInput {
+export interface AllwainRequestPageInput extends AllwainDiscoveryInput {
   limit: number;
   cursor?: string | null;
   userId?: string | null;
@@ -1812,18 +2006,31 @@ export interface AllwainRequestPageInput {
   productKind?: string | null;
   unit?: string | null;
   currency?: string | null;
+  sellerResponseUserId?: string | null;
 }
 
 export async function getAllwainScanRequestPagePg(
   input: AllwainRequestPageInput,
 ) {
+  validateDiscovery(input);
+  const pageCursor = discoveryCursor(input, "requests", input.userId || input.sellerResponseUserId || input.excludeUserId || "admin");
   const prisma = getPrisma();
+  const extra: any[] = [...discoveryWhere(input, { jsonField: "extracted" }), pageCursor.where()];
+  if (input.deliveryChannel) extra.push({ extracted: { path: ["deliveryChannel"], equals: input.deliveryChannel } });
+  if (input.minPrice != null || input.maxPrice != null) extra.push({ extracted: { path: ["targetPrice"], ...(input.minPrice != null ? { gte: input.minPrice } : {}), ...(input.maxPrice != null ? { lte: input.maxPrice } : {}) } });
+  if (input.radiusKm != null) extra.push({ id: { in: await allwainDiscoveryNearbyIdsPg("AllwainScanRequest", input) } });
+  if (input.responseStatus && input.sellerResponseUserId) {
+    const proposals = await prisma.offer.findMany({ where: { owner: "allwain", ownerUserId: input.sellerResponseUserId, requestId: { not: null } }, select: { requestId: true, allwainStatus: true, proposalExpiresAt: true, meta: true } });
+    const ids = proposals.filter((offer) => input.responseStatus === "none" || matchesResponse(offer, input.responseStatus)).map((offer) => offer.requestId!);
+    extra.push({ id: { [input.responseStatus === "none" ? "notIn" : "in"]: ids } });
+  }
   const rows = await prisma.allwainScanRequest.findMany({
     where: {
       ...(input.userId ? { userId: input.userId } : {}),
       ...(input.excludeUserId ? { NOT: { userId: input.excludeUserId } } : {}),
       ...(input.statuses?.length ? { status: { in: input.statuses } } : {}),
       ...(input.visibility ? { visibility: input.visibility } : {}),
+      AND: extra,
       ...(input.query
         ? {
             OR: [
@@ -1832,18 +2039,9 @@ export async function getAllwainScanRequestPagePg(
             ],
           }
         : {}),
-      ...(input.category
-        ? { category: { equals: input.category, mode: "insensitive" } }
-        : {}),
-      ...(input.productKind ? { productKind: input.productKind } : {}),
-      ...(input.unit
-        ? { unit: { equals: input.unit, mode: "insensitive" } }
-        : {}),
-      ...(input.currency ? { currency: input.currency.toUpperCase() } : {}),
     },
     orderBy: [{ createdAt: "desc" }, { id: "desc" }],
     take: input.limit + 1,
-    ...(input.cursor ? { cursor: { id: input.cursor }, skip: 1 } : {}),
   });
   const hasNextPage = rows.length > input.limit;
   const pageRows = hasNextPage ? rows.slice(0, input.limit) : rows;
@@ -1852,10 +2050,22 @@ export async function getAllwainScanRequestPagePg(
     pageInfo: {
       hasNextPage,
       nextCursor: hasNextPage
-        ? pageRows[pageRows.length - 1]?.id || null
+        ? pageCursor.encode(pageRows[pageRows.length - 1])
         : null,
     },
   };
+}
+
+/** Uses only the deliberately approximate public zone columns, never deliveryAddress. */
+export async function allwainDiscoveryNearbyIdsPg(model: "AllwainScanRequest" | "AllwainShoppingList", input: AllwainDiscoveryInput) {
+  validateDiscovery(input);
+  const table = model === "AllwainScanRequest" ? Prisma.sql`"AllwainScanRequest"` : Prisma.sql`"AllwainShoppingList"`;
+  const rows = await getPrisma().$queryRaw<Array<{ id: string }>>(Prisma.sql`
+    SELECT "id" FROM ${table}
+    WHERE "locationLatApprox" BETWEEN -90 AND 90 AND "locationLngApprox" BETWEEN -180 AND 180
+    AND 6371 * 2 * ASIN(SQRT(LEAST(1.0, POWER(SIN(RADIANS("locationLatApprox" - ${input.latitude!}) / 2), 2)
+       + COS(RADIANS(${input.latitude!})) * COS(RADIANS("locationLatApprox")) * POWER(SIN(RADIANS("locationLngApprox" - ${input.longitude!}) / 2), 2)))) <= ${input.radiusKm!}`);
+  return rows.map((row) => row.id);
 }
 
 export async function getAllwainProposalSummariesPg(
@@ -1876,7 +2086,7 @@ export async function getAllwainProposalSummariesPg(
       where: {
         owner: "allwain",
         requestId: { in: ids },
-        allwainStatus: { notIn: ["withdrawn"] },
+        allwainStatus: "active",
         OR: [
           { proposalExpiresAt: null },
           { proposalExpiresAt: { gt: new Date() } },
@@ -1915,6 +2125,17 @@ export async function addAllwainScanRequestPg(
   });
 
   return mapScanRequestPg(created);
+}
+
+export async function addAllwainScanRequestIfAbsentPg(item: AllwainScanRequest) {
+  const prisma = getPrisma() as any;
+  const inserted = await prisma.allwainScanRequest.createMany({
+    data: [scanRequestToPgData(item)],
+    skipDuplicates: true,
+  });
+  const request = await getAllwainScanRequestByIdPg(item.id);
+  if (!request) throw new Error("SCAN_REQUEST_NOT_FOUND");
+  return { request, created: inserted.count === 1 };
 }
 
 export async function updateAllwainScanRequestPg(

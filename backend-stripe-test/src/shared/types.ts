@@ -112,6 +112,7 @@ export interface AllwainParticipationSnapshot {
     available: boolean;
     radiusKm: 1 | 5 | 10 | 20 | 50;
     locationLabel?: string | null;
+    locationMode?: "coordinates" | "label" | "unset";
   };
 }
 
@@ -438,6 +439,7 @@ export interface AllwainScanRequest {
     summary: string;
     warnings: string[];
     rawData?: Record<string, unknown> | null;
+    recovery?: { contractId: string; orderId?: string | null; offerId: string; reason: string; reopenedAt: string; eligibleAlternativeIds: string[] };
   };
   createdAt: string;
   updatedAt: string;

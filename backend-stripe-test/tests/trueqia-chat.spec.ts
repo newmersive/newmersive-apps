@@ -2,11 +2,13 @@ import assert from "node:assert";
 import { after, before, describe, it } from "node:test";
 import { app } from "../src/server";
 import { TestClient } from "./helpers/test-client";
+import { createSyntheticAdmin } from "./helpers/synthetic-admin";
 
 const client = new TestClient(app);
 
 describe("TrueQIA chat routes", () => {
   let token: string;
+  let fixtureUserId: string;
   let requesterToken: string;
   let providerToken: string;
   let outsiderToken: string;
@@ -17,11 +19,9 @@ describe("TrueQIA chat routes", () => {
 
   before(async () => {
     await client.start();
-    const login = await client.post("/auth/login", {
-      email: "admin@newmersive.local",
-      password: "HighAssuranceTestOnly!2026",
-    });
-    token = login.body.token;
+    const login = await createSyntheticAdmin(client, "trueqia-chat-admin");
+    token = login.token;
+    fixtureUserId = login.user.id;
 
     const suffix = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
     const requester = await client.post("/auth/register", {
@@ -84,7 +84,7 @@ describe("TrueQIA chat routes", () => {
     assert.ok(Array.isArray(res.body.items));
     assert.ok(res.body.items.length >= 1);
     assert.equal(res.body.items[0].senderRole, "system");
-    assert.equal(res.body.items[0].userId, "1");
+    assert.equal(res.body.items[0].userId, fixtureUserId);
   });
 
   it("stores a user message in the current user's chat", async () => {
@@ -96,7 +96,7 @@ describe("TrueQIA chat routes", () => {
 
     assert.equal(created.status, 201);
     assert.equal(created.body.senderRole, "user");
-    assert.equal(created.body.senderId, "1");
+    assert.equal(created.body.senderId, fixtureUserId);
     assert.equal(created.body.text, "Necesito cerrar este trueque con contrato IA.");
 
     const list = await client.get("/trueqia/chat/messages", {
@@ -120,12 +120,14 @@ describe("TrueQIA chat routes", () => {
 
   it("creates a persisted chat thread for a trade participant", async () => {
     const trades = await client.get("/trueqia/trades", {
-      Authorization: `Bearer ${token}`,
+      Authorization: `Bearer ${requesterToken}`,
     });
-    const trade = trades.body.items[0];
+    assert.equal(trades.status, 200);
+    const trade = trades.body.items.find((row: any) => row.id === chatTradeId);
+    assert.ok(trade, "The explicitly created participant trade is visible");
 
     const thread = await client.get(`/trueqia/trades/${trade.id}/chat/messages`, {
-      Authorization: `Bearer ${token}`,
+      Authorization: `Bearer ${requesterToken}`,
     });
 
     assert.equal(thread.status, 200);
@@ -136,7 +138,7 @@ describe("TrueQIA chat routes", () => {
     const created = await client.post(
       `/trueqia/trades/${trade.id}/chat/messages`,
       { text: "Confirmo condiciones para este trueque." },
-      { Authorization: `Bearer ${token}` }
+      { Authorization: `Bearer ${requesterToken}` }
     );
 
     assert.equal(created.status, 201);
@@ -145,7 +147,7 @@ describe("TrueQIA chat routes", () => {
     assert.equal(created.body.text, "Confirmo condiciones para este trueque.");
 
     const list = await client.get(`/trueqia/trades/${trade.id}/chat/messages`, {
-      Authorization: `Bearer ${token}`,
+      Authorization: `Bearer ${requesterToken}`,
     });
 
     assert.equal(list.status, 200);
@@ -181,6 +183,18 @@ describe("TrueQIA chat routes", () => {
   });
 
   it("tracks unread messages and marks a conversation as read", async () => {
+    // The preceding participant scenario now uses a real synthetic trade rather
+    // than a global demo. Establish the unread precondition through the normal API.
+    const initialRead = await client.post(
+      `/chat/trueqia/conversations/${encodeURIComponent(conversationId)}/read`, {},
+      { Authorization: `Bearer ${providerToken}` },
+    );
+    assert.equal(initialRead.status, 200);
+    const initialConversations = await client.get("/chat/trueqia/conversations", {
+      Authorization: `Bearer ${providerToken}`,
+    });
+    assert.equal(initialConversations.status, 200);
+    assert.equal(initialConversations.body.items.find((item: any) => item.id === conversationId).unreadCount, 0);
     const sent = await client.post(
       `/chat/trueqia/conversations/${encodeURIComponent(conversationId)}/messages`,
       { text: "¿Te parece bien cerrar el intercambio el viernes?" },

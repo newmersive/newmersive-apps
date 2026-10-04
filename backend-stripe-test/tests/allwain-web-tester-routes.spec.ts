@@ -257,6 +257,9 @@ const fakePrisma: any = {
   passwordResetToken: emptyDeleteModel,
   allwainScanRequest: emptyUpdateModel,
   allwainSellerPaymentAccount: emptyUpdateModel,
+  // This fixture owns no publications; the deletion transaction now locks
+  // current owned rows before its open-operation checks.
+  $queryRaw: async () => [],
   $executeRaw: async () => 1,
   $transaction: async (operation: any) => {
     if (typeof operation === "function") {

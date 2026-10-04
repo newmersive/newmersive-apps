@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Modal,
@@ -46,6 +46,11 @@ import {
 } from "../../components/design-system";
 import type { MainTabParamList } from "../../navigation/types";
 import { trackAnalyticsEvent } from "../../analytics";
+import { captureAuthSession } from "../../store/authSessionBridge";
+import { useAppTranslation } from "../../i18n/useAppTranslation";
+import { connectorDiscoveryCopy } from "../../i18n/connectorDiscoveryCopy";
+import { discoveryPageUrl, discoveryQueryKey, useDiscoveryQuery } from "../../utils/discoveryFilters";
+import { createDiscoveryReadGuard, discoveryPageCursor, mergeDiscoveryPage, type DiscoveryPageInfo } from "../../utils/marketDiscovery";
 
 function money(amount: number, currency: string) {
   return formatMinorCurrency(amount, currency || "EUR");
@@ -88,6 +93,30 @@ export default function ConnectorOperationsScreen() {
   const isFocused = useIsFocused();
   const [cameraPermission, requestCameraPermission] = useCameraPermissions();
   const connector = useAuthStore((state) => state.user?.participation?.connector);
+  const userId = useAuthStore((state) => state.user?.id);
+  const appMode = useAuthStore((state) => state.appMode);
+  const { locale } = useAppTranslation();
+  const copy = connectorDiscoveryCopy[locale] || connectorDiscoveryCopy.es;
+  const { query, setQuery, ready } = useDiscoveryQuery(userId || "", "connector-logistics");
+  const selection = query.status === "mine" || query.status === "available" ? query.status : "all";
+  const actor = captureAuthSession();
+  const session = useMemo(() => actor, [actor.owner, actor.generation]);
+  const actorScope = `${userId}:${appMode}:${session.generation}`;
+  const appliedKey = `${discoveryQueryKey({ status: selection })}:${connector?.locationLabel}:${connector?.locationMode}:${connector?.radiusKm}:${connector?.available}`;
+  const guard = useRef(createDiscoveryReadGuard(actorScope)).current;
+  guard.apply(actorScope, appliedKey);
+  const mounted = useRef(true);
+  const flights = useRef(new Set<string>());
+  const writePending = useRef(false);
+  const failedCursor = useRef<string | null>(null);
+  const [verifiedKey, setVerifiedKey] = useState("");
+  const [page, setPage] = useState<DiscoveryPageInfo>({});
+  const [moreBusy, setMoreBusy] = useState(false);
+  const [focusedDelivery, setFocusedDelivery] = useState<AllwainDeliveryOpportunity | null>(null);
+  const [focusedError, setFocusedError] = useState<string | null>(null);
+  const [focusedLoading, setFocusedLoading] = useState(false);
+  const selectedDeliveryId = route.params?.deliveryId;
+  const selectedRef = useRef(selectedDeliveryId); selectedRef.current = selectedDeliveryId;
   const [snapshot, setSnapshot] = useState<AllwainConnectorLogistics | null>(null);
   const [loading, setLoading] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -99,24 +128,60 @@ export default function ConnectorOperationsScreen() {
   const [demoItem, setDemoItem] = useState<AllwainDeliveryOpportunity | null>(null);
   const [demoStage, setDemoStage] = useState<DemoStage>("open");
 
-  const load = useCallback(async () => {
-    if (!connector?.enabled) return;
-    setLoading(true);
+  const actorCurrent = useCallback(() => mounted.current && session.isCurrent() && useAuthStore.getState().user?.id === userId && useAuthStore.getState().appMode === appMode, [session, userId, appMode]);
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; guard.invalidate(); }; }, [guard]);
+  useLayoutEffect(() => {
+    guard.invalidate(); flights.current.clear(); failedCursor.current = null; writePending.current = false;
+    setSnapshot(null); setPage({}); setVerifiedKey(""); setError(null); setLoading(false); setMoreBusy(false); setBusyId(null);
+    setFocusedDelivery(null); setFocusedError(null); setFocusedLoading(false);
+    setVerificationItem(null); setVerificationError(null); setManualProof(""); setScanLocked(false); setDemoItem(null);
+  }, [actorScope, appliedKey, session, guard]);
+
+  const load = useCallback(async (cursor?: string | null, afterMutation = false) => {
+    if (!connector?.enabled || !ready || !actorCurrent() || (writePending.current && !afterMutation)) return;
+    const flight = `${actorScope}:${appliedKey}`;
+    if (flights.current.has(flight)) return;
+    flights.current.add(flight);
+    const ticket = guard.start("list"), current = () => actorCurrent() && guard.isCurrent(ticket);
+    if (cursor) setMoreBusy(true); else setLoading(true);
     setError(null);
     try {
-      setSnapshot(
-        await apiAuthGet<AllwainConnectorLogistics>("/allwain/participation/connector/logistics"),
-      );
+      const result = await apiAuthGet<AllwainConnectorLogistics>(discoveryPageUrl("/allwain/participation/connector/logistics", {}, { fixed: { scope: selection }, limit: 30, cursor: cursor || undefined, allowed: [] }));
+      if (!current()) return;
+      if (!Array.isArray(result.items)) throw new Error(copy.loadError);
+      setSnapshot(previous => ({ ...result, items: cursor ? mergeDiscoveryPage(previous?.items || [], result.items) : result.items }));
+      setPage({ ...result.pageInfo, queryKey: appliedKey }); setVerifiedKey(appliedKey); failedCursor.current = null;
     } catch (loadError: any) {
-      setError(loadError?.message || "No pudimos cargar las entregas.");
+      if (current()) { failedCursor.current = cursor || null; setError(loadError?.message || copy.loadError); }
     } finally {
-      setLoading(false);
+      if (current()) { flights.current.delete(flight); setLoading(false); setMoreBusy(false); }
     }
-  }, [connector?.enabled]);
+  }, [connector?.enabled, ready, actorCurrent, actorScope, appliedKey, guard, selection, copy.loadError]);
 
-  useFocusEffect(useCallback(() => { void load(); }, [load]));
+  const loadFocused = useCallback(async () => {
+    if (!selectedDeliveryId || !connector?.enabled || !actorCurrent()) return;
+    const ticket = guard.start("detail");
+    const current = () => actorCurrent() && guard.isCurrent(ticket) && selectedRef.current === selectedDeliveryId;
+    setFocusedLoading(true); setFocusedError(null); setFocusedDelivery(null);
+    try {
+      const item = await apiAuthGet<AllwainDeliveryOpportunity>(`/allwain/participation/connector/logistics/${encodeURIComponent(selectedDeliveryId)}`);
+      if (!current()) return;
+      if (item.id !== selectedDeliveryId) throw new Error(copy.exactError);
+      setFocusedDelivery(item);
+    } catch (detailError: any) { if (current()) setFocusedError(copy.exactError); }
+    finally { if (current()) setFocusedLoading(false); }
+  }, [selectedDeliveryId, connector?.enabled, actorCurrent, guard, appliedKey, copy.exactError]);
+  useFocusEffect(useCallback(() => { if (verifiedKey !== appliedKey) void load(); }, [load, verifiedKey, appliedKey]));
+  useEffect(() => { if (isFocused) void loadFocused(); }, [loadFocused, isFocused]);
+  useEffect(() => { if (!isFocused) { setVerificationItem(null); setManualProof(""); setScanLocked(false); } }, [isFocused]);
+
+  function navigateCurrent(name: string, params: any) { if (actorCurrent()) navigation.navigate(name, params); }
 
   async function accept(item: AllwainDeliveryOpportunity) {
+    if (writePending.current || !actorCurrent()) return;
+    writePending.current = true;
+    guard.start("list"); guard.start("detail"); flights.current.clear(); setLoading(false); setMoreBusy(false);
+    const ticket = guard.start("mutation"), current = () => actorCurrent() && guard.isCurrent(ticket);
     setBusyId(item.id);
     setError(null);
     try {
@@ -124,25 +189,28 @@ export default function ConnectorOperationsScreen() {
         `/allwain/participation/connector/logistics/${item.id}/accept`,
         {},
       );
+      if (!current()) return;
       if (updated.id !== item.id || updated.status !== "accepted" || !updated.mine) {
         throw new Error("El servidor no confirmó la entrega aceptada.");
       }
       void trackAnalyticsEvent("delivery_accepted", {
         delivery_kind: "local_connector",
       });
-      await load();
+      await load(null, true);
+      if (current()) await loadFocused();
     } catch (acceptError: any) {
-      setError(
+      if (current()) setError(
         acceptError?.message === "CONNECTOR_PAYOUTS_NOT_READY"
           ? "Activa tus cobros antes de aceptar una entrega."
           : acceptError?.message || "No pudimos aceptar esta entrega.",
       );
     } finally {
-      setBusyId(null);
+      if (current()) { writePending.current = false; setBusyId(null); }
     }
   }
 
   async function openVerification(item: AllwainDeliveryOpportunity) {
+    if (!actorCurrent() || writePending.current) return;
     setVerificationItem(item);
     setManualProof("");
     setVerificationError(null);
@@ -162,7 +230,10 @@ export default function ConnectorOperationsScreen() {
 
   async function verifyCheckpoint(item: AllwainDeliveryOpportunity, proof: string) {
     const cleanProof = proof.trim();
-    if (!cleanProof || scanLocked) return;
+    if (!cleanProof || scanLocked || writePending.current || !actorCurrent()) return;
+    writePending.current = true;
+    guard.start("list"); guard.start("detail"); flights.current.clear(); setLoading(false); setMoreBusy(false);
+    const ticket = guard.start("mutation"), current = () => actorCurrent() && guard.isCurrent(ticket);
     setBusyId(item.id);
     setVerificationError(null);
     setScanLocked(true);
@@ -171,18 +242,19 @@ export default function ConnectorOperationsScreen() {
         `/allwain/participation/connector/logistics/${item.id}/verify`,
         { proof: cleanProof },
       );
+      if (!current()) return;
       const expectedStatus = item.status === "accepted" ? "picked_up" : "delivered";
-      if (updated.id !== item.id || updated.status !== expectedStatus) {
+      if (updated.id !== item.id || updated.status !== expectedStatus || !updated.mine) {
         throw new Error("El servidor no confirmó la verificación.");
       }
       setVerificationItem(null);
       setManualProof("");
-      await load();
+      await load(null, true);
+      if (current()) await loadFocused();
     } catch (actionError: any) {
-      setVerificationError(actionError?.message || "No pudimos verificar la entrega.");
-      setScanLocked(false);
+      if (current()) { setVerificationError(actionError?.message || "No pudimos verificar la entrega."); setScanLocked(false); }
     } finally {
-      setBusyId(null);
+      if (current()) { writePending.current = false; setBusyId(null); }
     }
   }
 
@@ -227,54 +299,22 @@ export default function ConnectorOperationsScreen() {
     );
   }
 
-  const selectedDeliveryId = route.params?.deliveryId;
-  const items = [...(snapshot?.items || [])].sort((a, b) => {
+  const verified = verifiedKey === appliedKey;
+  const items = [...(verified ? snapshot?.items || [] : [])].sort((a, b) => {
     if (a.id === selectedDeliveryId) return -1;
     if (b.id === selectedDeliveryId) return 1;
     return b.createdAt.localeCompare(a.createdAt);
   });
   const available = items.filter((item) => item.status === "open" && !item.mine);
   const mine = items.filter((item) => item.mine && item.status !== "delivered");
-  const demoItems = [...(snapshot?.demoItems || [])].sort((a, b) => {
+  const demoItems = [...(verified ? snapshot?.demoItems || [] : [])].sort((a, b) => {
     if (a.id === selectedDeliveryId) return -1;
     if (b.id === selectedDeliveryId) return 1;
     return a.createdAt.localeCompare(b.createdAt);
   });
   const demoCopy = demoStageCopy(demoStage);
 
-  return (
-    <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
-      <View style={styles.heading}>
-        <Text style={styles.eyebrow}>CERCA DE TI</Text>
-        <Text style={styles.title}>Entregas</Text>
-        <Text style={styles.subtitle}>Hasta {snapshot?.radiusKm || connector.radiusKm} km de tu zona.</Text>
-      </View>
-
-      <TodaySummary
-        title="Ahora"
-        items={[
-          { key: "available", value: String(available.length), label: "disponibles", icon: <MapPin size={19} color={colors.primary} /> },
-          { key: "mine", value: String(mine.length), label: "aceptadas", icon: <PackageCheck size={19} color={colors.brandDark} /> },
-        ]}
-      />
-
-      {loading ? <ActivityIndicator color={colors.primary} /> : null}
-      {error ? <Text style={styles.error}>{error}</Text> : null}
-
-      {!loading && !items.length ? (
-        <EmptyState
-          title="No hay entregas reales cerca ahora"
-          body="Puedes practicar el recorrido completo más abajo. Las demostraciones no generan pedidos ni cobros."
-          demo={{
-            title: "Pedido local de demostración",
-            meta: "Foios → Meliana · 4,2 km",
-            detail: "La tarjeta real mostrará recogida, destino aproximado, ganancia y siguiente acción.",
-            leading: <PackageCheck size={20} color={colors.primary} />,
-          }}
-        />
-      ) : null}
-
-      {items.map((item) => (
+  const renderDelivery = (item: AllwainDeliveryOpportunity) => (
         <View
           key={item.id}
           style={[
@@ -299,7 +339,7 @@ export default function ConnectorOperationsScreen() {
             onContact={
               item.mine && item.orderId
                 ? () =>
-                    navigation.navigate("ChatThread", {
+                    navigateCurrent("ChatThread", {
                       orderId: item.orderId,
                       title: `${item.pickupZone} → ${item.deliveryZone}`,
                     })
@@ -315,7 +355,7 @@ export default function ConnectorOperationsScreen() {
                   accessibilityLabel={`Enviar mensaje privado a ${item.seller.name}`}
                   style={styles.privateContactButton}
                   onPress={() =>
-                    navigation.navigate("ChatThread", {
+                    navigateCurrent("ChatThread", {
                       targetUserId: item.seller?.id,
                       targetName: item.seller?.name,
                       title: "Mensaje privado",
@@ -332,7 +372,7 @@ export default function ConnectorOperationsScreen() {
                   accessibilityLabel={`Enviar mensaje privado a ${item.buyer.name}`}
                   style={styles.privateContactButton}
                   onPress={() =>
-                    navigation.navigate("ChatThread", {
+                    navigateCurrent("ChatThread", {
                       targetUserId: item.buyer?.id,
                       targetName: item.buyer?.name,
                       title: "Mensaje privado",
@@ -397,7 +437,35 @@ export default function ConnectorOperationsScreen() {
             />
           ) : null}
         </View>
-      ))}
+      );
+
+  return (
+    <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
+      <View style={styles.heading}>
+        <Text style={styles.eyebrow}>CERCA DE TI</Text>
+        <Text style={styles.title}>Entregas</Text>
+        <Text style={styles.subtitle}>{connector.locationMode === "coordinates" ? `Hasta ${snapshot?.radiusKm || connector.radiusKm} km de tu zona.` : copy.labelHint}</Text>
+      </View>
+      <View style={styles.privateContactRow}>
+        {(["all", "mine", "available"] as const).map(value => <TouchableOpacity key={value} style={[styles.privateContactButton, selection === value && styles.selectedDelivery]} accessibilityRole="button" accessibilityState={{ selected: selection === value, disabled: busyId !== null }} disabled={busyId !== null} onPress={() => setQuery({ ...query, status: value })}><Text style={styles.privateContactText}>{copy[value]}</Text></TouchableOpacity>)}
+      </View>
+      {verified ? <TodaySummary title={copy.loaded} items={[
+        { key: "available", value: String(available.length), label: copy.available, icon: <MapPin size={19} color={colors.primary} /> },
+        { key: "mine", value: String(mine.length), label: copy.mine, icon: <PackageCheck size={19} color={colors.brandDark} /> },
+      ]} /> : null}
+      {loading || !ready ? <ActivityIndicator color={colors.primary} /> : null}
+      {error ? <View><Text style={styles.error}>{error}</Text><BigActionButton label={copy.retry} disabled={loading || moreBusy} onPress={() => void load(failedCursor.current)} /></View> : null}
+      {selectedDeliveryId ? <View style={styles.deliveryBlock}>
+        <Text style={styles.eyebrow}>{copy.focused}</Text>
+        {focusedLoading ? <ActivityIndicator color={colors.primary} /> : null}
+        {focusedError ? <><Text style={styles.error}>{focusedError}</Text><BigActionButton label={copy.retry} onPress={() => void loadFocused()} /></> : null}
+        {focusedDelivery && !items.some(item => item.id === focusedDelivery.id) ? renderDelivery(focusedDelivery) : null}
+        <BigActionButton label={copy.closeFocused} onPress={() => { setFocusedDelivery(null); setFocusedError(null); navigation.setParams({ deliveryId: undefined }); }} />
+      </View> : null}
+      {verified && !loading && !error && !items.length ? <EmptyState title={copy.verifiedEmpty} body={copy.emptyHelp} /> : null}
+      {items.map(renderDelivery)}
+      {discoveryPageCursor(page, appliedKey) ? <BigActionButton label={copy.more} busy={moreBusy} disabled={loading || moreBusy || busyId !== null || Boolean(error)} onPress={() => void load(discoveryPageCursor(page, appliedKey))} /> : null}
+      {verified ? <BigActionButton label={copy.refresh} disabled={loading || moreBusy || busyId !== null} onPress={() => void load()} /> : null}
 
       {demoItems.length ? (
         <View style={styles.demoSection}>

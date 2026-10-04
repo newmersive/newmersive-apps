@@ -12,13 +12,17 @@ export async function applyAnalyticsConsentDecision(
     configure: (granted: boolean) => Promise<void>;
     store: (state: ConsentState) => Promise<void>;
     sync?: () => Promise<void>;
+    current?: () => boolean;
   },
 ) {
   try {
     // Stop collection immediately; a failed write must never enable tracking.
     await effects.configure(false);
+    if (effects.current && !effects.current()) throw new Error("ANALYTICS_CONSENT_SUPERSEDED");
     await effects.store(granted ? "granted" : "denied");
+    if (effects.current && !effects.current()) throw new Error("ANALYTICS_CONSENT_SUPERSEDED");
     await effects.sync?.();
+    if (effects.current && !effects.current()) throw new Error("ANALYTICS_CONSENT_SUPERSEDED");
     if (granted) await effects.configure(true);
   } catch (error) {
     await effects.configure(false).catch(() => {});

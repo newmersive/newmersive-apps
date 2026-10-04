@@ -6,7 +6,9 @@ import { TestClient } from "./helpers/test-client";
 import * as payments from "../src/services/allwain-payments.service";
 
 it("connector accepts once, verifies pickup and delivery with private proofs and persists notifications", async () => {
-  assert.match(new URL(process.env.DATABASE_URL!).pathname, /^\/newmersive_e2e_/);
+  const fixtureUrl = new URL(process.env.DATABASE_URL!);
+  assert.ok(["localhost", "127.0.0.1", "[::1]"].includes(fixtureUrl.hostname));
+  assert.match(fixtureUrl.pathname, /^\/(?:newmersive_e2e_|allwain_audit6_e2e_)/);
   const client = new TestClient(app);
   const prisma = getPrisma();
   // This journey starts from a simulated paid order. No provider payout is made.
@@ -29,8 +31,8 @@ it("connector accepts once, verifies pickup and delivery with private proofs and
     }
     const offer = await client.post("/allwain/offers", { title: "Naranjas prueba conector", description: "Solo prueba local", price: 1, meta: { currency: "EUR", unit: "kg", stockQuantity: 50, availableQuantity: 50, minQuantity: 5, quantityStep: 1, saleMode: "immediate", locationLabel: "Foios", deliveryEstimate: "Recogida" } }, seller.headers);
     assert.equal(offer.status, 201);
-    const contract = await client.post(`/allwain/offers/${offer.body.id}/accept`, { quantity: 10, deliveryMethod: "pickup", deliveryChannel: "pickup", purchaseKey: "connector-local" }, buyer.headers);
-    assert.equal(contract.status, 201);
+    const contract = await client.post(`/allwain/offers/${offer.body.id}/accept`, { quantity: 10, deliveryMethod: "pickup", deliveryChannel: "pickup", purchaseKey: `connector-local-${buyer.id}` }, buyer.headers);
+    assert.equal(contract.status, 201, JSON.stringify(contract.body));
     const order = await prisma.allwainOrder.findFirstOrThrow({ where: { contractId: contract.body.id } });
     await prisma.allwainOrder.update({ where: { id: order.id }, data: { paymentStatus: "paid", status: "confirmed", fulfillmentStatus: "ready", deliveryMethod: "shipping", deliveryChannel: "local_connector", deliveryAddress: { formatted: "Calle prueba 2, Foios", locationLatApprox: 39.533, locationLngApprox: -0.357 } } });
     const listing = await client.get("/allwain/participation/connector/logistics", connector.headers);

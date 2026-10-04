@@ -388,6 +388,20 @@ export function ensureAllwainRequestImageMeta(
   } as AllwainCardImageMeta;
 }
 
+/** Original request media is private OCR input, without consent to publish it. */
+export function publicRequestCardImageMeta(
+  _imageMeta: Record<string, unknown> | null | undefined,
+  extracted: AllwainScanExtractedFields,
+  title?: string | null,
+): AllwainCardImageMeta {
+  return allwainIllustrativeCardImageMeta({
+    title: extracted.productName || title,
+    category: extracted.category,
+    subcategory: extracted.subcategory,
+    productKind: extracted.productKind,
+  });
+}
+
 export async function storeAllwainCapturedCardImage(
   requestId: string,
   image: ValidatedImageDataUrl,

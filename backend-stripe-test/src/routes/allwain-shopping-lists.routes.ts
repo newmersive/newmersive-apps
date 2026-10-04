@@ -1,4 +1,5 @@
 import { Router, type Request, type Response } from "express";
+import { readDiscoveryQuery, isDiscoveryError } from "../services/allwain-discovery";
 
 import { authRequired } from "../middleware/auth.middleware";
 import {
@@ -23,6 +24,7 @@ function userId(req: Request) {
 
 function sendShoppingListError(error: unknown, res: Response) {
   if (!(error instanceof Error)) return false;
+  if (isDiscoveryError(error)) { res.status(400).json({ error: error.message }); return true; }
   if (error.message === "SHOPPING_LIST_NOT_FOUND") {
     res.status(404).json({ error: error.message });
     return true;
@@ -120,8 +122,9 @@ router.get("/mine", authRequired, async (req: Request, res: Response) => {
       await listMyAllwainShoppingLists(id, {
         limit: req.query.limit,
         cursor: req.query.cursor,
-        query: req.query.q,
+        query: typeof req.query.q === "string" ? req.query.q : null,
         status: req.query.status,
+        ...readDiscoveryQuery(req.query),
       }),
     );
   } catch (error) {
@@ -139,7 +142,8 @@ router.get("/market", authRequired, async (req: Request, res: Response) => {
       await listAllwainShoppingListMarket(id, {
         limit: req.query.limit,
         cursor: req.query.cursor,
-        query: req.query.q,
+        query: typeof req.query.q === "string" ? req.query.q : null,
+        ...readDiscoveryQuery(req.query),
       }),
     );
   } catch (error) {

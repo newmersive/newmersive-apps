@@ -1,4 +1,7 @@
-import { randomUUID } from "crypto";
+import { createHash, randomUUID } from "crypto";
+import { allwainAttemptHasFinancialRisk, allwainSelectionClosureMeta, planAllwainRequestRecovery } from "./allwain-request-recovery";
+import { discoveryPage, matchesDiscovery, matchesResponse, validateDiscovery, allwainAgreementStatusFilters, type AllwainDiscoveryInput } from "./allwain-discovery";
+import { buyerRequestPendingSummary, normalizeRequestProposalPage, requestProposalPage, requestProposalSummary, type RequestProposalPageInput } from "./allwain-request-work";
 import {
   Offer,
   Product,
@@ -73,12 +76,17 @@ import {
   getAllwainOfferPagePg,
   getAllwainOfferProviderSummariesPg,
   getAllwainSellerIdsMatchingPg,
+  getAllwainCatalogCommittedOfferIdsPg,
   type AllwainOfferPageInput,
   getAllwainOffersForRequestPg,
+  getAllwainBuyerRequestPendingSummaryPg,
+  getAllwainRequestProposalSummaryPg,
+  getAllwainRequestProposalPagePg,
   addAllwainOfferPg,
   createAllwainAgreementWithStockPg,
   updateAllwainOfferInventoryPg,
   updateAllwainOfferDetailsPg,
+  withdrawAllwainProposalPg,
   acceptAllwainContractWithInventoryPg,
   rejectAllwainContractWithInventoryPg,
   getOrderGroupsPg,
@@ -88,6 +96,7 @@ import {
   addReferralStatPg,
   getReferralStatsByUserPg,
   addAllwainScanRequestPg,
+  addAllwainScanRequestIfAbsentPg,
   getAllwainScanRequestsPg,
   getAllwainScanRequestByIdPg,
   updateAllwainScanRequestPg,
@@ -108,6 +117,7 @@ import {
   commitAllwainStock,
   normalizeAllwainInventoryMeta,
   readAllwainInventory,
+  isAllwainOfferArchived,
   releaseAllwainOfferStock,
   reserveAllwainStock,
   updateAllwainInventoryLimits,
@@ -146,6 +156,7 @@ import {
   ensureAllwainImageMeta,
   ensureAllwainOfferImage,
   ensureAllwainRequestImageMeta,
+  publicRequestCardImageMeta,
   refreshAllwainIllustrativeImageMeta,
   storeAllwainCapturedCardImage,
   type AllwainCardImageSource,
@@ -153,6 +164,13 @@ import {
 import { notifyAllwainUser } from "./allwain-notifications.service";
 import { createAllwainOcrShoppingListDraft } from "./allwain-evidence.service";
 import { normalizeAllwainPurchaseDetails } from "./allwain-purchase-details";
+import { isCatalogOffer, isPublicCatalogOffer } from "./allwain-publication-policy";
+import {
+  allwainCatalogEditPatch,
+  allwainProposalAggregate,
+  assertAllwainOfferVersion,
+  type AllwainOfferEditInput,
+} from "./allwain-offer-lifecycle";
 
 const ALLOWED_ROLES: UserRole[] = ["user", "buyer", "company", "admin"];
 const normalizeRole = (role: any): UserRole =>
@@ -212,6 +230,7 @@ async function enrichAllwainOffer(offer: Offer) {
   ]);
   return {
     ...offerWithImage,
+    updatedAt: offerWithImage.updatedAt || offerWithImage.createdAt,
     meta: {
       ...(offerWithImage.meta || {}),
       deliveryPricing: getAllwainDeliveryPricingConfig(),
@@ -1234,6 +1253,13 @@ async function matchAllwainRequest(
     allOffers = getOffersByOwner("allwain");
   }
   const category = normalizeMatchValue(extracted.category);
+  const owners = requestId ? null : new Map(
+    await Promise.all(
+      [...new Set(allOffers.map((offer) => offer.ownerUserId))].map(
+        async (ownerId) => [ownerId, await getAllwainUserById(ownerId)] as const,
+      ),
+    ),
+  );
   const matchedOffers = (allOffers as Offer[]).filter((offer) => {
     if (offer.ownerUserId === userId) return false;
     if (requestId) {
@@ -1250,6 +1276,7 @@ async function matchAllwainRequest(
         return false;
       }
     }
+    if (!isPublicCatalogOffer(offer, owners?.get(offer.ownerUserId) || null)) return false;
     if (product && offer.productId === product.id) return true;
     if (offer.productId) return false;
     return Boolean(
@@ -1355,9 +1382,19 @@ export async function scanDemoProduct(ean?: string) {
     return { product: null, offers: [] };
   }
 
-  const offers = (
+  const candidates = (
     usePostgres() ? await getAllwainOffersPg() : getOffersByOwner("allwain")
   ).filter((o) => o.productId === product.id);
+  const owners = new Map(
+    await Promise.all(
+      [...new Set(candidates.map((offer) => offer.ownerUserId))].map(
+        async (ownerId) => [ownerId, await getAllwainUserById(ownerId)] as const,
+      ),
+    ),
+  );
+  const offers = candidates.filter((offer) =>
+    isPublicCatalogOffer(offer, owners.get(offer.ownerUserId) || null),
+  );
 
   return { product, offers };
 }
@@ -1422,6 +1459,7 @@ export async function listAllwainScanRequestPage(
   userId: string,
   input: Omit<AllwainRequestPageInput, "userId" | "excludeUserId">,
 ) {
+  validateDiscovery(input);
   if (usePostgres()) {
     const page = await getAllwainScanRequestPagePg({
       ...input,
@@ -1433,48 +1471,68 @@ export async function listAllwainScanRequestPage(
   let items = (await listAllwainScanRequests(userId)).filter((item) => {
     if ((item.visibility || "public") !== "public") return false;
     if (input.statuses?.length && !input.statuses.includes(item.status)) return false;
-    if (input.category && String(item.extracted.category || "").toLowerCase() !== input.category.toLowerCase()) return false;
-    if (input.productKind && item.extracted.productKind !== input.productKind) return false;
-    if (input.unit && String(item.extracted.unit || "").toLowerCase() !== input.unit.toLowerCase()) return false;
-    if (input.currency && String(item.extracted.currency || "EUR").toUpperCase() !== input.currency.toUpperCase()) return false;
-    return !input.query || `${item.title} ${item.description}`.toLowerCase().includes(input.query.toLowerCase());
+    return matchesDiscovery(item, input, item.extracted.targetPrice);
   });
-  const start = input.cursor
-    ? Math.max(0, items.findIndex((item) => item.id === input.cursor) + 1)
-    : 0;
-  const slice = items.slice(start, start + input.limit + 1);
-  const hasNextPage = slice.length > input.limit;
-  const pageItems = hasNextPage ? slice.slice(0, input.limit) : slice;
-  return {
-    items: pageItems,
-    pageInfo: {
-      hasNextPage,
-      nextCursor: hasNextPage ? pageItems[pageItems.length - 1]?.id || null : null,
-    },
-  };
+  return discoveryPage(items, input, "requests", userId);
 }
 
 export async function getAllwainScanRequestForUser(
   userId: string,
   requestId: string,
+  options: { includeProposals?: boolean } = {},
 ) {
   const request = await findAllwainScanRequest(userId, requestId);
   if (!request) throw new Error("SCAN_REQUEST_NOT_FOUND");
   const requestWithImage = enrichAllwainRequestImage(request);
   if (
-    !["submitted", "awarded", "closed", "canceled"].includes(requestWithImage.status)
+    !["submitted", "awarded", "closed", "canceled", "archived"].includes(requestWithImage.status)
   ) {
-    return requestWithImage;
+    return { ...requestWithImage, offers: requestWithImage.offers.slice(0, 8) };
   }
-  const proposals = usePostgres()
-    ? await getAllwainOffersForRequestPg(requestWithImage.id)
-    : getOffersByOwner("allwain").filter(
-        (offer) => offerRequestId(offer) === requestWithImage.id,
-      );
-  return {
-    ...requestWithImage,
-    offers: await Promise.all((proposals as Offer[]).map(enrichAllwainOffer)),
-  };
+  const work = await loadRequestProposalWork(userId, requestWithImage, { limit: 20, sort: "newest", view: "all" }, options.includeProposals !== false);
+  // Older native clients locate the chosen proposal inside offers. Keep it in
+  // their bounded compatibility page; modern clients use selectedOffer + pager.
+  const compatibleOffers = options.includeProposals !== false && work.selectedOffer && !work.items.some(offer => offer.id === work.selectedOffer?.id)
+    ? [...work.items.slice(0, 19), work.selectedOffer] : work.items;
+  return { ...requestWithImage, offers: compatibleOffers, proposalSummary: work.summary, selectedOffer: work.selectedOffer, proposalPageInfo: work.pageInfo };
+}
+
+async function enrichRequestProposalsBatch(offers: Offer[]) {
+  const ids = [...new Set(offers.map((offer) => offer.ownerUserId))];
+  const providers = usePostgres() ? await getAllwainOfferProviderSummariesPg(ids) : new Map((await Promise.all(ids.map(async (id) => [id, await getAllwainUserById(id)] as const))).map(([id, provider]) => [id, { id, name: provider?.name || "Proveedor", score: 0, reviewCount: 0, completedOrders: 0 }]));
+  return offers.map((offer) => {
+    const withImage = ensureAllwainOfferImage(offer);
+    return { ...withImage, updatedAt: withImage.updatedAt || withImage.createdAt, meta: { ...(withImage.meta || {}), deliveryPricing: getAllwainDeliveryPricingConfig() }, provider: providers.get(offer.ownerUserId) || { id: offer.ownerUserId, name: "Proveedor", score: 0, reviewCount: 0, completedOrders: 0 } };
+  });
+}
+
+async function loadRequestProposalWork(userId: string, request: AllwainScanRequest, rawInput: RequestProposalPageInput, includePage = true) {
+  const input = normalizeRequestProposalPage(rawInput);
+  if (usePostgres()) {
+    const [metadata, page] = await Promise.all([
+      getAllwainRequestProposalSummaryPg(request.id, request.selectedOfferId),
+      includePage ? getAllwainRequestProposalPagePg(userId, request.id, input) : Promise.resolve({ items: [] as Offer[], pageInfo: { hasNextPage: false, nextCursor: null } }),
+    ]);
+    const unique = [...new Map([...page.items, ...(metadata.selectedOffer ? [metadata.selectedOffer] : [])].map((offer) => [offer.id, offer])).values()];
+    const enriched = new Map((await enrichRequestProposalsBatch(unique)).map((offer) => [offer.id, offer]));
+    return { ...page, summary: metadata.summary, items: page.items.map((offer) => enriched.get(offer.id)!), selectedOffer: metadata.selectedOffer ? enriched.get(metadata.selectedOffer.id)! : null };
+  }
+  const offers = getOffersByOwner("allwain").filter((offer) => offerRequestId(offer) === request.id);
+  // JSON storage is for local/small deployments; no per-proposal database reads.
+  const selected = offers.find((offer) => offer.id === request.selectedOfferId) || null;
+  const page = includePage ? requestProposalPage(offers, userId, request.id, input) : { items: [], pageInfo: { hasNextPage: false, nextCursor: null } };
+  const enriched = new Map((await enrichRequestProposalsBatch([...new Map([...page.items, ...(selected ? [selected] : [])].map((offer) => [offer.id, offer])).values()])).map((offer) => [offer.id, offer]));
+  return { ...page, summary: requestProposalSummary(offers), items: page.items.map((offer) => enriched.get(offer.id)!), selectedOffer: selected ? enriched.get(selected.id)! : null };
+}
+
+export async function listAllwainRequestProposalPage(userId: string, requestId: string, input: RequestProposalPageInput) {
+  const request = await findAllwainScanRequest(userId, requestId);
+  if (!request) throw new Error("SCAN_REQUEST_NOT_FOUND");
+  return loadRequestProposalWork(userId, request, input);
+}
+
+export async function getAllwainBuyerRequestPendingSummary(userId: string, limit = 3) {
+  return usePostgres() ? getAllwainBuyerRequestPendingSummaryPg(userId, limit) : buyerRequestPendingSummary(getAllwainScanRequests(userId), getOffersByOwner("allwain"), limit);
 }
 
 export async function canReadAllwainRequestImage(
@@ -1485,14 +1543,10 @@ export async function canReadAllwainRequestImage(
     findAllwainScanRequestById(requestId),
     getAllwainUserById(userId),
   ]);
-  if (!request || !actor) return false;
-  if (normalizeRole(actor.role) === "admin" || request.userId === userId) {
-    return true;
-  }
-  return (
-    (request.visibility || "public") === "public" &&
-    ["submitted", "awarded", "closed"].includes(request.status)
-  );
+  // Publication shares the request's product fields, not its source photo.
+  // A capture can contain a receipt even when OCR failed to classify it.
+  return Boolean(request && actor && !actor.deletedAt &&
+    (!actor.status || actor.status === "active") && request.userId === userId);
 }
 
 export async function analyzeAllwainScanPreview(input: {
@@ -1533,6 +1587,7 @@ async function createAllwainScanRequestFromResult(
     sourceType: AllwainScanSourceType;
     validatedImage: ReturnType<typeof validateImageDataUrl> | null;
     scan: ScanResult;
+    creation?: { id: string; fingerprint: string } | null;
   },
 ): Promise<AllwainScanRequest> {
   const { sourceType, validatedImage, scan } = input;
@@ -1552,7 +1607,7 @@ async function createAllwainScanRequestFromResult(
       : scan.provider === "mock"
         ? "heuristic-v1"
         : "google-vision-text-detection";
-  const requestId = randomUUID();
+  const requestId = input.creation?.id || randomUUID();
   const imageMeta = validatedImage
     ? await storeAllwainCapturedCardImage(
         requestId,
@@ -1585,15 +1640,51 @@ async function createAllwainScanRequestFromResult(
       rawData: {
         ...scan.rawData,
         lifecycleVersion: 2,
+        ...(input.creation ? { creationFingerprint: input.creation.fingerprint } : {}),
       },
     },
     createdAt: now,
     updatedAt: now,
   };
 
-  return usePostgres()
-    ? addAllwainScanRequestPg(request)
-    : addAllwainScanRequest(request);
+  if (!usePostgres()) {
+    // JSON storage is synchronous: check and insert without an intervening await.
+    // The PostgreSQL path below uses the existing primary key as its final guard.
+    const existing = input.creation && getAllwainScanRequests().find(row => row.id === requestId);
+    return existing ? replayScanCreation(existing, userId, input.creation!.fingerprint) : addAllwainScanRequest(request);
+  }
+  if (!input.creation) return addAllwainScanRequestPg(request);
+  const inserted = await addAllwainScanRequestIfAbsentPg(request);
+  return inserted.created ? inserted.request : replayScanCreation(inserted.request, userId, input.creation.fingerprint);
+}
+
+function scanCreationIdentity(userId: string, input: {
+  creationKey?: string; sourceType?: AllwainScanSourceType; rawText?: string;
+  imageBase64?: string; barcode?: string;
+}, sourceType: AllwainScanSourceType) {
+  if (input.creationKey === undefined) return null;
+  if (typeof input.creationKey !== "string" ||
+      !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(input.creationKey) ||
+      sourceType !== "text" || input.imageBase64 || input.barcode || typeof input.rawText !== "string" || !input.rawText.trim()) {
+    throw new Error("INVALID_REQUEST_CREATION_KEY");
+  }
+  const bytes = createHash("sha256").update(JSON.stringify(["allwain-manual-request-v1", userId, input.creationKey.toLowerCase()])).digest().subarray(0, 16);
+  // Application-defined UUID v8. The actor and key are hashed, never exposed.
+  bytes[6] = (bytes[6] & 0x0f) | 0x80;
+  bytes[8] = (bytes[8] & 0x3f) | 0x80;
+  const hex = bytes.toString("hex");
+  return { id: `${hex.slice(0,8)}-${hex.slice(8,12)}-${hex.slice(12,16)}-${hex.slice(16,20)}-${hex.slice(20)}`,
+    fingerprint: createHash("sha256").update(JSON.stringify([sourceType, input.rawText.trim()])).digest("hex") };
+}
+
+function replayScanCreation(request: AllwainScanRequest, userId: string, fingerprint: string) {
+  if (request.userId !== userId || request.ai?.rawData?.creationFingerprint !== fingerprint) {
+    throw new Error("REQUEST_CREATION_CONFLICT");
+  }
+  // Internal telemetry hint, deliberately absent from the serialized DTO.
+  const replay = { ...request };
+  Object.defineProperty(replay, "creationReplayed", { value: true, enumerable: false });
+  return replay;
 }
 
 export async function createAllwainScanRequest(
@@ -1604,11 +1695,17 @@ export async function createAllwainScanRequest(
     imageBase64?: string;
     barcode?: string;
     provider?: ScanProvider;
+    creationKey?: string;
   },
 ): Promise<AllwainScanRequest> {
   const sourceType =
     input.sourceType ||
     (input.barcode ? "barcode" : input.imageBase64 ? "image" : "text");
+  const creation = scanCreationIdentity(userId, input, sourceType);
+  if (creation) {
+    const existing = await findAllwainScanRequestById(creation.id);
+    if (existing) return replayScanCreation(existing, userId, creation.fingerprint);
+  }
   const validatedImage = input.imageBase64
     ? validateImageDataUrl(input.imageBase64)
     : null;
@@ -1624,6 +1721,7 @@ export async function createAllwainScanRequest(
     sourceType,
     validatedImage,
     scan,
+    creation,
   });
 }
 
@@ -1726,6 +1824,7 @@ export async function updateAllwainScanRequest(
     if (["closed", "canceled"].includes(input.status)) {
       for (const proposal of getOffersByOwner("allwain")) {
         if (offerRequestId(proposal) !== requestId) continue;
+        if (!["active", "paused"].includes(proposal.allwainStatus || "active")) continue;
         updateOffer({ ...proposal, allwainStatus: "withdrawn" });
       }
     }
@@ -2056,7 +2155,7 @@ export async function listAllwainMarketRequests(userId: string) {
         title: request.title,
         description: request.description,
         status: request.status,
-        imageMeta: ensureAllwainRequestImageMeta(
+        imageMeta: publicRequestCardImageMeta(
           request.imageMeta as Record<string, unknown> | null,
           request.extracted,
           request.title,
@@ -2084,7 +2183,7 @@ export async function listAllwainMarketRequests(userId: string) {
           id: requester?.id || request.userId,
           name: requester?.name || "Comprador",
         },
-        offerCount: directOffers.length,
+        offerCount: directOffers.filter((offer) => (offer.allwainStatus || "active") === "active" && (!offer.proposalExpiresAt || Date.parse(offer.proposalExpiresAt) > Date.now())).length,
         myOffer: myOffer ? await enrichAllwainOffer(myOffer) : null,
         createdAt: request.createdAt,
         updatedAt: request.updatedAt,
@@ -2104,7 +2203,7 @@ function allwainMarketRequestView(
     title: request.title,
     description: request.description,
     status: request.status,
-    imageMeta: ensureAllwainRequestImageMeta(
+    imageMeta: publicRequestCardImageMeta(
       request.imageMeta as Record<string, unknown> | null,
       request.extracted,
       request.title,
@@ -2146,12 +2245,14 @@ export async function listAllwainMarketRequestPage(
     "userId" | "excludeUserId" | "statuses" | "visibility"
   >,
 ) {
+  validateDiscovery(input);
   if (usePostgres()) {
     const page = await getAllwainScanRequestPagePg({
       ...input,
       excludeUserId: userId,
       statuses: ["submitted"],
       visibility: "public",
+      sellerResponseUserId: userId,
     });
     const requestIds = page.items.map((item) => item.id);
     const [proposals, requesters] = await Promise.all([
@@ -2174,26 +2275,11 @@ export async function listAllwainMarketRequestPage(
   }
 
   const allItems = await listAllwainMarketRequests(userId);
+  const rawById = new Map(getAllwainScanRequests().map((item) => [item.id, item]));
   const filtered = allItems.filter((item) => {
-    if (input.category && String(item.extracted.category || "").toLowerCase() !== input.category.toLowerCase()) return false;
-    if (input.productKind && item.extracted.productKind !== input.productKind) return false;
-    if (input.unit && String(item.extracted.unit || "").toLowerCase() !== input.unit.toLowerCase()) return false;
-    if (input.currency && String(item.extracted.currency || "EUR").toUpperCase() !== input.currency.toUpperCase()) return false;
-    return !input.query || `${item.title} ${item.description}`.toLowerCase().includes(input.query.toLowerCase());
+    return matchesDiscovery(rawById.get(item.id) || item, input, item.extracted.targetPrice) && matchesResponse(item.myOffer, input.responseStatus);
   });
-  const start = input.cursor
-    ? Math.max(0, filtered.findIndex((item) => item.id === input.cursor) + 1)
-    : 0;
-  const slice = filtered.slice(start, start + input.limit + 1);
-  const hasNextPage = slice.length > input.limit;
-  const items = hasNextPage ? slice.slice(0, input.limit) : slice;
-  return {
-    items,
-    pageInfo: {
-      hasNextPage,
-      nextCursor: hasNextPage ? items[items.length - 1]?.id || null : null,
-    },
-  };
+  return discoveryPage(filtered, input, "requests", userId);
 }
 
 export async function getAllwainMarketRequestForSeller(
@@ -2279,6 +2365,7 @@ export async function createAllwainOfferForRequest(
         (offer) =>
           offer.ownerUserId === userId && offerRequestId(offer) === requestId,
       );
+  if (existing?.allwainStatus === "withdrawn") throw new Error("PROPOSAL_NOT_EDITABLE");
   if (
     existing?.price != null &&
     totalAmount > Math.round(Number(existing.price) * 100)
@@ -2293,7 +2380,7 @@ export async function createAllwainOfferForRequest(
     input.availableQuantity > 0
       ? input.availableQuantity
       : request.extracted.quantity || null;
-  const requestImageMeta = ensureAllwainRequestImageMeta(
+  const requestImageMeta = publicRequestCardImageMeta(
     request.imageMeta as Record<string, unknown> | null,
     request.extracted,
     request.title,
@@ -2399,7 +2486,10 @@ export async function createAllwainOfferForRequest(
         },
       });
     } else if (existing) {
-      saved = updateOffer({ ...existing, ...offer, id: existing.id }) as Offer;
+      const current = getOfferById(existing.id);
+      if (!current || current.allwainStatus === "withdrawn") throw new Error("PROPOSAL_NOT_EDITABLE");
+      if (current.allwainStatus === "selected") throw new Error("PROPOSAL_NOT_EDITABLE");
+      saved = updateOffer({ ...current, ...offer, id: existing.id, updatedAt: new Date().toISOString() }) as Offer;
     } else {
       saved = addOffer(offer);
     }
@@ -2437,19 +2527,22 @@ export async function listAllwainOffers(userId?: string) {
       if (featuredDifference) return featuredDifference;
       return String(b.createdAt || "").localeCompare(String(a.createdAt || ""));
     });
-  if (!userId) {
-    const enriched = await Promise.all(
-      (offers as Offer[]).map(enrichAllwainOffer),
-    );
-    return sortOffers(enriched);
-  }
-
+  const owners = new Map(
+    await Promise.all(
+      [...new Set((offers as Offer[]).map((offer) => offer.ownerUserId))].map(
+        async (ownerId) => [ownerId, await getAllwainUserById(ownerId)] as const,
+      ),
+    ),
+  );
   const visible = (offers as Offer[]).filter((offer) => {
-    if (offerRequestId(offer) || offerShoppingListId(offer)) return false;
+    if (isPublicCatalogOffer(offer, owners.get(offer.ownerUserId) || null)) {
+      return true;
+    }
     return (
-      !offer.allwainStatus ||
-      ["active", "sold_out"].includes(offer.allwainStatus) ||
-      (offer.allwainStatus === "paused" && offer.ownerUserId === userId)
+      userId === offer.ownerUserId &&
+      isCatalogOffer(offer) &&
+      !isAllwainOfferArchived(offer) &&
+      ["paused", "sold_out"].includes(offer.allwainStatus || "active")
     );
   });
   const enriched = await Promise.all(visible.map(enrichAllwainOffer));
@@ -2460,6 +2553,11 @@ export async function listAllwainOfferPage(
   userId: string,
   input: AllwainOfferPageInput,
 ) {
+  validateDiscovery(input, input.sort);
+  if (input.radiusKm != null) throw new Error("INVALID_DISCOVERY_LOCATION");
+  if (input.ownerUserId && input.ownerUserId !== userId) {
+    throw new Error("OFFER_NOT_FOUND");
+  }
   if (usePostgres()) {
     const page = await getAllwainOfferPagePg({
       ...input,
@@ -2470,14 +2568,17 @@ export async function listAllwainOfferPage(
     const providers = await getAllwainOfferProviderSummariesPg(
       page.items.map((offer) => offer.ownerUserId),
     );
+    const committedIds = input.ownerUserId ? await getAllwainCatalogCommittedOfferIdsPg(page.items.map((offer) => offer.id)) : new Set<string>();
     return {
       ...page,
       items: page.items.map((offer) => {
         const offerWithImage = ensureAllwainOfferImage(offer);
         return {
           ...offerWithImage,
+          updatedAt: offerWithImage.updatedAt || offerWithImage.createdAt,
           meta: {
             ...(offerWithImage.meta || {}),
+            ...(input.ownerUserId && isCatalogOffer(offerWithImage) ? { catalogTermsLocked: committedIds.has(offerWithImage.id) || readAllwainInventory(offerWithImage).reservedQuantity > 0 || readAllwainInventory(offerWithImage).soldQuantity > 0 } : {}),
             deliveryPricing: getAllwainDeliveryPricingConfig(),
           },
           provider: providers.get(offerWithImage.ownerUserId) || {
@@ -2493,32 +2594,34 @@ export async function listAllwainOfferPage(
   }
 
   const normalizedQuery = input.query?.trim().toLowerCase() || "";
-  let items = (await listAllwainOffers(userId)).filter((offer) => {
+  const sourceOffers = input.ownerUserId
+    ? getOffersByOwner("allwain").filter(
+        (offer) =>
+          offer.ownerUserId === userId &&
+          (input.type === "all" || (input.type === "proposal" ? !isCatalogOffer(offer) : isCatalogOffer(offer))) &&
+          (!input.view || (input.view === "history" ? input.type === "proposal" || input.type === "all" ? ["selected", "not_selected", "withdrawn", "closed"] : ["closed"] : ["active", "paused", "sold_out"]).includes(offer.allwainStatus || "active")) &&
+          (input.status
+            ? (offer.allwainStatus || "active") === input.status
+            : input.view === "history"
+            ? (input.type === "proposal" || input.type === "all" ? ["selected", "not_selected", "withdrawn", "closed"] : ["closed"]).includes(offer.allwainStatus || "active")
+            : !isAllwainOfferArchived(offer) &&
+              ["active", "paused", "sold_out", ...((input.type === "proposal" || input.type === "all") && !input.view ? ["selected", "not_selected"] : [])].includes(offer.allwainStatus || "active")),
+      )
+    : await listAllwainOffers();
+  let items = sourceOffers.filter((offer) => {
     if (input.ownerUserId && offer.ownerUserId !== input.ownerUserId) return false;
     if (input.excludeOwnerUserId && offer.ownerUserId === input.excludeOwnerUserId) return false;
-    if (input.category && String(offer.category || offer.meta?.category || "").toLowerCase() !== input.category.toLowerCase()) return false;
-    if (input.productKind && String(offer.productKind || offer.meta?.productKind || "") !== input.productKind) return false;
-    if (input.currency && String(offer.currency || offer.meta?.currency || "EUR").toUpperCase() !== input.currency.toUpperCase()) return false;
-    if (input.unit && String(offer.unit || offer.meta?.unit || "").toLowerCase() !== input.unit.toLowerCase()) return false;
     if (input.status && String(offer.allwainStatus || "active") !== input.status) return false;
-    if (typeof input.minPrice === "number" && Number(offer.price) < input.minPrice) return false;
-    if (typeof input.maxPrice === "number" && Number(offer.price) > input.maxPrice) return false;
-    return !normalizedQuery || `${offer.title} ${offer.description}`.toLowerCase().includes(normalizedQuery);
+    if ((input.sort === "price_asc" || input.sort === "price_desc") && offer.price == null) return false;
+    return matchesDiscovery(offer, input, offer.price);
   });
-  if (input.sort === "price_asc") items.sort((a, b) => Number(a.price) - Number(b.price));
-  if (input.sort === "price_desc") items.sort((a, b) => Number(b.price) - Number(a.price));
-  const cursorIndex = input.cursor
-    ? items.findIndex((item) => item.id === input.cursor) + 1
-    : 0;
-  const slice = items.slice(Math.max(0, cursorIndex), Math.max(0, cursorIndex) + input.limit + 1);
-  const hasNextPage = slice.length > input.limit;
-  const pageItems = hasNextPage ? slice.slice(0, input.limit) : slice;
+  const page = discoveryPage(items, input, "offers", input.ownerUserId || input.excludeOwnerUserId || "market");
+  const pageItems = page.items;
   return {
-    items: pageItems,
-    pageInfo: {
-      hasNextPage,
-      nextCursor: hasNextPage ? pageItems[pageItems.length - 1]?.id || null : null,
-    },
+    items: input.ownerUserId
+      ? await Promise.all(pageItems.map((offer) => enrichAllwainOffer({ ...offer, meta: { ...(offer.meta || {}), ...(isCatalogOffer(offer) ? { catalogTermsLocked: getContracts().some((contract) => contract.app === "allwain" && contract.offerId === offer.id) || readAllwainInventory(offer).reservedQuantity > 0 || readAllwainInventory(offer).soldQuantity > 0 } : {}) } })))
+      : pageItems,
+    pageInfo: page.pageInfo,
   };
 }
 
@@ -2714,7 +2817,7 @@ export async function updateAllwainOfferInventory(
   ) {
     throw new Error("OFFER_NOT_FOUND");
   }
-  if (offer.meta?.requestId) throw new Error("INVENTORY_NOT_EDITABLE");
+  if (!isCatalogOffer(offer)) throw new Error("INVENTORY_NOT_EDITABLE");
 
   const updated = usePostgres()
     ? await updateAllwainOfferInventoryPg({
@@ -2727,6 +2830,7 @@ export async function updateAllwainOfferInventory(
         const meta = updateAllwainInventoryLimits(offer, input);
         return updateOffer({
           ...offer,
+          updatedAt: new Date().toISOString(),
           meta,
           allwainStatus:
             offer.allwainStatus === "sold_out" &&
@@ -2742,29 +2846,25 @@ export async function updateAllwainOfferInventory(
 export async function updateAllwainOffer(
   userId: string,
   offerId: string,
-  input: {
-    title?: string;
-    description?: string;
-    price?: number;
-    status?: "active" | "paused" | "closed";
-  },
+  input: AllwainOfferEditInput,
 ) {
   const actor = await requireAllwainSeller(userId);
-  const offer = await getAllwainOfferById(offerId);
+  const preview = await getAllwainOfferById(offerId);
+  // JSON writes are synchronous. Read again after the await, then validate and
+  // save in the same turn so a queued edit cannot overwrite a newer close.
+  const offer = usePostgres() ? preview : getOfferById(offerId);
   if (
     !offer ||
+    offer.owner !== "allwain" ||
     (offer.ownerUserId !== userId && normalizeRole(actor.role) !== "admin")
   ) {
     throw new Error("OFFER_NOT_FOUND");
   }
-  if (offerRequestId(offer)) throw new Error("OFFER_EDIT_NOT_ALLOWED");
   if (
-    input.title === undefined &&
-    input.description === undefined &&
-    input.price === undefined &&
-    input.status === undefined
+    !isCatalogOffer(offer) ||
+    (isAllwainOfferArchived(offer) && offer.allwainStatus !== "closed")
   ) {
-    throw new Error("MISSING_OFFER_FIELDS");
+    throw new Error("OFFER_EDIT_NOT_ALLOWED");
   }
   const title = input.title === undefined ? undefined : input.title.trim();
   const description =
@@ -2778,6 +2878,7 @@ export async function updateAllwainOffer(
   ) {
     throw new Error("INVALID_OFFER_PRICE");
   }
+  const edit = !usePostgres() ? allwainCatalogEditPatch(offer, input, getContracts().some((contract) => contract.app === "allwain" && contract.offerId === offer.id)) : null;
   const currentStatus = offer.allwainStatus || "active";
   if (input.status) {
     const allowed: Record<string, string[]> = {
@@ -2797,22 +2898,29 @@ export async function updateAllwainOffer(
       throw new Error("INSUFFICIENT_STOCK");
     }
   }
+  if (
+    !usePostgres() && input.status === "closed" &&
+    currentStatus === "closed" && isAllwainOfferArchived(offer) &&
+    title === undefined && description === undefined && input.price === undefined && !edit?.metaChanged
+  ) {
+    return enrichAllwainOffer(offer);
+  }
   const refreshedImageMeta =
-    title !== undefined || description !== undefined
-      ? refreshAllwainIllustrativeImageMeta(offer.meta, {
+    !usePostgres() && (title !== undefined || description !== undefined || input.category !== undefined || input.subcategory !== undefined)
+      ? refreshAllwainIllustrativeImageMeta(edit?.meta, {
           title: title ?? offer.title,
           description: description ?? offer.description,
-          category: offer.category || offer.meta?.category,
-          subcategory: offer.subcategory || offer.meta?.subcategory,
+          category: edit?.columns.category ?? offer.category ?? offer.meta?.category,
+          subcategory: edit?.columns.subcategory ?? offer.subcategory ?? offer.meta?.subcategory,
           productKind: offer.productKind || offer.meta?.productKind,
         })
       : undefined;
   const patch = {
+    ...input,
     title,
     description,
     price: input.price,
     status: input.status,
-    meta: refreshedImageMeta,
   };
   const updated = usePostgres()
     ? await updateAllwainOfferDetailsPg({
@@ -2823,30 +2931,48 @@ export async function updateAllwainOffer(
       })
     : updateOffer({
         ...offer,
-        ...(title !== undefined ? { title } : {}),
-        ...(description !== undefined ? { description } : {}),
-        ...(input.price !== undefined ? { price: input.price } : {}),
-        ...(refreshedImageMeta ? { meta: refreshedImageMeta } : {}),
+        ...edit!.columns,
+        updatedAt: new Date().toISOString(),
+        ...(refreshedImageMeta || edit?.metaChanged ? { meta: refreshedImageMeta || edit!.meta } : {}),
         ...(input.status !== undefined
           ? {
               allwainStatus: input.status,
               meta:
                 input.status === "closed"
                   ? {
-                      ...(refreshedImageMeta || offer.meta || {}),
+                      ...(refreshedImageMeta || edit!.meta || {}),
                       archived: true,
                       status: "archived",
                       availableQuantity: 0,
-                      archivedAt: new Date().toISOString(),
+                      archivedAt: offer.meta?.archivedAt || new Date().toISOString(),
                     }
                   : {
-                      ...(refreshedImageMeta || offer.meta || {}),
+                      ...(refreshedImageMeta || edit!.meta || {}),
                       archived: false,
                       status: input.status,
                     },
             }
           : {}),
       });
+  if (!updated) throw new Error("OFFER_NOT_FOUND");
+  return enrichAllwainOffer({ ...updated, meta: { ...(updated.meta || {}), catalogTermsLocked: usePostgres() ? updated.meta?.catalogTermsLocked === true : getContracts().some((contract) => contract.app === "allwain" && contract.offerId === updated.id) || readAllwainInventory(updated).reservedQuantity > 0 || readAllwainInventory(updated).soldQuantity > 0 } });
+}
+
+export async function withdrawAllwainProposal(userId: string, offerId: string, input: { expectedUpdatedAt?: unknown } = {}) {
+  await requireAllwainSeller(userId);
+  if (usePostgres()) return enrichAllwainOffer(await withdrawAllwainProposalPg({ userId, offerId, ...input }));
+  const offer = getOfferById(offerId);
+  if (!offer || offer.owner !== "allwain" || offer.ownerUserId !== userId) throw new Error("OFFER_NOT_FOUND");
+  const aggregate = allwainProposalAggregate(offer);
+  if (!aggregate.requestId && !aggregate.shoppingListId) throw new Error("PROPOSAL_REQUIRED");
+  if (offer.allwainStatus === "withdrawn") return enrichAllwainOffer(offer);
+  assertAllwainOfferVersion(offer, input.expectedUpdatedAt);
+  if (offer.allwainStatus === "selected" || getContracts().some((contract) => contract.app === "allwain" && contract.offerId === offer.id)) {
+    throw new Error("PROPOSAL_LOCKED");
+  }
+  if (!["active", "paused", "not_selected"].includes(offer.allwainStatus || "active")) throw new Error("PROPOSAL_NOT_EDITABLE");
+  const now = new Date().toISOString();
+  const updated = updateOffer({ ...offer, allwainStatus: "withdrawn", updatedAt: now, meta: { ...(offer.meta || {}), status: "withdrawn", withdrawnAt: now } });
   if (!updated) throw new Error("OFFER_NOT_FOUND");
   return enrichAllwainOffer(updated);
 }
@@ -2884,6 +3010,9 @@ async function assertAllwainOfferVisibleToBuyer(userId: string, offer: Offer) {
 }
 
 function assertAllwainOfferIsActionable(offer: Offer) {
+  if (isAllwainOfferArchived(offer) || (offer.allwainStatus && !["active", "sold_out"].includes(offer.allwainStatus))) {
+    throw new Error("OFFER_NOT_AVAILABLE");
+  }
   if (allwainOfferCheckoutDisabled(offer)) {
     throw new Error("DEMO_OFFER_READ_ONLY");
   }
@@ -3004,6 +3133,7 @@ export async function createAllwainAgreement(
       userId,
       quantity,
       contract,
+      expectedUpdatedAt: offer.updatedAt ? new Date(offer.updatedAt).toISOString() : undefined,
     });
     return {
       ...created,
@@ -3024,10 +3154,15 @@ export async function createAllwainAgreement(
   ) {
     throw new Error("MARKET_REQUEST_NOT_OPEN");
   }
-  const reservation = reserveAllwainStock(offer, quantity);
+  const currentOffer = getOfferById(offer.id);
+  if (!currentOffer) throw new Error("OFFER_NOT_FOUND");
+  assertAllwainOfferIsActionable(currentOffer);
+  if ((currentOffer.updatedAt || currentOffer.createdAt) !== (offer.updatedAt || offer.createdAt)) throw new Error("OFFER_VERSION_CONFLICT");
+  const reservation = reserveAllwainStock(currentOffer, quantity);
   if (reservation.inventory.managed) {
     updateOffer({
-      ...offer,
+      ...currentOffer,
+      updatedAt: new Date().toISOString(),
       meta: reservation.meta,
       allwainStatus:
         offerRequestId(offer)
@@ -3047,10 +3182,12 @@ export async function createAllwainAgreement(
     });
     for (const proposal of getOffersByOwner("allwain")) {
       if (offerRequestId(proposal) !== requestId) continue;
+      if (proposal.id !== offer.id && !["active", "paused"].includes(proposal.allwainStatus || "active")) continue;
       updateOffer({
         ...proposal,
         allwainStatus:
           proposal.id === offer.id ? "selected" : "not_selected",
+        ...(proposal.id !== offer.id ? { meta: allwainSelectionClosureMeta(proposal, offer.id) } : {}),
       });
     }
   }
@@ -3075,14 +3212,19 @@ export async function listAllwainContractsForUser(userId: string) {
 
 export async function listAllwainContractPage(
   userId: string,
-  input: {
+  input: AllwainDiscoveryInput & {
     limit: number;
     cursor?: string | null;
     scope?: "buyer" | "seller" | null;
     statuses?: string[] | null;
     query?: string | null;
+    offerId?: string | null;
+    paymentStatuses?: string[] | null;
+    fulfillmentStatuses?: string[] | null;
   },
 ) {
+  validateDiscovery(input);
+  input = { ...input, contractStatuses: allwainAgreementStatusFilters(input.contractStatuses) };
   if (usePostgres()) {
     const page = await getAllwainContractPagePg(userId, input);
     return {
@@ -3091,32 +3233,25 @@ export async function listAllwainContractPage(
     };
   }
   const all = (await listAllwainContractsForUser(userId)).filter((contract) => {
+    if (input.offerId && contract.offerId !== input.offerId) return false;
     if (input.scope === "buyer" && contract.requesterUserId !== userId)
       return false;
     if (input.scope === "seller" && contract.providerUserId !== userId)
       return false;
     if (input.statuses?.length && !input.statuses.includes(contract.status))
       return false;
+    if (input.contractStatuses?.length && !input.contractStatuses.includes(contract.status)) return false;
+    if (input.paymentStatuses?.length && !input.paymentStatuses.includes(contract.paymentStatus || "not_started")) return false;
+    if (input.fulfillmentStatuses?.length) return false; // Orders exist only in PostgreSQL storage.
+    if (input.deliveryChannel && contract.deliveryChannel !== input.deliveryChannel) return false;
+    if (!matchesDiscovery({ ...contract, title: contract.offerTitle }, { dateFrom: input.dateFrom, dateTo: input.dateTo })) return false;
     if (input.query) {
-      const haystack = `${contract.offerTitle || ""} ${contract.requesterName || ""} ${contract.providerName || ""}`.toLowerCase();
+      const haystack = `${contract.id} ${contract.offerTitle || ""} ${contract.requesterName || ""} ${contract.providerName || ""}`.toLowerCase();
       if (!haystack.includes(input.query.toLowerCase())) return false;
     }
     return true;
   });
-  const cursorIndex = input.cursor
-    ? all.findIndex((contract) => contract.id === input.cursor)
-    : -1;
-  const start = cursorIndex >= 0 ? cursorIndex + 1 : 0;
-  const rows = all.slice(start, start + input.limit + 1);
-  const hasNextPage = rows.length > input.limit;
-  const items = hasNextPage ? rows.slice(0, input.limit) : rows;
-  return {
-    items,
-    pageInfo: {
-      hasNextPage,
-      nextCursor: hasNextPage ? items[items.length - 1]?.id || null : null,
-    },
-  };
+  return discoveryPage(all, input, "contracts", userId);
 }
 
 export async function getAllwainContractForUser(
@@ -3134,19 +3269,66 @@ export async function getAllwainContractForUser(
   return (await enrichAllwainContractsWithImages([contract]))[0];
 }
 
+async function hasAllwainOfferHistory(userId: string, offerId: string) {
+  if (!usePostgres()) {
+    return getContracts().some(
+      (contract) =>
+        contract.app === "allwain" &&
+        contract.offerId === offerId &&
+        isAllwainContractParticipant(contract, userId),
+    );
+  }
+  const prisma = getPrisma();
+  const [contract, order] = await Promise.all([
+    prisma.contract.findFirst({
+      where: {
+        app: "allwain",
+        offerId,
+        OR: [{ requesterUserId: userId }, { providerUserId: userId }],
+      },
+      select: { id: true },
+    }),
+    prisma.allwainOrder.findFirst({
+      where: {
+        offerId,
+        OR: [
+          { buyerUserId: userId },
+          { sellerUserId: userId },
+          { connectorUserId: userId },
+        ],
+      },
+      select: { id: true },
+    }),
+  ]);
+  return Boolean(contract || order);
+}
+
 export async function getAllwainOfferForUser(userId: string, offerId: string) {
   const offer = await getAllwainOfferById(offerId);
   if (!offer) throw new Error("OFFER_NOT_FOUND");
   const requestId = offerRequestId(offer);
   const shoppingListId = offerShoppingListId(offer);
   let shoppingListDefaults: Record<string, unknown> | null = null;
+  if (!requestId && !shoppingListId && offer.ownerUserId !== userId) {
+    const owner = await getAllwainUserById(offer.ownerUserId);
+    if (
+      !isPublicCatalogOffer(offer, owner || null) &&
+      !(await hasAllwainOfferHistory(userId, offer.id))
+    ) {
+      throw new Error("OFFER_NOT_FOUND");
+    }
+  }
   if (requestId && offer.ownerUserId !== userId) {
     const request = await findAllwainScanRequestById(requestId);
-    if (!request || request.userId !== userId) throw new Error("OFFER_NOT_FOUND");
+    if (
+      (!request || request.userId !== userId) &&
+      !(await hasAllwainOfferHistory(userId, offer.id))
+    ) {
+      throw new Error("OFFER_NOT_FOUND");
+    }
   }
   if (shoppingListId && offer.ownerUserId !== userId) {
-    if (!usePostgres()) throw new Error("OFFER_NOT_FOUND");
-    const list = await (getPrisma() as any).allwainShoppingList.findUnique({
+    const list = usePostgres() ? await (getPrisma() as any).allwainShoppingList.findUnique({
       where: { id: shoppingListId },
       select: {
         buyerUserId: true,
@@ -3155,25 +3337,40 @@ export async function getAllwainOfferForUser(userId: string, offerId: string) {
         preferredDeliveryChannel: true,
         deliveryAddress: true,
       },
-    });
-    if (!list || list.buyerUserId !== userId) throw new Error("OFFER_NOT_FOUND");
-    shoppingListDefaults = {
-      recurrence: list.recurrence,
-      deliveryWindow: list.deliveryWindow,
-      preferredDeliveryChannel: list.preferredDeliveryChannel,
-      deliveryAddress: list.deliveryAddress,
-    };
+    }) : null;
+    if (
+      (!list || list.buyerUserId !== userId) &&
+      !(await hasAllwainOfferHistory(userId, offer.id))
+    ) {
+      throw new Error("OFFER_NOT_FOUND");
+    }
+    if (list?.buyerUserId === userId) {
+      shoppingListDefaults = {
+        recurrence: list.recurrence,
+        deliveryWindow: list.deliveryWindow,
+        preferredDeliveryChannel: list.preferredDeliveryChannel,
+        deliveryAddress: list.deliveryAddress,
+      };
+    }
   }
+  const ownCatalog = offer.ownerUserId === userId && isCatalogOffer(offer);
+  const committed = ownCatalog && (usePostgres()
+    ? (await getAllwainCatalogCommittedOfferIdsPg([offer.id])).has(offer.id)
+    : getContracts().some((contract) => contract.app === "allwain" && contract.offerId === offer.id));
+  const ownMeta = ownCatalog ? {
+    ...(offer.meta || {}),
+    catalogTermsLocked: committed || readAllwainInventory(offer).reservedQuantity > 0 || readAllwainInventory(offer).soldQuantity > 0,
+  } : offer.meta;
   return enrichAllwainOffer(
     shoppingListDefaults
       ? {
           ...offer,
           meta: {
-            ...(offer.meta || {}),
+            ...(ownMeta || {}),
             shoppingListDefaults,
           },
         }
-      : offer,
+      : { ...offer, meta: ownMeta },
   );
 }
 
@@ -3240,6 +3437,25 @@ export async function acceptAllwainContract(
   return (await enrichAllwainContractsWithImages([updated]))[0];
 }
 
+async function recoverJsonAllwainRejectedRequest(contract: Contract) {
+  if (!contract.requestId || contract.shoppingListId) return;
+  const request = getAllwainScanRequests().find(row => row.id === contract.requestId);
+  const offers = getOffersByOwner("allwain").filter(row => offerRequestId(row) === contract.requestId);
+  const contracts = getContracts().filter(row => row.app === "allwain" && row.requestId === contract.requestId);
+  const eligibleSellerIds = offers.filter(row => {
+    const seller = getUserById(row.ownerUserId);
+    return seller && !seller.deletedAt && (!seller.status || seller.status === "active");
+  }).map(row => row.ownerUserId).filter((id): id is string => Boolean(id));
+  const plan = planAllwainRequestRecovery({ request, contract, contracts, offers, eligibleSellerIds, reason: "contract_rejected" });
+  if (plan && request) {
+    for (const patch of plan.offerPatches) {
+      const proposal = getOfferById(patch.id);
+      if (proposal) updateOffer({ ...proposal, ...patch } as Offer);
+    }
+    await persistAllwainScanRequest({ ...request, ...plan.requestPatch, updatedAt: plan.requestPatch.updatedAt.toISOString() } as AllwainScanRequest);
+  }
+}
+
 export async function rejectAllwainContract(
   userId: string,
   contractId: string,
@@ -3260,10 +3476,12 @@ export async function rejectAllwainContract(
     throw new Error("CONTRACT_NOT_FOUND");
   }
   if (contract.status === "rejected") {
+    await recoverJsonAllwainRejectedRequest(contract);
     return (await enrichAllwainContractsWithImages([contract]))[0];
   }
   if (contract.status === "accepted")
     throw new Error("INVALID_CONTRACT_STATUS");
+  if (allwainAttemptHasFinancialRisk(contract, [], [])) throw new Error("INVALID_CONTRACT_STATUS");
   let inventoryStatus = contract.inventoryStatus;
   if (
     inventoryStatus === "reserved" &&
@@ -3285,6 +3503,7 @@ export async function rejectAllwainContract(
     inventoryStatus,
   });
   if (!updated) throw new Error("CONTRACT_NOT_FOUND");
+  await recoverJsonAllwainRejectedRequest(updated);
   return (await enrichAllwainContractsWithImages([updated]))[0];
 }
 

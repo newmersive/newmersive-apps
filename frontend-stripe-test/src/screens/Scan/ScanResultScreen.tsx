@@ -1,5 +1,6 @@
-import { readJourneyDraft, clearJourneyDraft } from "../../utils/journeyDrafts";
-import React, { useEffect, useRef, useState } from "react";
+import { finishManualRequestDraft, requestCardReturnUrl } from "../../utils/manualRequestContinuity";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import { useFocusEffect } from "@react-navigation/native";
 import {
   ActivityIndicator,
   AccessibilityInfo,
@@ -54,13 +55,26 @@ import {
 import { openExternalUrl } from "../../utils/openExternalUrl";
 import { getAllwainCurrentLocation } from "../../utils/currentLocation";
 import { interpretDeliveryWindow, StructuredDeliveryWindow } from "../../utils/deliveryIntelligence";
-import { DemoCard, PublicationImage } from "../../components/design-system";
+import { DemoCard, OrderCard, PublicationImage } from "../../components/design-system";
 import { useAuthStore } from "../../store/auth.store";
+import { captureAuthSession } from "../../store/authSessionBridge";
+import { createReplyGate, proposalPageUrl, validateProposalPage, type ProposalView, type RequestProposalPage, type RequestWorkDetail } from "../../utils/requestWork";
+import { requestWorkCopy } from "../../i18n/requestWorkCopy";
+import { buyerContinuityCopy, buyerRecoveryCopy } from "../../i18n/buyerContinuityCopy";
 import { trackAnalyticsEvent } from "../../analytics";
+import { captureAnalyticsGuard, recordPublicationWithdrawal } from "../../analytics/purchaseAnalytics";
 import { ProposalCountdown } from "../../components/ProposalValidityControl";
-import { allwainWebAppReturnUrl } from "../../utils/webAppUrl";
 import { readScanCapture, forgetScanCapture, type ScanCaptureInput } from "../../utils/scanCaptureMemory";
 import { useRequestKeyboardLayout } from "../../components/useRequestKeyboardLayout";
+import { buyerRequestLifecycleCopy } from "../../i18n/buyerRequestLifecycleCopy";
+import { requestCopy } from "../../i18n/requestCopy";
+import { useAppTranslation } from "../../i18n/useAppTranslation";
+import { isRtlLocale } from "../../i18n";
+import { AppAlert } from "../../utils/appAlert";
+import {
+  existingRequestContract, hasRequestOrder, requestPublicationAction,
+  transitionRequestPublication, type RequestPublicationAction,
+} from "../../utils/requestLifecycle";
 
 type Props = NativeStackScreenProps<RootStackParamList, "ScanResult">;
 type DeliveryMethod = "shipping" | "pickup" | "in_person" | null;
@@ -366,13 +380,26 @@ function deliveryChannelLabel(channel?: DeliveryChannel) {
 export default function ScanResultScreen({ navigation, route }: Props) {
   const { keyboardAvoidingProps, footerPaddingBottom } = useRequestKeyboardLayout();
   const userId = useAuthStore((state) => state.user?.id);
+  const { locale, t } = useAppTranslation();
+  const workCopy = requestWorkCopy[locale];
+  const continuityCopy = buyerContinuityCopy[locale];
+  const lifecycle = buyerRequestLifecycleCopy[locale];
+  const labels = requestCopy[locale].states;
+  const screen = useRef({ focused: true, generation: 0 });
+  const originalAccount = useRef(userId);
+  const lifecycleOperation = useRef<string | null>(null);
+  const loadRevision = useRef(0);
+  const capturePromise = useRef<Promise<AllwainScanCaptureResponse> | null>(null);
   const initialInput = useRef<ScanCaptureInput & { requestId?: string }>({
     ...readScanCapture(route.params?.captureId),
     requestId: route.params?.requestId,
   });
-  const sourceManualText = useRef(initialInput.current.sourceType === "text" ? initialInput.current.rawText?.trim() : undefined);
+  const formDirty = useRef(false);
+  const formRevision = useRef(0);
+  const lastRequestState = useRef<{id?:string;status?:string}>({});
+  const lastProposalKey = useRef("");
   const scrollRef = useRef<ScrollView>(null);
-  const [data, setData] = useState<AllwainScanRequest | null>(null);
+  const [data, setData] = useState<RequestWorkDetail | null>(null);
   const [form, setForm] = useState<ProductForm>(EMPTY_FORM);
   const [errors, setErrors] = useState<FormErrors>({});
   const firstError = Object.keys(errors)[0];
@@ -389,21 +416,92 @@ export default function ScanResultScreen({ navigation, route }: Props) {
   const [offerSort, setOfferSort] = useState<"price" | "rating" | "newest">(
     "price",
   );
+  const [proposalView, setProposalView] = useState<ProposalView>("active");
+  const [proposalCursors, setProposalCursors] = useState<Array<string | null>>([null]);
+  const [proposalIndex, setProposalIndex] = useState(0);
+  const [proposalRefresh, setProposalRefresh] = useState(0);
+  const [proposalResult, setProposalResult] = useState<{ key: string; value: RequestProposalPage } | null>(null);
+  const [proposalError, setProposalError] = useState("");
+  const [proposalLoading, setProposalLoading] = useState(false);
+  const [refreshLoading, setRefreshLoading] = useState(false);
+  const [expandedOffer, setExpandedOffer] = useState<string | null>(null);
+  const proposalGate = useRef(createReplyGate());
+  const effectiveView = data?.status === "submitted" ? proposalView : "all";
+  const proposalKey = data?.id ? proposalPageUrl(data.id, offerSort, effectiveView, proposalCursors[proposalIndex]) : "";
+  const activeProposalPage = proposalResult?.key === proposalKey ? proposalResult.value : null;
+  const proposalRequestId = data?.id;
+  const proposalsVisible = Boolean(data && ["submitted", "awarded", "closed", "canceled", "archived"].includes(data.status));
   const [paymentProfile, setPaymentProfile] =
     useState<AllwainBuyerPaymentProfile | null>(null);
   const [publicationCardRequired, setPublicationCardRequired] = useState(false);
   const [cardConsent, setCardConsent] = useState(false);
   const purchaseKeys = useRef<Record<string, string>>({});
 
-  async function loadRequest() {
+  function currentScreen() {
+    const generation = screen.current.generation, accountId = userId;
+    const session = captureAuthSession();
+    return () => screen.current.focused && screen.current.generation === generation &&
+      session.isCurrent() && Boolean(accountId) && originalAccount.current === accountId && useAuthStore.getState().user?.id === accountId;
+  }
+
+  useEffect(() => {
+    if (!proposalsVisible || !proposalRequestId) { proposalGate.current.invalidate(); setProposalResult(null); return; }
+    const current = proposalGate.current.begin(currentScreen());
+    setProposalLoading(true); setProposalError("");
+    if (lastProposalKey.current !== proposalKey) setExpandedOffer(null);
+    lastProposalKey.current = proposalKey;
+    void apiAuthGet<RequestProposalPage>(proposalKey).then(value => {
+      if (current()) setProposalResult({ key: proposalKey, value: validateProposalPage(value, proposalRequestId) });
+    }).catch(() => { if (current()) { setProposalResult(null); setProposalError(workCopy.error); } })
+      .finally(() => { if (current()) setProposalLoading(false); });
+    return () => proposalGate.current.invalidate();
+  }, [proposalKey, proposalsVisible, proposalRequestId, proposalRefresh, userId, workCopy.error]);
+
+  function resetProposalPage() { proposalGate.current.invalidate(); setProposalCursors([null]); setProposalIndex(0); setProposalResult(null); setExpandedOffer(null); }
+  useEffect(() => { lastRequestState.current = {id:data?.id,status:data?.status}; }, [data?.id,data?.status]);
+
+  useFocusEffect(useCallback(() => {
+    const returning = !screen.current.focused;
+    screen.current.focused = true; screen.current.generation++;
+    if (returning && originalAccount.current === userId) {
+      lifecycleOperation.current = null; setBusy(null); setLocating(false);
+      void loadRequest({ preserveEdits:true, silent:true, preserveProposals:true }); void loadPublicationPaymentPolicy();
+    }
+    return () => { screen.current.focused = false; screen.current.generation++; loadRevision.current++; };
+  }, [userId]));
+
+  useEffect(() => {
+    if (userId === originalAccount.current) return;
+    screen.current.generation++; loadRevision.current++;
+    setData(null); setForm(EMPTY_FORM); setLoading(false); setBusy(null);
+    formDirty.current = false; formRevision.current++; setProposalResult(null);
+    setScreenError(lifecycle.changed); purchaseKeys.current = {}; capturePromise.current = null;
+  }, [userId, lifecycle.changed]);
+
+  useEffect(() => {
+    const requestId = route.params?.requestId;
+    if (!requestId || requestId === initialInput.current.requestId) return;
+    screen.current.generation++; loadRevision.current++;
+    initialInput.current = { requestId }; formDirty.current = false; formRevision.current++;
+    capturePromise.current = null;
+    lifecycleOperation.current = null; setBusy(null); setNotice("");
+    void loadRequest();
+  }, [route.params?.requestId]);
+
+  async function loadRequest(options: {preserveEdits?:boolean;silent?:boolean;preserveProposals?:boolean} = {}) {
+    const isCurrentScreen = currentScreen();
+    const revision = ++loadRevision.current;
+    const isCurrent = () => isCurrentScreen() && revision === loadRevision.current;
+    if (!isCurrent()) return;
     const scanInput = initialInput.current;
-    setLoading(true);
+    const editsAtStart = formRevision.current;
+    if (options.silent) setRefreshLoading(true); else setLoading(true);
     setScreenError("");
     try {
       let request: AllwainScanRequest;
       if (scanInput?.requestId) {
-        request = await apiAuthGet<AllwainScanRequest>(
-          `/allwain/scan-requests/${scanInput.requestId}`
+        request = await apiAuthGet<RequestWorkDetail>(
+          `/allwain/scan-requests/${scanInput.requestId}?includeProposals=false`
         );
       } else {
         const rawText = scanInput?.rawText?.trim();
@@ -412,7 +510,9 @@ export default function ScanResultScreen({ navigation, route }: Props) {
         if (!rawText && !barcode && !imageBase64) {
           throw new Error("La captura ya no está disponible. Vuelve a Capturar para seleccionar la imagen o introducir el texto.");
         }
-        const capture = await apiAuthPost<AllwainScanCaptureResponse>(
+        // Re-entering while OCR is pending must await the same capture, not
+        // create a second server draft. The promise remains local to this screen.
+        const pending = capturePromise.current || apiAuthPost<AllwainScanCaptureResponse>(
           "/allwain/scan-captures",
           {
           sourceType:
@@ -423,6 +523,17 @@ export default function ScanResultScreen({ navigation, route }: Props) {
           imageBase64,
           },
         );
+        capturePromise.current = pending;
+        let capture: AllwainScanCaptureResponse;
+        try { capture = await pending; }
+        catch (error) { if (capturePromise.current === pending) capturePromise.current = null; throw error; }
+        if (capture.kind === "request" && initialInput.current === scanInput && originalAccount.current === userId && useAuthStore.getState().user?.id === userId) {
+          // Keep the server identifier when the user briefly leaves, while
+          // guarding all UI updates and navigation with the current focus.
+          initialInput.current = { requestId: capture.request.id };
+          forgetScanCapture(route.params?.captureId);
+        }
+        if (!isCurrent()) return;
         if (capture.kind === "shopping_list") {
           forgetScanCapture(route.params?.captureId);
           navigation.replace("ShoppingLists", {
@@ -434,21 +545,27 @@ export default function ScanResultScreen({ navigation, route }: Props) {
         request = capture.request;
         forgetScanCapture(route.params?.captureId);
         initialInput.current = { requestId: request.id };
-        navigation.setParams({ requestId: request.id, captureId: undefined });
       }
+      if (!isCurrent()) return;
+      if ((scanInput.requestId && request.id !== scanInput.requestId) || (request.userId && request.userId !== userId)) {
+        throw new Error(lifecycle.changed);
+      }
+      if (route.params?.requestId !== request.id) navigation.setParams({ requestId: request.id, captureId: undefined });
       const nextForm = formFromRequest(request);
+      const keepEdits = Boolean(options.preserveEdits && formDirty.current || formRevision.current !== editsAtStart);
       setData(request);
-      setForm(nextForm);
-      setUnitOverridden(request.extracted.measurement?.source === "user");
-      setEditing(
-        request.status === "draft" ||
-          (request.status === "ready" && Object.keys(validateForm(nextForm)).length > 0)
-      );
+      if (!options.preserveProposals || lastRequestState.current.id !== request.id || lastRequestState.current.status !== request.status) resetProposalPage();
+      setProposalRefresh(value => value + 1);
+      if (!keepEdits) { setForm(nextForm); formDirty.current = false; setUnitOverridden(request.extracted.measurement?.source === "user"); }
+      setEditing(previous => request.status === "draft" || (request.status === "ready" && (keepEdits && previous || Object.keys(validateForm(nextForm)).length > 0)));
+      if (["submitted","awarded","closed","canceled","archived"].includes(request.status) && userId) await finishManualRequestDraft(userId, request.id, isCurrent);
+      if (isCurrent() && options.silent) setNotice(keepEdits ? continuityCopy.changesKept : continuityCopy.refreshed);
     } catch (err: any) {
+      if (!isCurrent()) return;
       setScreenError(err?.message || "No pudimos preparar la ficha del producto.");
-      setData(null);
+      if (!options.silent) setData(null);
     } finally {
-      setLoading(false);
+      if (isCurrent()) { setLoading(false); setRefreshLoading(false); }
     }
   }
 
@@ -460,24 +577,28 @@ export default function ScanResultScreen({ navigation, route }: Props) {
   }, []);
 
   async function loadPublicationPaymentPolicy() {
+    const isCurrent = currentScreen();
     try {
       const config = await apiGet<AllwainPaymentConfig>(
         "/allwain/payments/config",
       );
+      if (!isCurrent()) return;
       const required = Boolean(config.publicationCardRequired);
       setPublicationCardRequired(required);
       if (required) await refreshPaymentProfile();
     } catch {
       // The backend remains authoritative if the public configuration cannot load.
-      setPublicationCardRequired(false);
+      if (isCurrent()) setPublicationCardRequired(false);
     }
   }
 
   async function refreshPaymentProfile() {
+    const isCurrent = currentScreen();
     try {
       const profile = await apiAuthGet<AllwainBuyerPaymentProfile>(
         "/allwain/payments/buyer/payment-method",
       );
+      if (!isCurrent()) return null;
       setPaymentProfile(profile);
       return profile;
     } catch {
@@ -486,15 +607,13 @@ export default function ScanResultScreen({ navigation, route }: Props) {
   }
 
   function paymentReturnUrl() {
-    const location = (globalThis as any)?.location;
-    if (Platform.OS === "web") {
-      const appReturnUrl = allwainWebAppReturnUrl(location);
-      if (appReturnUrl) return `${appReturnUrl.replace(/\/$/, "")}/peticion`;
-    }
-    return "allwain://peticion";
+    if (!data?.id) throw new Error("REQUEST_RETURN_UNAVAILABLE");
+    return requestCardReturnUrl(data.id, Platform.OS, (globalThis as any)?.location);
   }
 
   async function startCardSetup() {
+    const isCurrent = currentScreen();
+    if (!isCurrent() || busy || lifecycleOperation.current) return;
     if (!cardConsent) {
       setScreenError("Confirma el uso de la tarjeta para continuar.");
       return;
@@ -503,6 +622,7 @@ export default function ScanResultScreen({ navigation, route }: Props) {
       setBusy("card");
       setScreenError("");
       const current = paymentProfile || (await refreshPaymentProfile());
+      if (!isCurrent()) return;
       const consentVersion =
         current?.consentVersion || "allwain-buyer-payment-method-v1-2026-09-03";
       const setup = await apiAuthPost<AllwainBuyerPaymentProfile>(
@@ -513,19 +633,21 @@ export default function ScanResultScreen({ navigation, route }: Props) {
           returnUrl: paymentReturnUrl(),
         },
       );
+      if (!isCurrent()) return;
       setPaymentProfile(setup);
       if (!setup.url || !/^https:\/\//i.test(setup.url)) {
         throw new Error("Stripe no devolvió un acceso seguro.");
       }
       await openExternalUrl(setup.url);
     } catch (err: any) {
-      setScreenError(err?.message || "No se pudo abrir la verificación de tarjeta.");
+      if (isCurrent()) setScreenError(err?.message || "No se pudo abrir la verificación de tarjeta.");
     } finally {
-      setBusy(null);
+      if (isCurrent()) setBusy(null);
     }
   }
 
   function updateField<K extends keyof ProductForm>(key: K, value: ProductForm[K]) {
+    formDirty.current = true; formRevision.current++;
     setForm((current) => ({ ...current, [key]: value }));
     setErrors((current) => ({ ...current, [key]: undefined }));
     setScreenError("");
@@ -533,6 +655,7 @@ export default function ScanResultScreen({ navigation, route }: Props) {
   }
 
   function updateProductName(value: string) {
+    formDirty.current = true; formRevision.current++;
     setForm((current) => {
       if (unitOverridden) return { ...current, productName: value };
       const measurement = measurementFromProductName(value);
@@ -550,6 +673,7 @@ export default function ScanResultScreen({ navigation, route }: Props) {
   }
 
   function updateDeliveryAddress(value: string) {
+    formDirty.current = true; formRevision.current++;
     setForm((current) => ({
       ...current,
       deliveryAddress: value,
@@ -563,6 +687,7 @@ export default function ScanResultScreen({ navigation, route }: Props) {
   }
 
   function updateDeliveryWindow(value: string) {
+    formDirty.current = true; formRevision.current++;
     setForm((current) => ({
       ...current,
       deliveryWindow: value,
@@ -574,10 +699,14 @@ export default function ScanResultScreen({ navigation, route }: Props) {
   }
 
   async function fillCurrentLocation() {
+    const isCurrent = currentScreen();
+    if (!isCurrent() || busy || lifecycleOperation.current) return;
     setLocating(true);
     setScreenError("");
     try {
       const location = await getAllwainCurrentLocation();
+      if (!isCurrent()) return;
+      formDirty.current = true; formRevision.current++;
       setForm((current) => ({
         ...current,
         deliveryAddress: location.address || current.deliveryAddress,
@@ -594,16 +723,17 @@ export default function ScanResultScreen({ navigation, route }: Props) {
           : "GPS añadido. Escribe la dirección de entrega para completarla.",
       );
     } catch (locationError: any) {
-      setScreenError(
+      if (isCurrent()) setScreenError(
         locationError?.message || "No pudimos obtener tu ubicación.",
       );
     } finally {
-      setLocating(false);
+      if (isCurrent()) setLocating(false);
     }
   }
 
   async function saveDraft() {
-    if (!data) return;
+    const isCurrent = currentScreen();
+    if (!data || !isCurrent() || busy || lifecycleOperation.current) return;
     try {
       setBusy("save");
       setScreenError("");
@@ -611,6 +741,7 @@ export default function ScanResultScreen({ navigation, route }: Props) {
         `/allwain/scan-requests/${data.id}`,
         { extracted: formPayload(form) }
       );
+      if (!isCurrent()) return;
       if (
         updated.id !== data.id ||
         (form.productName.trim() &&
@@ -623,16 +754,18 @@ export default function ScanResultScreen({ navigation, route }: Props) {
       }
       setData(updated);
       setForm(formFromRequest(updated));
+      formDirty.current = false;
       setNotice("Borrador guardado. Puedes continuar más tarde desde Inicio.");
     } catch (err: any) {
-      setScreenError(err?.message || "No se pudo guardar el borrador.");
+      if (isCurrent()) setScreenError(err?.message || "No se pudo guardar el borrador.");
     } finally {
-      setBusy(null);
+      if (isCurrent()) setBusy(null);
     }
   }
 
   async function confirmSheet() {
-    if (!data) return;
+    const isCurrent = currentScreen();
+    if (!data || !isCurrent() || busy || lifecycleOperation.current) return;
     const nextErrors = validateForm(form);
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length) {
@@ -648,32 +781,37 @@ export default function ScanResultScreen({ navigation, route }: Props) {
         `/allwain/scan-requests/${data.id}`,
         { extracted: formPayload(form) }
       );
+      if (!isCurrent()) return;
       const confirmed = await apiAuthPost<AllwainScanRequest>(
         `/allwain/scan-requests/${saved.id}/confirm`,
         {}
       );
+      if (!isCurrent()) return;
       if (confirmed.id !== data.id || confirmed.status !== "ready") {
         throw new Error("El servidor no confirmó la ficha.");
       }
       setData(confirmed);
       setForm(formFromRequest(confirmed));
+      formDirty.current = false;
       setEditing(false);
       scrollRef.current?.scrollTo({y:0,animated:false});
       setNotice("Ficha confirmada. Ya puedes lanzar la petición.");
     } catch (err: any) {
-      setScreenError(err?.message || "No se pudo confirmar la ficha.");
+      if (isCurrent()) setScreenError(err?.message || "No se pudo confirmar la ficha.");
     } finally {
-      setBusy(null);
+      if (isCurrent()) setBusy(null);
     }
   }
 
   async function launchRequest() {
-    if (!data) return;
+    const isCurrent = currentScreen();
+    if (!data || !isCurrent() || busy || lifecycleOperation.current) return;
     try {
       setBusy("launch");
       setScreenError("");
       if (publicationCardRequired) {
         const currentPayment = await refreshPaymentProfile();
+        if (!isCurrent()) return;
         if (!currentPayment?.ready) {
           setScreenError("Añade y verifica una tarjeta antes de publicar la petición.");
           return;
@@ -683,30 +821,32 @@ export default function ScanResultScreen({ navigation, route }: Props) {
         `/allwain/scan-requests/${data.id}/launch`,
         {}
       );
+      if (!isCurrent()) return;
       if (launched.id !== data.id || launched.status !== "submitted") {
         throw new Error("El servidor no confirmó el lanzamiento.");
       }
       void trackAnalyticsEvent("request_created", {
         source: analyticsRequestSource(data.sourceType),
       });
-      if (userId && sourceManualText.current) {
-        const draft = await readJourneyDraft<{requestText:string}>(userId,"manual-request");
-        if (draft?.requestText.trim() === sourceManualText.current) await clearJourneyDraft(userId,"manual-request");
-      }
+      if (userId) await finishManualRequestDraft(userId, launched.id, isCurrent);
+      if (!isCurrent()) return;
       setData(launched);
       scrollRef.current?.scrollTo({y:0,animated:false});
       setForm(formFromRequest(launched));
+      formDirty.current = false;
       setNotice(
         "Petición publicada. Las propuestas de vendedores aparecerán juntas en esta ficha.",
       );
     } catch (err: any) {
-      setScreenError(err?.message || "No se pudo lanzar la petición.");
+      if (isCurrent()) setScreenError(err?.message || "No se pudo lanzar la petición.");
     } finally {
-      setBusy(null);
+      if (isCurrent()) setBusy(null);
     }
   }
 
   async function registerInterest(offerId: string) {
+    const isCurrent = currentScreen();
+    if (!isCurrent() || busy || lifecycleOperation.current) return;
     try {
       setBusy(offerId);
       setScreenError("");
@@ -715,14 +855,15 @@ export default function ScanResultScreen({ navigation, route }: Props) {
         source: "scan",
         note: data?.title || form.productName || "Interés desde petición",
       });
+      if (!isCurrent()) return;
       if (!lead.id || lead.offerId !== offerId) {
         throw new Error("El servidor no confirmó el interés enviado.");
       }
       setNotice("Interés enviado. El proveedor ha recibido tu solicitud.");
     } catch (err: any) {
-      setScreenError(err?.message || "No se pudo enviar. Inténtalo de nuevo.");
+      if (isCurrent()) setScreenError(err?.message || "No se pudo enviar. Inténtalo de nuevo.");
     } finally {
-      setBusy(null);
+      if (isCurrent()) setBusy(null);
     }
   }
 
@@ -731,7 +872,8 @@ export default function ScanResultScreen({ navigation, route }: Props) {
     quantity: number,
     delivery: OfferDeliveryDraft,
   ) {
-    if (!data) return;
+    const isCurrent = currentScreen();
+    if (!data || !isCurrent() || busy || lifecycleOperation.current) return;
     try {
       setBusy(offer.id);
       setScreenError("");
@@ -744,6 +886,7 @@ export default function ScanResultScreen({ navigation, route }: Props) {
         `/allwain/offers/${offer.id}/accept`,
         { quantity, ...delivery, purchaseKey }
       );
+      if (!isCurrent()) return;
       if (
         !contract.id ||
         contract.offerId !== offer.id ||
@@ -756,31 +899,61 @@ export default function ScanResultScreen({ navigation, route }: Props) {
         params: { section: "orders", contractId: contract.id, focusKey: String(Date.now()) },
       });
     } catch (err: any) {
-      setScreenError(err?.message || "No se pudo solicitar. Inténtalo de nuevo.");
+      if (isCurrent()) setScreenError(err?.message || "No se pudo solicitar. Inténtalo de nuevo.");
     } finally {
-      setBusy(null);
+      if (isCurrent()) setBusy(null);
     }
   }
 
-  async function changeRequestStatus(status: "canceled" | "closed") {
-    if (!data) return;
+  function confirmRequestAction(action: RequestPublicationAction) {
+    if (!data || !userId || busy || lifecycleOperation.current) return;
+    const item = data, accountId = userId, isCurrent = currentScreen();
+    const analyticsCurrent = captureAnalyticsGuard(isCurrent);
+    AppAlert.alert(lifecycle.actions[action].label, lifecycle.actions[action].confirmation, [
+      { text: lifecycle.cancel, style: "cancel" },
+      { text: lifecycle.actions[action].label, style: action === "discard" || action === "withdraw" ? "destructive" : "default", onPress: () => {
+        if (!isCurrent() || lifecycleOperation.current) return;
+        const key = `${item.id}:${screen.current.generation}`;
+        lifecycleOperation.current = key; setBusy(`request:${action}`); setScreenError(""); setNotice("");
+        void (async () => {
+          try {
+            const updated = await transitionRequestPublication(item, action, {
+              accountId, isCurrent,
+              read: id => apiAuthGet<AllwainScanRequest>(`/allwain/scan-requests/${encodeURIComponent(id)}`),
+              patch: (id, status) => apiAuthPatch<AllwainScanRequest>(`/allwain/scan-requests/${encodeURIComponent(id)}`, { status }),
+            });
+            if (!updated || !isCurrent()) return;
+            if (action === "withdraw" && updated.status === "canceled") void recordPublicationWithdrawal("request", "buy", analyticsCurrent);
+            await finishManualRequestDraft(accountId, updated.id, isCurrent);
+            if (!isCurrent()) return;
+            setData(updated); setEditing(false); setErrors({}); setNotice(lifecycle.actions[action].done);
+            scrollRef.current?.scrollTo({ y: 0, animated: false });
+          } catch (err: any) {
+            if (isCurrent()) setScreenError(err?.message === "REQUEST_PUBLICATION_CHANGED" ? lifecycle.changed : lifecycle.error);
+          } finally {
+            if (lifecycleOperation.current === key) lifecycleOperation.current = null;
+            if (isCurrent()) setBusy(null);
+          }
+        })();
+      } },
+    ]);
+  }
+
+  async function openRequestOrder() {
+    if (!data || !userId || busy || lifecycleOperation.current) return;
+    const isCurrent = currentScreen(), key = `order:${data.id}:${screen.current.generation}`;
+    lifecycleOperation.current = key; setBusy("request:order"); setScreenError("");
     try {
-      setBusy(`request:${status}`);
-      setScreenError("");
-      const updated = await apiAuthPatch<AllwainScanRequest>(
-        `/allwain/scan-requests/${data.id}`,
-        { status },
-      );
-      setData(updated);
-      setNotice(
-        status === "closed"
-          ? "Petición cerrada. Su historial sigue disponible."
-          : "Petición cancelada. Ya no recibirá propuestas.",
-      );
-    } catch (err: any) {
-      setScreenError(err?.message || "No se pudo actualizar la petición.");
-    } finally {
-      setBusy(null);
+      const contractId = await existingRequestContract(data, userId, isCurrent, url => apiAuthGet(url));
+      if (!isCurrent()) return;
+      if (!contractId) { setScreenError(lifecycle.orderMissing); return; }
+      await useAuthStore.getState().setAppMode("buy");
+      if (!isCurrent()) return;
+      navigation.navigate("MainTabs", { screen: "Ofertas", params: { section: "orders", contractId, focusKey: String(Date.now()) } });
+    } catch { if (isCurrent()) setScreenError(lifecycle.orderError); }
+    finally {
+      if (lifecycleOperation.current === key) lifecycleOperation.current = null;
+      if (isCurrent()) setBusy(null);
     }
   }
 
@@ -799,7 +972,7 @@ export default function ScanResultScreen({ navigation, route }: Props) {
       <SafeAreaView style={styles.loading}>
         <Text style={styles.loadingTitle}>No pudimos crear la ficha</Text>
         <Text style={styles.loadingText}>{screenError}</Text>
-        <TouchableOpacity style={styles.primaryButton} onPress={loadRequest}>
+        <TouchableOpacity style={styles.primaryButton} onPress={() => void loadRequest()}>
           <Text style={styles.primaryButtonText}>Reintentar</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.textButton} onPress={() => navigation.goBack()}>
@@ -810,6 +983,7 @@ export default function ScanResultScreen({ navigation, route }: Props) {
   }
 
   const status = data.status;
+  const publicationAction = requestPublicationAction(data);
   const showForm = status === "draft" || editing;
   const imageBase64 = initialInput.current?.imageBase64;
   const quantityText = data.extracted.quantity
@@ -832,23 +1006,12 @@ export default function ScanResultScreen({ navigation, route }: Props) {
   const hasDetectedDetails = Boolean(
     form.brand || form.category || form.ean || form.supplier || attributes.length,
   );
-  const sortedOffers = (() => {
-    const items = [...data.offers];
-    if (offerSort === "price") {
-      return items.sort(
-        (a, b) => Number(a.price ?? Number.MAX_VALUE) - Number(b.price ?? Number.MAX_VALUE),
-      );
-    }
-    if (offerSort === "rating") {
-      return items.sort(
-        (a, b) => Number(b.provider?.score || 0) - Number(a.provider?.score || 0),
-      );
-    }
-    return items.reverse();
-  })();
+  const sortedOffers = activeProposalPage?.items || [];
+  const proposalSummary = activeProposalPage?.summary || data.proposalSummary;
+  const chosenProposal = activeProposalPage?.selectedOffer || data.selectedOffer;
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={["left", "right"]}>
+    <SafeAreaView style={[styles.safeArea, { direction: isRtlLocale(locale) ? "rtl" : "ltr" }]} edges={["left", "right"]}>
       <View style={styles.topBar}>
         <Text style={styles.topBarTitle}>Petición de producto</Text>
         <TouchableOpacity
@@ -880,7 +1043,7 @@ export default function ScanResultScreen({ navigation, route }: Props) {
               number="3"
               label="Lanzamiento"
               state={
-                ["submitted", "awarded", "closed", "canceled"].includes(status)
+                ["submitted", "awarded", "closed", "canceled", "archived"].includes(status)
                   ? "done"
                   : status === "ready" && !editing
                     ? "active"
@@ -903,6 +1066,8 @@ export default function ScanResultScreen({ navigation, route }: Props) {
                       ? "Propuesta elegida"
                       : status === "canceled"
                         ? "Petición cancelada"
+                        : status === "archived"
+                          ? labels.archived
                         : "Petición cerrada"}
             </Text>
             <Text style={styles.subtitle}>
@@ -919,6 +1084,15 @@ export default function ScanResultScreen({ navigation, route }: Props) {
                       : "Esta petición conserva todas sus propuestas como historial y ya no recibe nuevas."}
             </Text>
           </View>
+
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>{lifecycle.statusTitle}: {labels[status]}</Text>
+            <Text style={styles.sectionHint}>{lifecycle.hint}</Text>
+            {hasRequestOrder(data) ? <TouchableOpacity accessibilityRole="button" accessibilityState={{ disabled: Boolean(busy) }} disabled={Boolean(busy)} style={[styles.primaryButton, busy && styles.disabledButton]} onPress={() => void openRequestOrder()}><Text style={styles.primaryButtonText}>{busy === "request:order" ? lifecycle.busy : lifecycle.orders}</Text></TouchableOpacity> : null}
+            {publicationAction ? <TouchableOpacity accessibilityRole="button" accessibilityState={{ disabled: Boolean(busy) }} disabled={Boolean(busy)} style={[styles.secondaryButton, busy && styles.disabledButton]} onPress={() => confirmRequestAction(publicationAction)}><Text style={styles.secondaryButtonText}>{busy === `request:${publicationAction}` ? lifecycle.busy : lifecycle.actions[publicationAction].label}</Text></TouchableOpacity> : null}
+            {screenError === lifecycle.changed || screenError === lifecycle.orderMissing || screenError === lifecycle.orderError ? <TouchableOpacity accessibilityRole="button" style={styles.textButton} disabled={Boolean(busy)} onPress={() => screenError === lifecycle.changed ? void loadRequest() : void openRequestOrder()}><Text style={styles.textButtonLabel}>{t("common.retry")}</Text></TouchableOpacity> : null}
+          </View>
+          {status === "submitted" && data.ai.recovery ? <OrderCard title={buyerRecoveryCopy[locale].title} meta={buyerRecoveryCopy[locale].body} actionLabel={buyerRecoveryCopy[locale].previous} onPress={() => { if (!currentScreen()()) return; navigation.navigate("MainTabs",{screen:"Ofertas",params:{section:"orders",contractId:data.ai.recovery?.contractId,orderId:data.ai.recovery?.orderId || undefined,focusKey:String(Date.now())}}); }} /> : null}
 
           {imageBase64 || data.imageMeta?.url ? (
             <PublicationImage
@@ -1330,13 +1504,18 @@ export default function ScanResultScreen({ navigation, route }: Props) {
             </View>
           ) : null}
 
-          {["submitted", "awarded", "closed", "canceled"].includes(status) ? (
+          {["submitted", "awarded", "closed", "canceled", "archived"].includes(status) ? (
             <View style={styles.offersSection}>
+              <TouchableOpacity accessibilityRole="button" accessibilityState={{ disabled:Boolean(busy) || refreshLoading || proposalLoading }} disabled={Boolean(busy) || refreshLoading || proposalLoading} style={styles.refreshButton} onPress={() => void loadRequest({preserveEdits:true,silent:true,preserveProposals:true})}>
+                <RefreshCw size={17} color={colors.primary} /><Text style={styles.refreshButtonText}>{continuityCopy.refresh}</Text>
+              </TouchableOpacity>
+              {refreshLoading ? <ActivityIndicator color={colors.primary} /> : null}
               <Text style={styles.sectionTitle}>
-                Ofertas recibidas ({data.offers.length})
+                {workCopy.proposals} ({proposalSummary?.total ?? "—"})
               </Text>
+              {proposalSummary ? <Text style={styles.sectionHint}>{workCopy.active}: {proposalSummary.active} · {workCopy.all}: {proposalSummary.total}</Text> : null}
               <Text style={styles.sectionHint}>
-                {data.offers.length
+                {proposalError ? workCopy.error : proposalLoading || refreshLoading ? lifecycle.busy : proposalSummary?.total
                   ? status === "submitted"
                     ? "Compáralas y elige la que prefieras. Precio, cantidad y vendedor quedan vinculados a esta petición."
                     : "Conservamos la propuesta elegida y las no seleccionadas para que puedas reconstruir la decisión."
@@ -1345,7 +1524,11 @@ export default function ScanResultScreen({ navigation, route }: Props) {
                     : "Esta petición terminó sin propuestas."}
               </Text>
 
-              {data.offers.length === 0 ? (
+              {chosenProposal ? <OrderCard title={workCopy.selected} meta={`${chosenProposal.title}${typeof chosenProposal.price === "number" ? ` · ${formatCurrency(chosenProposal.price)}` : ""}`} actionLabel={lifecycle.orders} onPress={() => void openRequestOrder()} /> : null}
+              {proposalLoading ? <ActivityIndicator color={colors.primary} /> : null}
+              {proposalError ? <View accessibilityLiveRegion="polite"><Text accessibilityRole="alert" style={styles.errorText}>{proposalError}</Text><TouchableOpacity accessibilityRole="button" style={styles.secondaryButton} onPress={() => setProposalRefresh(value => value + 1)}><Text style={styles.secondaryButtonText}>{workCopy.retry}</Text></TouchableOpacity></View> : null}
+
+              {proposalSummary?.total === 0 && !proposalLoading && !refreshLoading && !proposalError ? (
                 <DemoCard
                   title="Así aparecerá una propuesta"
                   meta="Vendedor verificado · Precio y entrega"
@@ -1354,12 +1537,13 @@ export default function ScanResultScreen({ navigation, route }: Props) {
                 />
               ) : null}
 
-              {data.offers.length > 1 ? (
+              {status === "submitted" ? <View style={styles.segmentedControl}>{(["active", "history", "all"] as const).map(value => <TouchableOpacity key={value} accessibilityRole="button" accessibilityState={{ selected: effectiveView === value }} style={[styles.segment, effectiveView === value && styles.segmentSelected]} onPress={() => { resetProposalPage(); setProposalView(value); }}><Text style={[styles.segmentText, effectiveView === value && styles.segmentTextSelected]}>{workCopy[value]}</Text></TouchableOpacity>)}</View> : null}
+              {(proposalSummary?.total || 0) > 1 ? (
                 <View style={styles.segmentedControl}>
                   {([
-                    ["price", "Menor precio"],
-                    ["rating", "Mejor valorado"],
-                    ["newest", "Más reciente"],
+                    ["price", workCopy.price],
+                    ["rating", workCopy.rating],
+                    ["newest", workCopy.newest],
                   ] as const).map(([value, label]) => (
                     <TouchableOpacity
                       key={value}
@@ -1367,7 +1551,9 @@ export default function ScanResultScreen({ navigation, route }: Props) {
                         styles.segment,
                         offerSort === value && styles.segmentSelected,
                       ]}
-                      onPress={() => setOfferSort(value)}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected: offerSort === value }}
+                      onPress={() => { resetProposalPage(); setOfferSort(value); }}
                     >
                       <Text
                         style={[
@@ -1450,20 +1636,22 @@ export default function ScanResultScreen({ navigation, route }: Props) {
                         <Text style={styles.privateMessageText}>Enviar mensaje privado</Text>
                       </TouchableOpacity>
                     ) : null}
-                    {status !== "submitted" || proposalExpired ? null : typeof offer.price !== "number" ? (
+                    {status !== "submitted" || proposalExpired || !["active", undefined, null].includes(offer.allwainStatus) ? null : typeof offer.price !== "number" ? (
                     <View style={styles.offerActions}>
                       <TouchableOpacity
                         style={styles.offerSecondaryButton}
                         onPress={() => registerInterest(offer.id)}
-                        disabled={offerBusy}
+                        disabled={offerBusy || proposalLoading || refreshLoading}
                       >
                         <Text style={styles.offerSecondaryText}>Me interesa</Text>
                       </TouchableOpacity>
                     </View>
+                    ) : expandedOffer !== offer.id ? (
+                      <TouchableOpacity accessibilityRole="button" style={styles.offerSecondaryButton} disabled={Boolean(busy)} onPress={() => setExpandedOffer(offer.id)}><Text style={styles.offerSecondaryText}>{workCopy.review}</Text></TouchableOpacity>
                     ) : (
                       <OfferOrderForm
                         offer={offer}
-                        busy={offerBusy}
+                        busy={offerBusy || proposalLoading || refreshLoading}
                         initialDelivery={{
                           deliveryMethod: form.deliveryMethod || "shipping",
                           deliveryChannel:
@@ -1484,38 +1672,18 @@ export default function ScanResultScreen({ navigation, route }: Props) {
                 );
               })}
 
+              {activeProposalPage ? <View style={styles.segmentedControl}>
+                <TouchableOpacity accessibilityRole="button" accessibilityState={{ disabled: proposalIndex === 0 || proposalLoading }} style={styles.segment} disabled={proposalIndex === 0 || proposalLoading} onPress={() => { proposalGate.current.invalidate(); setProposalResult(null); setProposalIndex(index => Math.max(0, index - 1)); }}><Text style={styles.segmentText}>{workCopy.previous}</Text></TouchableOpacity>
+                <Text style={styles.segmentText}>{workCopy.page} {proposalIndex + 1}</Text>
+                <TouchableOpacity accessibilityRole="button" accessibilityState={{ disabled: !activeProposalPage.pageInfo.hasNextPage || proposalLoading }} style={styles.segment} disabled={!activeProposalPage.pageInfo.hasNextPage || proposalLoading} onPress={() => { const cursor = activeProposalPage.pageInfo.nextCursor; if (!cursor) return; proposalGate.current.invalidate(); setProposalResult(null); setProposalCursors(cursors => [...cursors.slice(0, proposalIndex + 1), cursor]); setProposalIndex(index => index + 1); }}><Text style={styles.segmentText}>{workCopy.next}</Text></TouchableOpacity>
+              </View> : null}
+
               <TouchableOpacity
                 style={styles.secondaryButton}
                 onPress={() => navigation.navigate("MainTabs", { screen: "Ofertas" })}
               >
                 <Text style={styles.secondaryButtonText}>Ver ofertas y acuerdos</Text>
               </TouchableOpacity>
-              {status === "submitted" ? (
-                <TouchableOpacity
-                  style={styles.secondaryButton}
-                  disabled={Boolean(busy)}
-                  onPress={() => void changeRequestStatus("canceled")}
-                >
-                  <Text style={styles.secondaryButtonText}>
-                    {busy === "request:canceled"
-                      ? "Cancelando…"
-                      : "Cancelar petición"}
-                  </Text>
-                </TouchableOpacity>
-              ) : null}
-              {status === "awarded" ? (
-                <TouchableOpacity
-                  style={styles.secondaryButton}
-                  disabled={Boolean(busy)}
-                  onPress={() => void changeRequestStatus("closed")}
-                >
-                  <Text style={styles.secondaryButtonText}>
-                    {busy === "request:closed"
-                      ? "Cerrando…"
-                      : "Cerrar petición"}
-                  </Text>
-                </TouchableOpacity>
-              ) : null}
             </View>
           ) : null}
         </ScrollView>

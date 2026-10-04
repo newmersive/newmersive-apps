@@ -88,6 +88,7 @@ export interface AllwainParticipation {
     available: boolean;
     radiusKm: 1 | 5 | 10 | 20 | 50;
     locationLabel?: string | null;
+    locationMode?: "coordinates" | "label" | "unset";
   };
 }
 
@@ -132,6 +133,7 @@ export interface AllwainConnectorLogistics {
   radiusKm: 1 | 5 | 10 | 20 | 50;
   items: AllwainDeliveryOpportunity[];
   demoItems?: AllwainDeliveryOpportunity[];
+  pageInfo?: { hasNextPage?: boolean; nextCursor?: string | null };
 }
 
 export interface AllwainDeliveryPricingConfig {
@@ -239,6 +241,8 @@ export interface AllwainCardImageMeta {
 
 export interface AllwainOffer {
   id: string;
+  createdAt?: string;
+  updatedAt?: string;
   title: string;
   description?: string;
   ownerUserId?: string;
@@ -705,6 +709,13 @@ export interface AllwainSellerPaymentStatus {
 
 export interface AllwainOrder {
   id: string;
+  purchaseAnalytics?: {
+    version: 1;
+    transactionId: string;
+    paymentEnvironment: "test" | "live";
+    currency: string;
+    value: number;
+  } | null;
   contractId: string;
   offerId: string;
   offerTitle?: string | null;
@@ -1059,6 +1070,7 @@ export interface AllwainScanRequest {
     summary: string;
     warnings: string[];
     rawData?: Record<string, unknown> | null;
+    recovery?: { contractId: string; orderId?: string | null; offerId: string; reason: string; reopenedAt: string; eligibleAlternativeIds: string[] };
   };
   createdAt?: string;
   updatedAt?: string;
@@ -1121,6 +1133,8 @@ export interface AllwainOrderSummary {
   newCount: number;
   readyCount: number;
   completedCount: number;
+  preparationCount?: number;
+  pendingActionCount?: number;
   toPrepare: { unit: string; quantity: number }[];
   pendingIncome: { currency: string; amount: number }[];
   incomeSummary?: {
@@ -1266,6 +1280,8 @@ async function requestAuthorized<T>(path: string, init: RequestInit, timeoutMs =
 }
 
 function extractErrorMessage(data: any, status: number) {
+  // Publication screens translate these conflicts in the current locale.
+  if (["PROPOSAL_LOCKED", "OFFER_VERSION_CONFLICT", "OFFER_TERMS_LOCKED", "PROPOSAL_WITHDRAWN", "OFFER_CLOSED", "PRODUCT_IDENTITY_CHANGE_REQUIRES_NEW_OFFER"].includes(data?.error)) return data.error;
   if (data?.error === 'ADMIN_MFA_REQUIRED' || data?.error === 'ADMIN_MFA_ENROLLMENT_REQUIRED') {
     requireAdminMfa();
     return 'Confirma el segundo factor para acceder como administrador.';

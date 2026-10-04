@@ -2,6 +2,7 @@ import assert from "node:assert";
 import { after, before, describe, it } from "node:test";
 import { app } from "../src/server";
 import { TestClient } from "./helpers/test-client";
+import { createSyntheticAdmin } from "./helpers/synthetic-admin";
 
 const client = new TestClient(app);
 
@@ -14,11 +15,8 @@ describe("Offers routes", () => {
 
   before(async () => {
     await client.start();
-    const login = await client.post("/auth/login", {
-      email: "admin@newmersive.local",
-      password: "HighAssuranceTestOnly!2026",
-    });
-    token = login.body.token;
+    const login = await createSyntheticAdmin(client, "offers-admin");
+    token = login.token;
     const suffix = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
     const company = await client.post("/auth/register", {
       name: "Featured Offer Company",
@@ -51,6 +49,19 @@ describe("Offers routes", () => {
       { Authorization: `Bearer ${companyToken}` },
     );
     assert.equal(sellerActivation.status, 200);
+    const trueqiaOffer = await client.post("/trueqia/offers", {
+      title: "Synthetic service offer", description: "Isolated catalog fixture", tokens: 25,
+    }, { Authorization: `Bearer ${companyToken}` });
+    assert.equal(trueqiaOffer.status, 201);
+    const trueqiaTrade = await client.post("/trueqia/trades", {
+      offerId: trueqiaOffer.body.id, toUserId: companyUserId, tokens: 25,
+    }, { Authorization: `Bearer ${token}` });
+    assert.equal(trueqiaTrade.status, 201);
+    const catalogOffer = await client.post("/allwain/offers", {
+      title: "Synthetic catalog offer", description: "Isolated commercial fixture", price: 12,
+      meta: { unit: "ud", availableQuantity: 5 },
+    }, { Authorization: `Bearer ${companyToken}` });
+    assert.equal(catalogOffer.status, 201);
   });
 
   after(async () => {
@@ -65,7 +76,7 @@ describe("Offers routes", () => {
 
       assert.equal(res.status, 200);
       assert.ok(Array.isArray(res.body.items));
-      assert.ok(res.body.items.length > 0, "should return demo trueques");
+      assert.ok(res.body.items.length > 0, "should return the synthetic trueqia fixture");
       res.body.items.forEach((offer: any) => {
         assert.ok(offer.owner);
         assert.ok(typeof offer.owner.id === "string");
@@ -81,7 +92,7 @@ describe("Offers routes", () => {
 
       assert.equal(listRes.status, 200);
       assert.ok(Array.isArray(listRes.body.items));
-      assert.ok(listRes.body.items.length > 0, "should return demo trades");
+      assert.ok(listRes.body.items.length > 0, "should return the synthetic participant trade");
 
       const trade = listRes.body.items[0];
       const res = await client.get(`/trueqia/trades/${trade.id}`, {
@@ -102,7 +113,7 @@ describe("Offers routes", () => {
 
       assert.equal(res.status, 200);
       assert.ok(Array.isArray(res.body.items));
-      assert.ok(res.body.items.length > 0, "should return demo compras/comisiones");
+      assert.ok(res.body.items.length > 0, "should return the synthetic catalog fixture");
       res.body.items.forEach((offer: any) => {
         assert.equal(offer.owner, "allwain");
       });
@@ -282,9 +293,15 @@ describe("Offers routes", () => {
       const inventoryOffer = afterOrders.body.items.find(
         (item: any) => item.id === featured.body.id,
       );
-      assert.equal(inventoryOffer.meta.availableQuantity, 0);
-      assert.equal(inventoryOffer.meta.reservedQuantity, 12);
-      assert.equal(inventoryOffer.meta.soldQuantity, 0);
+      assert.equal(afterOrders.status, 200);
+      assert.equal(inventoryOffer, undefined, "Fully reserved offers leave public discovery");
+      const ownedInventory = await client.get(`/allwain/offers/${featured.body.id}`, {
+        Authorization: `Bearer ${companyToken}`,
+      });
+      assert.equal(ownedInventory.status, 200);
+      assert.equal(ownedInventory.body.meta.availableQuantity, 0);
+      assert.equal(ownedInventory.body.meta.reservedQuantity, 12);
+      assert.equal(ownedInventory.body.meta.soldQuantity, 0);
 
       const adjusted = await client.post(
         `/allwain/offers/${featured.body.id}/inventory`,

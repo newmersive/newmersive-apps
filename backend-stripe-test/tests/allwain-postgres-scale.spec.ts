@@ -3,7 +3,7 @@ import { after, before, describe, it } from "node:test";
 import { ENV } from "../src/config/env";
 import { app } from "../src/server";
 import { closePrisma, getPrisma } from "../src/db/prisma";
-import { TestClient } from "./helpers/test-client";
+import { TestClient, type TestResponse } from "./helpers/test-client";
 
 const client = new TestClient(app);
 const prisma = getPrisma();
@@ -488,10 +488,16 @@ describe("Allwain PostgreSQL marketplace at realistic volume", () => {
       buyer.headers,
     );
     assert.equal(soldOut.status, 200);
-    assert.equal(soldOut.body.items.length, 5);
+    assert.equal(soldOut.body.items.length, 0, "Unavailable/retired rows cannot be discovered by another account");
+    const ownedSoldOut = await client.get(
+      "/allwain/offers?scope=mine&status=sold_out&limit=5",
+      seller.headers,
+    );
+    assert.equal(ownedSoldOut.status, 200);
+    assert.equal(ownedSoldOut.body.items.length, 5);
     assert.ok(
-      soldOut.body.items.every(
-        (item: any) => item.allwainStatus === "sold_out",
+      ownedSoldOut.body.items.every(
+        (item: any) => item.allwainStatus === "sold_out" && item.ownerUserId === seller.userId,
       ),
     );
   });
@@ -1775,12 +1781,29 @@ describe("Allwain PostgreSQL marketplace at realistic volume", () => {
     assert.equal(grouped.status, 200);
     assert.equal(grouped.body.offers.length, 3);
 
-    const notifications = await client.get(
-      "/allwain/notifications?limit=100",
-      secondBuyer.headers,
-    );
-    assert.equal(notifications.status, 200);
-    const proposalNotifications = notifications.body.items.filter(
+    // The preceding pagination scenario deliberately stores 105 future-dated
+    // notices. New proposal notices can sit beyond the first page; read all pages.
+    const notificationItems: any[] = [];
+    const seenNotificationCursors = new Set<string>();
+    let notificationCursor: string | null = null;
+    do {
+      const notifications: TestResponse<any> = await client.get(
+        `/allwain/notifications?limit=100${notificationCursor ? `&cursor=${encodeURIComponent(notificationCursor)}` : ""}`,
+        secondBuyer.headers,
+      );
+      assert.equal(notifications.status, 200);
+      notificationItems.push(...notifications.body.items);
+      notificationCursor = notifications.body.pageInfo.hasNextPage
+        ? notifications.body.pageInfo.nextCursor
+        : null;
+      if (notifications.body.pageInfo.hasNextPage) {
+        assert.ok(notificationCursor, "Another page requires a continuation cursor");
+        assert.ok(!seenNotificationCursors.has(notificationCursor), "Notification pagination must advance");
+        seenNotificationCursors.add(notificationCursor);
+      }
+    } while (notificationCursor);
+    assert.equal(new Set(notificationItems.map(item => item.id)).size, notificationItems.length);
+    const proposalNotifications = notificationItems.filter(
       (item: any) =>
         item.type === "request.offer_received" &&
         item.route === "request" &&

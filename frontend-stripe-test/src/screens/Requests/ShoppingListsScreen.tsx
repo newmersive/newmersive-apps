@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { AppAlert as Alert } from "../../utils/appAlert";
 import {
   ActivityIndicator,
@@ -39,6 +39,8 @@ import {
   apiAuthGet,
   apiAuthPatch,
   apiAuthPost,
+  type AllwainContract,
+  type AllwainOffer,
   type AllwainShoppingList,
   type AllwainShoppingListItem,
   type AllwainShoppingListProposal,
@@ -51,6 +53,7 @@ import {
 } from "../../components/design-system";
 import type { RootStackParamList } from "../../navigation/types";
 import { useAuthStore } from "../../store/auth.store";
+import { captureAuthSession } from "../../store/authSessionBridge";
 import { colors } from "../../theme/colors";
 import { useRequestKeyboardLayout } from "../../components/useRequestKeyboardLayout";
 import { clearJourneyDraft, readJourneyDraft, writeJourneyDraft } from "../../utils/journeyDrafts";
@@ -58,15 +61,27 @@ import { getAllwainCurrentLocation } from "../../utils/currentLocation";
 import { interpretDeliveryWindow } from "../../utils/deliveryIntelligence";
 import { formatCurrency } from "../../utils/format";
 import { useAppTranslation } from "../../i18n/useAppTranslation";
+import { createShoppingListRequestGuard, shoppingProposalDetailMatches, shoppingProposalLifecycle, shoppingProposalOrderTarget, shoppingProposalWithdrawalConfirmed } from "../../utils/shoppingProposalLifecycle";
+import { shoppingProposalCopy, shoppingProposalFailure } from "../../utils/shoppingProposalCopy";
+import { useSellerProposalDraft } from "../../utils/useSellerProposalDraft";
+import { sellerProposalFingerprint, sellerProposalStamp, sellerProposalSubmissionConfirmed, type SellerProposalForm, type SellerSubmission } from "../../utils/sellerProposalDraft";
+import { sellerProposalDraftCopy } from "../../i18n/sellerProposalDraftCopy";
+import { captureAnalyticsGuard, createDiscoveryAnalyticsState, recordAppliedFilters, recordDiscoveryResults, recordPublicationWithdrawal } from "../../analytics/purchaseAnalytics";
 import type { AppLocale, TranslationKey } from "../../i18n";
+import DiscoveryFilters from "../../components/DiscoveryFilters";
+import VirtualizedResults from "../../components/VirtualizedResults";
+import DemandFilterFields from "../../components/DemandFilterFields";
+import { discoveryPageUrl, discoveryQueryKey, useDiscoveryQuery, type DiscoveryQuery } from "../../utils/discoveryFilters";
+import { discoveryFilterCopy } from "../../i18n/discoveryFilterCopy";
+import { demandFilterSummary } from "../../i18n/demandFilterCopy";
+import { discoveryPageCursor, mergeDiscoveryPage, MARKET_LIST_FILTERS, OWN_LIST_FILTERS, type DiscoveryPageInfo } from "../../utils/marketDiscovery";
 import {
   ProposalCountdown,
   ProposalValidityControl,
-  nearestProposalDuration,
 } from "../../components/ProposalValidityControl";
 
 type Props = NativeStackScreenProps<RootStackParamList, "ShoppingLists">;
-type PageInfo = { hasNextPage?: boolean; nextCursor?: string | null };
+type PageInfo = DiscoveryPageInfo;
 type ScreenView = "overview" | "create" | "detail";
 type Recurrence = "once" | "weekly" | "biweekly" | "monthly";
 type DeliveryChannel = "local_connector" | "carrier" | "seller" | "pickup";
@@ -186,19 +201,58 @@ export default function ShoppingListsScreen({ navigation, route }: Props) {
   const titleInput = useRef<TextInput>(null);
   const { locale, t } = useAppTranslation();
   const user = useAuthStore((state) => state.user);
+  const renderedSession = captureAuthSession();
+  const actorSession = useMemo(() => renderedSession, [renderedSession.owner, renderedSession.generation]);
   const appMode = useAuthStore((state) => state.appMode);
   const setAppMode = useAuthStore((state) => state.setAppMode);
   const sellerEnabled = user?.participation?.seller?.enabled === true;
   const sellerMode = route.params?.mode === "sell" || (route.params?.mode !== "buy" && appMode === "sell");
+  const screenScope = `${user?.id || ""}:${sellerMode ? "sell" : "buy"}`;
+  const requestGuard = useRef(createShoppingListRequestGuard(screenScope)).current;
+  requestGuard.setScope(screenScope);
+  const mounted = useRef(true);
+  const isCurrentScope = useCallback(() => {
+    const live = useAuthStore.getState();
+    const liveSellerMode = route.params?.mode === "sell" || (route.params?.mode !== "buy" && live.appMode === "sell");
+    return mounted.current && actorSession.isCurrent() && Boolean(user?.id) && live.user?.id === user?.id && liveSellerMode === sellerMode;
+  }, [user?.id, actorSession, sellerMode, route.params?.mode]);
 
   const [view, setView] = useState<ScreenView>(route.params?.create ? "create" : route.params?.shoppingListId ? "detail" : "overview");
   const [lists, setLists] = useState<AllwainShoppingList[]>([]);
-  const [selected, setSelected] = useState<AllwainShoppingList | null>(null);
+  const [selectedState, setSelectedState] = useState<{ scope: string; list: AllwainShoppingList } | null>(null);
+  const selected = selectedState?.scope === screenScope ? selectedState.list : null;
+  const setSelected = useCallback((list: AllwainShoppingList | null) => {
+    setSelectedState(list ? { scope: screenScope, list } : null);
+  }, [screenScope]);
   const [page, setPage] = useState<PageInfo>({});
-  const [query, setQuery] = useState("");
+  const { query, setQuery, ready: queryReady } = useDiscoveryQuery(user?.id || "", sellerMode ? "shopping-market" : "shopping-mine");
+  const appliedKey = discoveryQueryKey(query);
+  const appliedQueryRef = useRef(query);
+  const appliedKeyRef = useRef(appliedKey);
+  appliedQueryRef.current = query;
+  appliedKeyRef.current = appliedKey;
+  const overviewStarted = useRef<string | null>(null);
+  const overviewDirty = useRef(false);
+  const overviewFlight = useRef<string | null>(null);
+  const failedOverview = useRef<string | null>(null);
+  const analyticsState = useRef(createDiscoveryAnalyticsState()).current;
+  const filterCopy = discoveryFilterCopy[locale];
+  const setMutatedList = useCallback((list: AllwainShoppingList) => {
+    overviewDirty.current = true;
+    requestGuard.invalidate("overview");
+    overviewFlight.current = null;
+    setSelected(list);
+  }, [requestGuard, setSelected]);
   const [loading, setLoading] = useState(false);
+  const [overviewLoading, setOverviewLoading] = useState(false);
+  const [overviewError, setOverviewError] = useState<string | null>(null);
   const [moreBusy, setMoreBusy] = useState(false);
   const [busy, setBusy] = useState(false);
+  const sellerDraftExit = useRef<(() => Promise<boolean>) | null>(null);
+  const draftExitPending = useRef(false);
+  const bypassDraftExit = useRef(false);
+  const registerSellerDraftExit = useCallback((handler: (() => Promise<boolean>) | null) => { sellerDraftExit.current = handler; }, []);
+  const orderLookupBusy = useRef(false);
   const [error, setError] = useState<string | null>(null);
 
   const [wizardStep, setWizardStep] = useState(1);
@@ -218,13 +272,14 @@ export default function ShoppingListsScreen({ navigation, route }: Props) {
   const [allowSubstitutions, setAllowSubstitutions] = useState(false);
   const [locating, setLocating] = useState(false);
   const [draftReady, setDraftReady] = useState(false);
+  const draftAccount = useRef<string | null>(null);
   const [draftNotice, setDraftNotice] = useState<string | null>(null);
   const viewRef = useRef(view);
   viewRef.current = view;
   const localDraft = useMemo<ListDraft>(() => ({ wizardStep, editingListId, rawText, draftItems, title, description, recurrence, proposalWindowDays, needByText, locationLabel, deliveryChannel, allowSubstitutions }), [wizardStep, editingListId, rawText, draftItems, title, description, recurrence, proposalWindowDays, needByText, locationLabel, deliveryChannel, allowSubstitutions]);
   const hasDraft = Boolean(rawText || draftItems.length || title);
   const persistDraft = useCallback(async () => {
-    if (!user?.id || !draftReady || !hasDraft) return true;
+    if (!user?.id || draftAccount.current !== user.id || !draftReady || !hasDraft) return true;
     return writeJourneyDraft(user.id, "shopping-list", localDraft);
   }, [user?.id, draftReady, hasDraft, localDraft]);
 
@@ -244,6 +299,7 @@ export default function ShoppingListsScreen({ navigation, route }: Props) {
         setDeliveryChannel(draft.deliveryChannel || "local_connector"); setAllowSubstitutions(draft.allowSubstitutions === true);
         setDraftNotice("Borrador recuperado. Por privacidad, vuelve a indicar la dirección exacta si hace falta.");
       }
+      draftAccount.current = user.id;
       setDraftReady(true);
     });
     return () => { active = false; };
@@ -254,11 +310,21 @@ export default function ShoppingListsScreen({ navigation, route }: Props) {
   }, [view, persistDraft]);
   useEffect(() => { wizardScroll.current?.scrollTo({ y: 0, animated: false }); setError(null); }, [wizardStep]);
   useEffect(() => navigation.addListener("beforeRemove", (event) => {
+    if (bypassDraftExit.current) { bypassDraftExit.current = false; return; }
+    if (view === "detail" && selected && selected.buyerUserId !== user?.id && sellerDraftExit.current && ["GO_BACK", "POP"].includes(event.data.action.type)) {
+      event.preventDefault();
+      if (draftExitPending.current) return;
+      draftExitPending.current = true;
+      void sellerDraftExit.current().then(saved => {
+        if (saved && isCurrentScope()) { bypassDraftExit.current = true; navigation.dispatch(event.data.action); }
+      }).finally(() => { draftExitPending.current = false; });
+      return;
+    }
     if (view !== "create" || !["GO_BACK", "POP"].includes(event.data.action.type)) return;
     event.preventDefault();
     if (wizardStep > 1) setWizardStep((current) => current - 1);
     else { setView("overview"); navigation.setParams({ create: false }); }
-  }), [navigation, view, wizardStep]);
+  }), [navigation, view, wizardStep, selected, user?.id, isCurrentScope]);
 
   const resetWizard = useCallback(() => {
     setWizardStep(1);
@@ -279,46 +345,81 @@ export default function ShoppingListsScreen({ navigation, route }: Props) {
     setError(null);
   }, []);
 
-  const loadOverview = useCallback(async (search = "", cursor?: string | null) => {
+  useEffect(() => {
+    mounted.current = true;
+    return () => { mounted.current = false; requestGuard.invalidate(); };
+  }, [requestGuard]);
+  useLayoutEffect(() => {
+    requestGuard.invalidate();
+    setLists([]); setPage({}); setSelected(null);
+    setLoading(false); setMoreBusy(false); setBusy(false); setError(null);
+    setOverviewLoading(false); setOverviewError(null);
+    overviewStarted.current = null; overviewFlight.current = null; overviewDirty.current = false;
+    orderLookupBusy.current = false;
+  }, [screenScope, requestGuard, setSelected]);
+  useLayoutEffect(() => {
+    requestGuard.invalidate("overview");
+    overviewStarted.current = null; overviewFlight.current = null; failedOverview.current = null;
+    setLists([]); setPage({}); setOverviewLoading(false); setMoreBusy(false); setOverviewError(null);
+  }, [appliedKey, actorSession, requestGuard]);
+  useLayoutEffect(() => { draftAccount.current = null; resetWizard(); setDraftReady(false); setDraftNotice(null); }, [user?.id, resetWizard]);
+
+  const loadOverview = useCallback(async (search: DiscoveryQuery = appliedQueryRef.current, cursor?: string | null) => {
+    if (!queryReady || !isCurrentScope()) return;
+    const queryKey = discoveryQueryKey(search);
+    if (queryKey !== appliedKeyRef.current) return;
+    const flightKey = `${screenScope}:${queryKey}`;
+    if (cursor && overviewFlight.current === flightKey) return;
+    overviewFlight.current = flightKey;
+    overviewStarted.current = flightKey;
+    const ticket = requestGuard.start("overview");
+    const current = () => isCurrentScope() && requestGuard.isCurrent(ticket) && appliedKeyRef.current === queryKey;
+    const analyticsCurrent = captureAnalyticsGuard(current);
     const append = Boolean(cursor);
     if (append) setMoreBusy(true);
-    else setLoading(true);
-    setError(null);
+    else setOverviewLoading(true);
+    setOverviewError(null);
     try {
       const endpoint = sellerMode ? "/allwain/shopping-lists/market" : "/allwain/shopping-lists/mine";
       const response = await apiAuthGet<{ items: AllwainShoppingList[]; pageInfo?: PageInfo }>(
-        `${endpoint}?limit=25${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}${search.trim() ? `&q=${encodeURIComponent(search.trim())}` : ""}`,
+        discoveryPageUrl(endpoint, search, { limit: 25, cursor: cursor || undefined, allowed: sellerMode ? MARKET_LIST_FILTERS : OWN_LIST_FILTERS }),
       );
+      if (!current()) return;
       setLists((current) => {
         if (!append) return response.items || [];
-        const merged = new Map(current.map((item) => [item.id, item]));
-        (response.items || []).forEach((item) => merged.set(item.id, item));
-        return [...merged.values()];
+        return mergeDiscoveryPage(current, response.items || []);
       });
-      setPage(response.pageInfo || {});
+      setPage({ ...response.pageInfo, queryKey });
+      overviewDirty.current = false;
+      if (Array.isArray(response.items)) void recordDiscoveryResults({state:analyticsState,scope:`${screenScope}:${actorSession.generation}`,queryKey,query:search,surface:"shopping_lists",appMode:sellerMode ? "sell" : "buy",current:analyticsCurrent,resultCount:response.items.length,append,allowed:sellerMode ? MARKET_LIST_FILTERS : OWN_LIST_FILTERS});
     } catch (loadError: any) {
-      setError(loadError?.message || "No pudimos cargar las listas.");
+      if (!current()) return;
+      failedOverview.current = cursor || null;
+      setOverviewError(loadError?.message || filterCopy.error);
     } finally {
-      setLoading(false);
-      setMoreBusy(false);
+      if (current()) { overviewFlight.current = null; setOverviewLoading(false); setMoreBusy(false); }
     }
-  }, [sellerMode]);
+  }, [sellerMode, screenScope, queryReady, requestGuard, isCurrentScope, filterCopy.error]);
 
   const loadDetail = useCallback(async (shoppingListId: string) => {
+    const ticket = requestGuard.start("detail");
+    const current = () => isCurrentScope() && requestGuard.isCurrent(ticket);
     setLoading(true);
     setError(null);
     try {
       const result = await apiAuthGet<AllwainShoppingList>(
         `/allwain/shopping-lists/${shoppingListId}`,
       );
+      if (!current()) return;
       setSelected(result);
       setView("detail");
     } catch (loadError: any) {
+      if (!current()) return;
       setError(loadError?.message || "No pudimos abrir esta lista.");
     } finally {
-      setLoading(false);
+      if (current()) setLoading(false);
     }
-  }, []);
+  }, [requestGuard, isCurrentScope, screenScope, setSelected]);
 
   useFocusEffect(
     useCallback(() => {
@@ -332,8 +433,8 @@ export default function ShoppingListsScreen({ navigation, route }: Props) {
       }
       if (viewRef.current === "create") return;
       setView("overview");
-      void loadOverview();
-    }, [loadDetail, loadOverview, resetWizard, route.params?.create, route.params?.shoppingListId]),
+      if (overviewStarted.current !== `${screenScope}:${appliedKey}` || overviewDirty.current) void loadOverview();
+    }, [loadDetail, loadOverview, resetWizard, screenScope, appliedKey, route.params?.create, route.params?.shoppingListId]),
   );
 
   function beginCreate() {
@@ -366,6 +467,17 @@ export default function ShoppingListsScreen({ navigation, route }: Props) {
   }
 
   function back() {
+    if (view === "detail" && selected && selected.buyerUserId !== user?.id && sellerDraftExit.current) {
+      if (draftExitPending.current) return;
+      draftExitPending.current = true;
+      void sellerDraftExit.current().then(saved => { if (saved && isCurrentScope()) leaveDetail(); }).finally(() => { draftExitPending.current = false; });
+      return;
+    }
+    leaveDetail();
+  }
+
+  function leaveDetail() {
+    requestGuard.invalidate("detail");
     if (view === "create" && wizardStep > 1) {
       setWizardStep((current) => current - 1);
       return;
@@ -377,7 +489,8 @@ export default function ShoppingListsScreen({ navigation, route }: Props) {
     if (view === "create") navigation.setParams({ create: false });
     setSelected(null);
     setView("overview");
-    void loadOverview(query);
+    navigation.setParams({ shoppingListId: undefined, create: false });
+    if (overviewDirty.current || overviewStarted.current !== `${screenScope}:${appliedKey}`) void loadOverview();
   }
 
   async function parseListText(text = rawText) {
@@ -595,7 +708,7 @@ export default function ShoppingListsScreen({ navigation, route }: Props) {
           )
         : created;
       if (useAuthStore.getState().user?.id !== accountId) return;
-      setSelected(result);
+      setMutatedList(result);
       setView("detail");
       if (user?.id) await clearJourneyDraft(user.id, "shopping-list");
       resetWizard();
@@ -608,7 +721,7 @@ export default function ShoppingListsScreen({ navigation, route }: Props) {
       );
     } catch (saveError: any) {
       if (created) {
-        setSelected(created);
+        setMutatedList(created);
         setView("detail");
         setError("La lista quedó guardada como borrador. Revisa las indicaciones antes de publicarla.");
       } else {
@@ -628,7 +741,7 @@ export default function ShoppingListsScreen({ navigation, route }: Props) {
         `/allwain/shopping-lists/${selected.id}/publish`,
         {},
       );
-      setSelected(published);
+      setMutatedList(published);
     } catch (publishError: any) {
       setError(publishError?.message || "No pudimos publicar la lista.");
     } finally {
@@ -649,14 +762,14 @@ export default function ShoppingListsScreen({ navigation, route }: Props) {
         { selectedItemIds },
       );
       if (!publishAfterReview) {
-        setSelected(reviewed);
+        setMutatedList(reviewed);
         return;
       }
       const published = await apiAuthPost<AllwainShoppingList>(
         `/allwain/shopping-lists/${reviewed.id}/publish`,
         {},
       );
-      setSelected(published);
+      setMutatedList(published);
       Alert.alert(
         "Peticiones publicadas",
         `${selectedItemIds.length} producto${selectedItemIds.length === 1 ? "" : "s"} ya puede${selectedItemIds.length === 1 ? "" : "n"} recibir propuestas.`,
@@ -706,7 +819,10 @@ export default function ShoppingListsScreen({ navigation, route }: Props) {
   }
 
   async function cancelList() {
-    if (!selected) return;
+    if (!selected || !user?.id || sellerMode || !isCurrentScope()) return;
+    const item = selected;
+    const accountId = user.id;
+    const analyticsCurrent = captureAnalyticsGuard(isCurrentScope);
     Alert.alert(
       "Cancelar lista",
       "Las propuestas quedarán cerradas. Esta acción no afecta a pedidos ya adjudicados.",
@@ -716,17 +832,21 @@ export default function ShoppingListsScreen({ navigation, route }: Props) {
           text: "Cancelar lista",
           style: "destructive",
           onPress: async () => {
+            if (!isCurrentScope()) return;
             setBusy(true);
             try {
               const canceled = await apiAuthPost<AllwainShoppingList>(
-                `/allwain/shopping-lists/${selected.id}/cancel`,
+                `/allwain/shopping-lists/${item.id}/cancel`,
                 {},
               );
-              setSelected(canceled);
+              if (!isCurrentScope()) return;
+              if (canceled.id !== item.id || canceled.buyerUserId !== accountId || canceled.status !== "canceled") throw new Error("El servidor no confirmó la cancelación de esta lista.");
+              void recordPublicationWithdrawal("shopping_list","buy",analyticsCurrent);
+              setMutatedList(canceled);
             } catch (cancelError: any) {
-              setError(cancelError?.message || "No pudimos cancelar la lista.");
+              if (isCurrentScope()) setError(cancelError?.message || "No pudimos cancelar la lista.");
             } finally {
-              setBusy(false);
+              if (isCurrentScope()) setBusy(false);
             }
           },
         },
@@ -743,7 +863,7 @@ export default function ShoppingListsScreen({ navigation, route }: Props) {
         `/allwain/shopping-lists/${selected.id}/duplicate`,
         { proposalWindowDays: 14 },
       );
-      setSelected(copy);
+      setMutatedList(copy);
       editDraft(selectedItemIds ? { ...copy, items: selected.items.filter(item => selectedItemIds.includes(item.id)) } : copy);
       Alert.alert(
         "Lista preparada",
@@ -757,11 +877,44 @@ export default function ShoppingListsScreen({ navigation, route }: Props) {
   }
 
   async function chooseProposal(proposal: AllwainShoppingListProposal) {
+    if (!selected || !shoppingProposalLifecycle(selected, proposal).canAccept || !isCurrentScope()) return;
+    const session = captureAuthSession(), accountId = user?.id;
     await setAppMode("buy");
+    if (!mounted.current || !session.isCurrent() || useAuthStore.getState().user?.id !== accountId || useAuthStore.getState().appMode !== "buy") return;
     navigation.navigate("MainTabs", {
       screen: "Ofertas",
       params: { offerId: proposal.id },
     });
+  }
+
+  async function openProposalOrders(proposal: AllwainShoppingListProposal, scope: "buyer" | "seller") {
+    const accountId = user?.id;
+    if (!accountId || busy || orderLookupBusy.current || !isCurrentScope()) return;
+    orderLookupBusy.current = true;
+    const ticket = requestGuard.start("orders");
+    const current = () => isCurrentScope() && requestGuard.isCurrent(ticket);
+    setBusy(true); setError(null);
+    try {
+      const response = await apiAuthGet<{ items: AllwainContract[]; pageInfo?: PageInfo }>(
+        `/allwain/contracts?scope=${scope}&offerId=${encodeURIComponent(proposal.id)}&limit=2`,
+      );
+      if (!current()) return;
+      const copy = shoppingProposalCopy(locale);
+      const target = shoppingProposalOrderTarget(response.items || [], response.pageInfo?.hasNextPage === true, proposal.id, accountId, scope);
+      if (!target) { setError(copy.ordersError); return; }
+      await setAppMode(scope === "seller" ? "sell" : "buy");
+      if (!current()) return;
+      const navigate = () => { if (current()) navigation.navigate("MainTabs", { screen: "Ofertas", params: target }); };
+      if (target.contractId) navigate();
+      else Alert.alert(copy.orders, copy.multipleOrders, [
+        { text: copy.cancel, style: "cancel" },
+        { text: copy.orders, onPress: navigate },
+      ]);
+    } catch (orderError: any) {
+      if (current()) setError(orderError?.message || shoppingProposalCopy(locale).ordersError);
+    } finally {
+      if (current()) { orderLookupBusy.current = false; setBusy(false); }
+    }
   }
 
   function messageUser(targetUserId: string, targetName: string) {
@@ -1014,7 +1167,7 @@ export default function ShoppingListsScreen({ navigation, route }: Props) {
           <>
             <View style={styles.detailHeader}>
               <View style={styles.detailTitleRow}>
-                <Text style={styles.detailTitle}>{list.title}</Text>
+                <Text testID="shopping-selected-title" style={styles.detailTitle}>{list.title}</Text>
                 <StatusChip {...listStatus(list, t)} />
               </View>
               <Text style={styles.detailMeta}>
@@ -1078,6 +1231,7 @@ export default function ShoppingListsScreen({ navigation, route }: Props) {
                 onCancel={() => void cancelList()}
                 onDuplicate={(itemIds) => void duplicateList(itemIds)}
                 onChoose={(proposal) => void chooseProposal(proposal)}
+                onOrders={(proposal) => void openProposalOrders(proposal, "buyer")}
                 onMessage={messageUser}
                 onSaveOcrSelection={(ids) => void saveOcrSelection(ids, false)}
                 onPublishOcrSelection={(ids) => void saveOcrSelection(ids, true)}
@@ -1085,14 +1239,20 @@ export default function ShoppingListsScreen({ navigation, route }: Props) {
               />
             ) : (
               <SellerProposalEditor
+                key={`${screenScope}:${actorSession.generation}:${list.id}`}
                 list={list}
+                actorAccountId={user?.id || ""}
+                registerDraftExit={registerSellerDraftExit}
+                onExit={leaveDetail}
                 sellerEnabled={sellerEnabled}
                 busy={busy}
                 setBusy={setBusy}
                 onActivate={() => navigation.navigate("ActivateSeller", { shoppingListId: list.id })}
-                onSaved={setSelected}
+                isCurrentScope={isCurrentScope}
+                onSaved={(updated) => { requestGuard.invalidate("detail"); setMutatedList(updated); }}
                 onError={setError}
                 onMessage={() => messageUser(list.buyer.id, list.buyer.name)}
+                onOrders={() => { if (list.myProposal) void openProposalOrders(list.myProposal, "seller"); }}
               />
             )}
           </>
@@ -1102,7 +1262,14 @@ export default function ShoppingListsScreen({ navigation, route }: Props) {
   }
 
   return (
-    <ScrollView style={styles.screen} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+    <VirtualizedResults
+      testID="shopping-overview-results"
+      restoreKey={`${screenScope}:shopping-overview:${appliedKey}`}
+      style={styles.screen}
+      contentContainerStyle={styles.content}
+      data={lists}
+      keyExtractor={list => list.id}
+      ListHeaderComponent={<View style={styles.overviewHeader}>
       <Text style={styles.eyebrow}>{sellerMode ? t("shopping.sellerEyebrow") : t("shopping.buyerEyebrow")}</Text>
       <Text style={styles.title}>{sellerMode ? t("shopping.sellerTitle") : t("shopping.buyerTitle")}</Text>
       <Text style={styles.subtitle}>
@@ -1115,24 +1282,15 @@ export default function ShoppingListsScreen({ navigation, route }: Props) {
       ) : !sellerEnabled ? (
         <BigActionButton label={t("home.seller.activate")} tone="dark" onPress={() => navigation.navigate("ActivateSeller")} />
       ) : null}
-      <View style={styles.searchRow}>
-        <Search size={19} color={colors.mutedText} />
-        <TextInput
-          style={styles.searchInput}
-          value={query}
-          onChangeText={setQuery}
-          placeholder={t("shopping.searchPlaceholder")}
-          placeholderTextColor={colors.mutedText}
-          returnKeyType="search"
-          onSubmitEditing={() => void loadOverview(query)}
-        />
-        <TouchableOpacity style={styles.searchGo} onPress={() => void loadOverview(query)}>
-          <ChevronRight size={20} color="#FFFFFF" />
-        </TouchableOpacity>
-      </View>
-      {loading ? <ActivityIndicator color={colors.primary} /> : null}
-      {error ? <Text style={styles.error}>{error}</Text> : null}
-      {!loading && !error && !lists.length ? (
+      <DiscoveryFilters value={query} onApply={next => { const current = captureAnalyticsGuard(isCurrentScope); void recordAppliedFilters({state:analyticsState,scope:`${screenScope}:${actorSession.generation}`,queryKey:discoveryQueryKey(next),query:next,surface:"shopping_lists",appMode:sellerMode ? "sell" : "buy",current,allowed:sellerMode ? MARKET_LIST_FILTERS : OWN_LIST_FILTERS},appliedKey); setQuery(next); }} kind="requests" disabled={!queryReady}
+        allowed={sellerMode ? MARKET_LIST_FILTERS : OWN_LIST_FILTERS}
+        statuses={sellerMode ? undefined : ["draft", "published", "partially_awarded", "awarded", "closed", "canceled", "archived"].map(status => ({ value: status, label: listStatus({ status } as AllwainShoppingList, t).label }))}
+        extra={(draft, setDraft) => <DemandFilterFields value={draft} onChange={setDraft} lists own={!sellerMode} />}
+        extraSummary={value => demandFilterSummary(locale, value)}
+      />
+      {overviewLoading || !queryReady ? <ActivityIndicator color={colors.primary} /> : null}
+      {overviewError ? <View style={styles.discoveryFailure}><Text style={styles.error}>{overviewError}</Text><BigActionButton label={filterCopy.retry} tone="light" busy={overviewLoading || moreBusy} onPress={() => void loadOverview(appliedQueryRef.current, failedOverview.current)} /></View> : null}
+      {queryReady && !overviewLoading && !overviewError && !lists.length ? (
         <EmptyState
           icon={<ShoppingCart size={24} color={colors.primary} />}
           title={sellerMode ? t("shopping.emptySellerTitle") : t("shopping.emptyBuyerTitle")}
@@ -1141,11 +1299,12 @@ export default function ShoppingListsScreen({ navigation, route }: Props) {
           onAction={sellerMode ? undefined : beginCreate}
         />
       ) : null}
-      {lists.map((list) => {
+      </View>}
+      renderItem={({ item: list }) => {
         const status = listStatus(list, t);
         const firstImage = list.items[0]?.imageMeta;
         return (
-          <TouchableOpacity key={list.id} style={styles.listCard} onPress={() => openList(list)} activeOpacity={0.86}>
+          <TouchableOpacity testID="shopping-list-card" style={styles.listCard} onPress={() => openList(list)} activeOpacity={0.86}>
             <View style={styles.listCardTop}>
               {firstImage?.url ? (
                 <View style={styles.listImage}>
@@ -1174,16 +1333,19 @@ export default function ShoppingListsScreen({ navigation, route }: Props) {
             </View>
             <View style={styles.listCardFooter}>
               <Text style={styles.proposalCount}>{list.proposalCount === 1 ? t("shopping.proposalOne") : t("shopping.proposalMany", { count: list.proposalCount })}</Text>
-              <Text style={styles.openLabel}>{sellerMode ? (list.myProposal?.isSelected ? t("shopping.proposalSelected") : list.myProposal ? t("shopping.editProposal") : t("shopping.prepareProposal")) : t("shopping.open")}</Text>
+              <Text style={styles.openLabel}>{sellerMode ? (shoppingProposalLifecycle(list, list.myProposal).selected ? t("shopping.proposalSelected") : shoppingProposalLifecycle(list, list.myProposal).retired ? shoppingProposalCopy(locale).viewHistory : list.myProposal ? t("shopping.editProposal") : t("shopping.prepareProposal")) : t("shopping.open")}</Text>
               <ChevronRight size={18} color={colors.primary} />
             </View>
           </TouchableOpacity>
         );
-      })}
-      {page.hasNextPage && page.nextCursor ? (
-        <BigActionButton label={t("market.showMore")} tone="light" busy={moreBusy} onPress={() => void loadOverview(query, page.nextCursor)} />
+      }}
+      ListFooterComponent={<View>
+
+      {discoveryPageCursor(page, appliedKey) ? (
+        <BigActionButton label={t("market.showMore")} tone="light" busy={moreBusy} disabled={overviewLoading} onPress={() => void loadOverview(appliedQueryRef.current, discoveryPageCursor(page, appliedKey))} />
       ) : null}
-    </ScrollView>
+      </View>}
+    />
   );
 }
 
@@ -1320,6 +1482,7 @@ function BuyerListActions({
   onCancel,
   onDuplicate,
   onChoose,
+  onOrders,
   onMessage,
   onSaveOcrSelection,
   onPublishOcrSelection,
@@ -1332,11 +1495,14 @@ function BuyerListActions({
   onCancel: () => void;
   onDuplicate: (itemIds?: string[]) => void;
   onChoose: (proposal: AllwainShoppingListProposal) => void;
+  onOrders: (proposal: AllwainShoppingListProposal) => void;
   onMessage: (userId: string, name: string) => void;
   onSaveOcrSelection: (itemIds: string[]) => void;
   onPublishOcrSelection: (itemIds: string[]) => void;
   onRestartOcr: () => void;
 }) {
+  const { locale } = useAppTranslation();
+  const copy = shoppingProposalCopy(locale);
   if (list.status === "draft") {
     if (list.sourceKind === "ocr_document") {
       return (
@@ -1369,7 +1535,9 @@ function BuyerListActions({
           body="Aquí verás propuestas completas y parciales para comparar producto por producto."
         />
       ) : null}
-      {list.proposals.map((proposal) => (
+      {list.proposals.map((proposal) => {
+        const lifecycle = shoppingProposalLifecycle(list, proposal);
+        return (
         <View key={proposal.id} style={[styles.proposalCard, list.selectedOfferId === proposal.id && styles.selectedProposal]}>
           <View style={styles.proposalTop}>
             <View style={styles.proposalCopy}>
@@ -1379,6 +1547,9 @@ function BuyerListActions({
                   ? `${proposal.provider.score.toFixed(1).replace(".", ",")} de 5 · ${proposal.provider.reviewCount} opiniones`
                   : "Empresa aún sin opiniones"}
               </Text>
+              {lifecycle.withdrawn ? <StatusChip label={copy.withdrawn} tone="neutral" /> :
+                lifecycle.retired ? <StatusChip label={copy.unavailable} tone="neutral" /> :
+                  lifecycle.selected ? <StatusChip label="Elegida" tone="success" /> : null}
               <StatusChip
                 label={proposal.coverageKind === "full" ? "Lista completa" : `${proposal.coveredItemCount || proposal.items.length} de ${proposal.totalItemCount || list.items.length} productos`}
                 tone={proposal.coverageKind === "full" ? "success" : "warning"}
@@ -1408,26 +1579,33 @@ function BuyerListActions({
             </View>
           ))}
           <Text style={styles.proposalDetail}>{proposal.deliveryEstimate || "Entrega por concretar"}</Text>
-          <ProposalCountdown expiresAt={proposal.validUntil} compact />
+          {!lifecycle.retired && !lifecycle.selected ? <ProposalCountdown expiresAt={proposal.validUntil} compact /> : null}
           {proposal.description ? <Text style={styles.proposalDescription}>{proposal.description}</Text> : null}
           <View style={styles.proposalActions}>
             <TouchableOpacity style={styles.messageButton} onPress={() => onMessage(proposal.provider.id, proposal.provider.name)}>
               <MessageCircle size={17} color={colors.primary} />
               <Text style={styles.messageButtonText}>Mensaje privado</Text>
             </TouchableOpacity>
-            {proposal.isSelected ? (
-              <StatusChip label="Elegida" tone="success" />
-            ) : ["published", "partially_awarded"].includes(list.status) && proposal.isSelectable ? (
-              <TouchableOpacity style={styles.chooseButton} onPress={() => onChoose(proposal)}>
+            {lifecycle.selected ? (
+              <TouchableOpacity style={styles.messageButton} onPress={() => onOrders(proposal)} disabled={busy}>
+                <ShoppingCart size={17} color={colors.primary} />
+                <Text style={styles.messageButtonText}>{copy.orders}</Text>
+              </TouchableOpacity>
+            ) : lifecycle.withdrawn ? (
+              <StatusChip label={copy.withdrawn} tone="neutral" />
+            ) : lifecycle.retired ? (
+              <StatusChip label={copy.unavailable} tone="neutral" />
+            ) : lifecycle.canAccept ? (
+              <TouchableOpacity style={styles.chooseButton} onPress={() => onChoose(proposal)} disabled={busy}>
                 <Text style={styles.chooseButtonText}>{proposal.coverageKind === "full" ? "Elegir y pagar" : "Elegir esta parte"}</Text>
                 <ChevronRight size={17} color="#FFFFFF" />
               </TouchableOpacity>
             ) : ["published", "partially_awarded"].includes(list.status) ? (
-              <Text style={styles.proposalUnavailable}>Incluye productos que ya están cubiertos</Text>
+              <Text style={styles.proposalUnavailable}>{lifecycle.expired ? copy.expired : copy.covered}</Text>
             ) : null}
           </View>
         </View>
-      ))}
+      ); })}
       {list.status === "published" ? (
         <TouchableOpacity style={styles.cancelAction} onPress={onCancel} disabled={busy}>
           <Text style={styles.cancelActionText}>Cancelar esta lista</Text>
@@ -1448,6 +1626,9 @@ function BuyerListActions({
 
 function SellerProposalEditor({
   list,
+  actorAccountId,
+  registerDraftExit,
+  onExit,
   sellerEnabled,
   busy,
   setBusy,
@@ -1455,8 +1636,13 @@ function SellerProposalEditor({
   onSaved,
   onError,
   onMessage,
+  onOrders,
+  isCurrentScope,
 }: {
   list: AllwainShoppingList;
+  actorAccountId: string;
+  registerDraftExit?: (handler: (() => Promise<boolean>) | null) => void;
+  onExit?: () => void;
   sellerEnabled: boolean;
   busy: boolean;
   setBusy: (value: boolean) => void;
@@ -1464,66 +1650,83 @@ function SellerProposalEditor({
   onSaved: (list: AllwainShoppingList) => void;
   onError: (message: string | null) => void;
   onMessage: () => void;
+  onOrders: () => void;
+  isCurrentScope: () => boolean;
 }) {
+  const { locale } = useAppTranslation();
+  const copy = shoppingProposalCopy(locale);
+  const draftCopy = sellerProposalDraftCopy[locale] || sellerProposalDraftCopy.es;
+  const lifecycle = shoppingProposalLifecycle(list, list.myProposal);
+  const liveList = useRef(list);
+  liveList.current = list;
+  const mounted = useRef(true);
+  const mutationRevision = useRef(0);
+  const mutationBusy = useRef(false);
+  useEffect(() => {
+    mounted.current = true;
+    return () => { mounted.current = false; mutationRevision.current += 1; };
+  }, []);
+  const isCurrentMutation = (revision: number, listId: string) =>
+    mounted.current && isCurrentScope() && mutationRevision.current === revision && liveList.current.id === listId;
   const existingByItem = useMemo(
     () => new Map((list.myProposal?.items || []).map((item) => [item.shoppingListItemId, item])),
     [list.myProposal],
   );
   const openItems = useMemo(
-    () => list.items.filter((item) => item.availabilityStatus !== "awarded"),
+    () => list.items.filter((item) => item.availabilityStatus !== "awarded" && item.availabilityStatus !== "discarded" && item.reviewStatus !== "discarded"),
     [list.items],
   );
-  const [selectedItems, setSelectedItems] = useState<Record<string, boolean>>({});
-  const [prices, setPrices] = useState<Record<string, string>>({});
-  const [substitutions, setSubstitutions] = useState<Record<string, boolean>>({});
-  const [substitutionNames, setSubstitutionNames] = useState<Record<string, string>>({});
-  const [description, setDescription] = useState(list.myProposal?.description || "");
-  const [deliveryEstimate, setDeliveryEstimate] = useState(list.myProposal?.deliveryEstimate || "");
-  const [shippingWeightKg, setShippingWeightKg] = useState("");
-  const [validForMinutes, setValidForMinutes] = useState(10_080);
+  const draft = useSellerProposalDraft(actorAccountId, list, isCurrentScope);
+  const draftSnapshot = `${sellerProposalFingerprint(list)}:${sellerProposalStamp(list.myProposal)}:${JSON.stringify(draft.form)}`;
+  const liveDraftSnapshot = useRef(draftSnapshot);
+  liveDraftSnapshot.current = draftSnapshot;
+  const { selectedItems, prices, substitutions, substitutionNames, description, deliveryEstimate, shippingWeightKg, validForMinutes } = draft.form;
+  function field<K extends keyof SellerProposalForm>(name: K, update: React.SetStateAction<SellerProposalForm[K]>) {
+    if (busy || mutationBusy.current || !draft.ready || !lifecycle.canEdit) return;
+    draft.update(current => ({ ...current, [name]: typeof update === "function" ? (update as (old: SellerProposalForm[K]) => SellerProposalForm[K])(current[name]) : update }));
+  }
+  const setSelectedItems = (value: React.SetStateAction<Record<string, boolean>>) => field("selectedItems", value);
+  const setPrices = (value: React.SetStateAction<Record<string, string>>) => field("prices", value);
+  const setSubstitutions = (value: React.SetStateAction<Record<string, boolean>>) => field("substitutions", value);
+  const setSubstitutionNames = (value: React.SetStateAction<Record<string, string>>) => field("substitutionNames", value);
+  const setDescription = (value: string) => field("description", value);
+  const setDeliveryEstimate = (value: string) => field("deliveryEstimate", value);
+  const setShippingWeightKg = (value: string) => field("shippingWeightKg", value);
+  const setValidForMinutes = (value: number) => field("validForMinutes", value);
 
-  useEffect(() => {
-    setSelectedItems(
-      Object.fromEntries(
-        list.items.map((item) => [
-          item.id,
-          item.availabilityStatus !== "awarded" &&
-            (existingByItem.size ? existingByItem.has(item.id) : true),
-        ]),
-      ),
-    );
-    setPrices(
-      Object.fromEntries(
-        list.items.map((item) => [item.id, euroInput(existingByItem.get(item.id)?.unitPriceAmount)]),
-      ),
-    );
-    setSubstitutions(
-      Object.fromEntries(
-        list.items.map((item) => [item.id, existingByItem.get(item.id)?.isSubstitution === true]),
-      ),
-    );
-    setSubstitutionNames(
-      Object.fromEntries(
-        list.items.map((item) => [item.id, existingByItem.get(item.id)?.productName || item.productName]),
-      ),
-    );
-    setDescription(list.myProposal?.description || "");
-    setDeliveryEstimate(list.myProposal?.deliveryEstimate || "");
-    const existingWeight = list.myProposal?.meta?.shippingWeightKg;
-    setShippingWeightKg(
-      typeof existingWeight === "number"
-        ? String(existingWeight).replace(".", ",")
-        : "",
-    );
-    const expiresAt = list.myProposal?.validUntil;
-    const remainingMinutes = expiresAt
-      ? Math.max(
-          60,
-          Math.ceil((new Date(expiresAt).getTime() - Date.now()) / 60_000),
-        )
-      : 10_080;
-    setValidForMinutes(nearestProposalDuration(remainingMinutes));
-  }, [existingByItem, list.items, list.myProposal]);
+  async function saveForExit() {
+    if (busy || mutationBusy.current || !isCurrentScope()) return false;
+    mutationBusy.current = true; setBusy(true);
+    try {
+      const saved = await draft.save();
+      if (!mounted.current || !isCurrentScope()) return false;
+      if (!saved) onError(draftCopy.storageError);
+      return saved;
+    } finally { if (mounted.current && isCurrentScope()) { mutationBusy.current = false; setBusy(false); } }
+  }
+  useEffect(() => { registerDraftExit?.(saveForExit); return () => registerDraftExit?.(null); }, [registerDraftExit, draft.save, busy, list.id, actorAccountId]);
+  useFocusEffect(useCallback(() => () => { if (!mutationBusy.current) void draft.save(); }, [draft.save]));
+
+  function confirmDiscard() {
+    if (busy || mutationBusy.current || draft.recovering || !isCurrentScope()) return;
+    const revision = mutationRevision.current;
+    const confirmedSnapshot = liveDraftSnapshot.current;
+    Alert.alert(draftCopy.discardTitle, draftCopy.discardBody, [
+      { text: draftCopy.cancel, style: "cancel" },
+      { text: draftCopy.discard, style: "destructive", onPress: () => {
+        if (!isCurrentMutation(revision, list.id) || confirmedSnapshot !== liveDraftSnapshot.current || busy || mutationBusy.current) return;
+        mutationBusy.current = true; setBusy(true);
+        void draft.discard().then(removed => { if (mounted.current && isCurrentScope() && !removed) onError(draftCopy.storageError); }).finally(() => { if (mounted.current && isCurrentScope()) { mutationBusy.current = false; setBusy(false); } });
+      } },
+    ]);
+  }
+  const draftBanner = <View style={styles.section}>
+    {draft.recovering ? <Text style={styles.fieldHint}>{draftCopy.recovering}</Text> : null}
+    {draft.storageError ? <Text accessibilityRole="alert" style={styles.error}>{draftCopy.storageError}</Text> : null}
+    {draft.notice ? <Text style={styles.fieldHint}>{draftCopy[draft.notice]}</Text> : null}
+    {!draft.ready && !draft.recovering ? <BigActionButton label={draftCopy.retry} onPress={() => void draft.recover()} disabled={busy} /> : null}
+    {draft.requiresReview && lifecycle.canEdit ? <BigActionButton label={draftCopy.review} onPress={draft.acknowledge} disabled={busy || !draft.ready} /> : null}
+  </View>;
 
   const proposalItems = useMemo(
     () => openItems.filter((item) => selectedItems[item.id]),
@@ -1559,15 +1762,13 @@ function SellerProposalEditor({
     });
   const coversAllPending =
     openItems.length > 0 && proposalItems.length === openItems.length;
-  const proposalLocked =
-    list.myProposal?.isSelected === true || list.myProposal?.status === "selected";
 
   function chooseAllPending() {
     setSelectedItems(
       Object.fromEntries(
         list.items.map((item) => [
           item.id,
-          item.availabilityStatus !== "awarded",
+          item.availabilityStatus !== "awarded" && item.availabilityStatus !== "discarded" && item.reviewStatus !== "discarded",
         ]),
       ),
     );
@@ -1581,7 +1782,7 @@ function SellerProposalEditor({
   }
 
   function toggleItem(item: AllwainShoppingListItem) {
-    if (item.availabilityStatus === "awarded") return;
+    if (item.availabilityStatus === "awarded" || item.availabilityStatus === "discarded" || item.reviewStatus === "discarded") return;
     setSelectedItems((current) => ({
       ...current,
       [item.id]: !current[item.id],
@@ -1589,34 +1790,44 @@ function SellerProposalEditor({
   }
 
   async function submit() {
+    if (mutationBusy.current || busy || !isCurrentScope() || !draft.ready || draft.requiresReview || !shoppingProposalLifecycle(liveList.current, liveList.current.myProposal).canEdit) return;
     if (!complete || !description.trim() || !deliveryEstimate.trim()) {
       onError("Elige al menos un producto e indica sus precios, cómo lo servirás y el plazo de entrega.");
       return;
     }
+    mutationBusy.current = true;
+    const revision = ++mutationRevision.current;
     setBusy(true);
     onError(null);
+    const submission: SellerSubmission = {
+      listVersion: list.version, description: description.trim(), deliveryEstimate: deliveryEstimate.trim(), shippingWeightKg: parseNumber(shippingWeightKg), validForMinutes,
+      items: proposalItems.map(item => ({ shoppingListItemId: item.id, productName: substitutions[item.id] ? (substitutionNames[item.id] || "").trim() : item.productName, quantity: item.quantity, unit: item.unit, unitPrice: parseNumber(prices[item.id] || ""), isSubstitution: substitutions[item.id] === true })),
+    };
+    const sourceFingerprint = sellerProposalFingerprint(list);
+    const sourceProposalStamp = sellerProposalStamp(list.myProposal);
+    const sourceCurrent = () => sellerProposalFingerprint(liveList.current) === sourceFingerprint && sellerProposalStamp(liveList.current.myProposal) === sourceProposalStamp;
     try {
+      if (!await draft.save()) throw new Error(draftCopy.storageError);
+      if (!isCurrentMutation(revision, list.id)) return;
+      if (!sourceCurrent()) throw new Error(draftCopy.freshChanged);
+      const fresh = await apiAuthGet<AllwainShoppingList>(`/allwain/shopping-lists/${encodeURIComponent(list.id)}`);
+      if (!isCurrentMutation(revision, list.id)) return;
+      if (!sourceCurrent()) throw new Error(draftCopy.freshChanged);
+      if (fresh.id !== list.id || fresh.buyerUserId !== list.buyerUserId || (fresh.myProposal && (fresh.myProposal.ownerUserId || fresh.myProposal.provider?.id) !== actorAccountId)) throw new Error(draftCopy.receiptError);
+      if (sellerProposalFingerprint(fresh) !== sellerProposalFingerprint(list) || sellerProposalStamp(fresh.myProposal) !== sellerProposalStamp(list.myProposal) || !shoppingProposalLifecycle(fresh, fresh.myProposal).canEdit || (fresh.proposalDeadlineAt && Date.parse(fresh.proposalDeadlineAt) <= Date.now())) {
+        onSaved(fresh); onError(draftCopy.freshChanged); return;
+      }
       const updated = await apiAuthPost<AllwainShoppingList>(
-        `/allwain/shopping-lists/${list.id}/proposals`,
-        {
-          listVersion: list.version,
-          description: description.trim(),
-          deliveryEstimate: deliveryEstimate.trim(),
-          shippingWeightKg: parseNumber(shippingWeightKg),
-          validForMinutes,
-          items: proposalItems.map((item) => ({
-            shoppingListItemId: item.id,
-            productName: substitutions[item.id]
-              ? (substitutionNames[item.id] || "").trim()
-              : item.productName,
-            quantity: item.quantity,
-            unit: item.unit,
-            unitPrice: parseNumber(prices[item.id] || ""),
-            isSubstitution: substitutions[item.id] === true,
-          })),
-        },
+        `/allwain/shopping-lists/${encodeURIComponent(list.id)}/proposals`, submission,
       );
+      if (!isCurrentMutation(revision, list.id)) return;
+      if (!sourceCurrent()) throw new Error(draftCopy.freshChanged);
+      if (!sellerProposalSubmissionConfirmed(fresh, updated, actorAccountId, submission)) throw new Error(draftCopy.receiptError);
+      const cleared = await draft.discard(true);
+      if (!isCurrentMutation(revision, list.id)) return;
+      if (!sourceCurrent()) throw new Error(draftCopy.freshChanged);
       onSaved(updated);
+      if (!cleared) onError(draftCopy.cleanupError);
       Alert.alert(
         "Propuesta enviada",
         coversAllPending
@@ -1624,9 +1835,74 @@ function SellerProposalEditor({
           : `Has puesto precio a ${proposalItems.length} producto${proposalItems.length === 1 ? "" : "s"}.`,
       );
     } catch (submitError: any) {
-      onError(submitError?.message || "No pudimos enviar la propuesta.");
+      if (!isCurrentMutation(revision, list.id)) return;
+      if (["SHOPPING_LIST_CHANGED", "SHOPPING_LIST_ITEMS_ALREADY_AWARDED", "SHOPPING_LIST_NOT_OPEN", "SHOPPING_LIST_PROPOSAL_ALREADY_SELECTED", "PROPOSAL_NOT_EDITABLE", "PROPOSAL_NOT_IMPROVED"].includes(submitError?.message)) {
+        try {
+          const fresh = await apiAuthGet<AllwainShoppingList>(`/allwain/shopping-lists/${encodeURIComponent(list.id)}`);
+          if (!isCurrentMutation(revision, list.id)) return;
+          if (fresh.id === list.id && fresh.buyerUserId === list.buyerUserId && (!fresh.myProposal || (fresh.myProposal.ownerUserId || fresh.myProposal.provider?.id) === actorAccountId)) onSaved(fresh);
+        } catch { /* Keep the saved local form until the latest list can be verified. */ }
+      }
+      onError(shoppingProposalFailure(locale, submitError, "No pudimos enviar la propuesta."));
     } finally {
-      setBusy(false);
+      if (isCurrentMutation(revision, list.id)) { mutationBusy.current = false; setBusy(false); }
+    }
+  }
+
+  function confirmWithdrawal() {
+    const proposal = list.myProposal;
+    if (!proposal || busy || mutationBusy.current || !lifecycle.canWithdraw || !isCurrentScope()) return;
+    Alert.alert(copy.confirmTitle, copy.confirmBody, [
+      { text: copy.cancel, style: "cancel" },
+      { text: copy.withdraw, style: "destructive", onPress: () => {
+        const current = liveList.current.myProposal;
+        if (!mounted.current || !isCurrentScope() || current?.id !== proposal.id || current.updatedAt !== proposal.updatedAt ||
+          !shoppingProposalLifecycle(liveList.current, current).canWithdraw) return;
+        void withdrawProposal(proposal);
+      } },
+    ]);
+  }
+
+  async function withdrawProposal(proposal: AllwainShoppingListProposal) {
+    if (mutationBusy.current || !isCurrentScope()) return;
+    mutationBusy.current = true;
+    const revision = ++mutationRevision.current;
+    const analyticsCurrent = captureAnalyticsGuard(() => isCurrentMutation(revision, list.id));
+    setBusy(true); onError(null);
+    let retired = false;
+    try {
+      const receipt = await apiAuthPost<AllwainOffer>(`/allwain/offers/${encodeURIComponent(proposal.id)}/withdraw`, { expectedUpdatedAt: proposal.updatedAt });
+      if (!isCurrentMutation(revision, list.id)) return;
+      if (!shoppingProposalWithdrawalConfirmed(proposal, receipt)) throw new Error(copy.withdrawError);
+      void recordPublicationWithdrawal("proposal", "sell", analyticsCurrent);
+      retired = true;
+      // Hide edit/accept immediately, including when the detail refresh fails.
+      const retiredProposal = { ...proposal, status: "withdrawn", isSelectable: false };
+      onSaved({ ...liveList.current, myProposal: retiredProposal,
+        proposals: liveList.current.proposals.map((item) => item.id === proposal.id ? retiredProposal : item) });
+      const updated = await apiAuthGet<AllwainShoppingList>(`/allwain/shopping-lists/${encodeURIComponent(list.id)}`);
+      if (!shoppingProposalDetailMatches(list, updated, proposal)) throw new Error(copy.refreshError);
+      if (isCurrentMutation(revision, list.id)) onSaved({ ...updated,
+        myProposal: updated.myProposal?.id === proposal.id
+          ? { ...updated.myProposal, status: "withdrawn", isSelectable: false }
+          : retiredProposal,
+        proposals: updated.proposals.map((item) => item.id === proposal.id ? { ...item, status: "withdrawn", isSelectable: false } : item),
+      });
+    } catch (withdrawError: any) {
+      if (!isCurrentMutation(revision, list.id)) return;
+      if (!retired) {
+        // The buyer may have chosen it meanwhile, or a timed-out request may have committed.
+        try {
+          const currentList = await apiAuthGet<AllwainShoppingList>(`/allwain/shopping-lists/${encodeURIComponent(list.id)}`);
+          if (!isCurrentMutation(revision, list.id)) return;
+          if (!shoppingProposalDetailMatches(list, currentList, proposal)) throw new Error(copy.withdrawError);
+          onSaved(currentList);
+          if (currentList.myProposal?.status === "withdrawn") { void recordPublicationWithdrawal("proposal", "sell", analyticsCurrent); onError(null); return; }
+        } catch { /* Keep the failed mutation visible if its current state cannot be verified. */ }
+      }
+      if (isCurrentMutation(revision, list.id)) onError(retired ? copy.refreshError : shoppingProposalFailure(locale, withdrawError, copy.withdrawError));
+    } finally {
+      if (isCurrentMutation(revision, list.id)) { mutationBusy.current = false; setBusy(false); }
     }
   }
 
@@ -1639,15 +1915,44 @@ function SellerProposalEditor({
       </View>
     );
   }
-  if (proposalLocked) {
+  if (lifecycle.selected) {
     return (
       <View style={styles.section}>
+        {draftBanner}
+        <TouchableOpacity style={styles.cancelAction} onPress={confirmDiscard} disabled={busy || draft.recovering}><Text style={styles.cancelActionText}>{draftCopy.discard}</Text></TouchableOpacity>
         <Text style={styles.title}>Tu propuesta ha sido elegida</Text>
         <Text style={styles.subtitle}>Estos productos ya forman parte de un pedido. Puedes seguir el cobro y la preparación desde tus pedidos.</Text>
         <View style={styles.totalBand}>
           <Text style={styles.totalBandLabel}>IMPORTE ELEGIDO</Text>
           <Text style={styles.totalBandValue}>{formatCurrency(list.myProposal?.price || 0, list.currency)}</Text>
         </View>
+        <BigActionButton label={copy.orders} tone="dark" icon={<ShoppingCart size={18} color="#FFFFFF" />} onPress={onOrders} />
+        <TouchableOpacity style={styles.messageButtonWide} onPress={onMessage}>
+          <MessageCircle size={18} color={colors.primary} />
+          <Text style={styles.messageButtonText}>Hablar con el comprador</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+  if (lifecycle.retired || !lifecycle.open) {
+    return (
+      <View style={styles.section}>
+        {draftBanner}
+        <TouchableOpacity style={styles.cancelAction} onPress={confirmDiscard} disabled={busy || draft.recovering}><Text style={styles.cancelActionText}>{draftCopy.discard}</Text></TouchableOpacity>
+        <StatusChip label={lifecycle.withdrawn ? copy.withdrawn : lifecycle.retired ? copy.unavailable : copy.closed} tone="neutral" />
+        <Text style={styles.subtitle}>{lifecycle.withdrawn ? copy.withdrawnBody : lifecycle.retired ? copy.unavailableBody : copy.closedBody}</Text>
+        {list.myProposal ? (
+          <View style={styles.proposalCard}>
+            <Text style={styles.proposalTotal}>{formatCurrency(list.myProposal.price, list.currency)}</Text>
+            {list.myProposal.description ? <Text style={styles.proposalDescription}>{list.myProposal.description}</Text> : null}
+            {list.myProposal.items.map((item) => (
+              <View key={item.id} style={styles.proposalLine}>
+                <Text style={styles.proposalLineName}>{item.productName} · {item.quantity} {item.unit}</Text>
+                <Text style={styles.proposalLinePrice}>{formatCurrency(item.subtotalAmount / 100, item.currency)}</Text>
+              </View>
+            ))}
+          </View>
+        ) : null}
         <TouchableOpacity style={styles.messageButtonWide} onPress={onMessage}>
           <MessageCircle size={18} color={colors.primary} />
           <Text style={styles.messageButtonText}>Hablar con el comprador</Text>
@@ -1657,6 +1962,7 @@ function SellerProposalEditor({
   }
   return (
     <View style={styles.section}>
+      {draftBanner}
       <SectionTitle title={list.myProposal ? "Tu propuesta" : "¿Qué puedes servir?"} count={proposalItems.length} />
       <Text style={styles.subtitle}>
         {list.myProposal
@@ -1675,11 +1981,11 @@ function SellerProposalEditor({
               accessibilityLabel={`Incluir ${item.productName}`}
               accessibilityState={{
                 checked: selectedItems[item.id] === true,
-                disabled: item.availabilityStatus === "awarded",
+                disabled: !draft.ready || busy || item.availabilityStatus === "awarded" || item.availabilityStatus === "discarded" || item.reviewStatus === "discarded",
               }}
               style={[styles.checkBox, selectedItems[item.id] && styles.checkBoxSelected]}
               onPress={() => toggleItem(item)}
-              disabled={item.availabilityStatus === "awarded"}
+              disabled={!draft.ready || busy || item.availabilityStatus === "awarded" || item.availabilityStatus === "discarded" || item.reviewStatus === "discarded"}
             >
               {selectedItems[item.id] ? <Check size={14} color="#FFFFFF" /> : null}
             </TouchableOpacity>
@@ -1705,6 +2011,9 @@ function SellerProposalEditor({
             </View>
             {selectedItems[item.id] && item.availabilityStatus !== "awarded" ? <View style={styles.priceInputFrame}>
               <TextInput
+                editable={draft.ready && !busy}
+                accessibilityLabel={`Precio por unidad de ${item.productName}`}
+                testID={`seller-proposal-price:${item.id}`}
                 style={styles.priceInput}
                 value={prices[item.id] || ""}
                 onChangeText={(value) => setPrices((current) => ({ ...current, [item.id]: value }))}
@@ -1731,6 +2040,11 @@ function SellerProposalEditor({
             <View style={styles.substitutionArea}>
               <TouchableOpacity
                 style={styles.substitutionToggle}
+                testID={`seller-proposal-substitution:${item.id}`}
+                accessibilityRole="checkbox"
+                accessibilityLabel={`Ofrecer alternativa para ${item.productName}`}
+                accessibilityState={{ checked: substitutions[item.id] === true, disabled: !draft.ready || busy }}
+                disabled={!draft.ready || busy}
                 onPress={() =>
                   setSubstitutions((current) => ({
                     ...current,
@@ -1745,6 +2059,10 @@ function SellerProposalEditor({
               </TouchableOpacity>
               {substitutions[item.id] ? (
                 <TextInput
+                  editable={draft.ready && !busy}
+                  accessibilityLabel={`Alternativa para ${item.productName}`}
+                  testID={`seller-proposal-substitution-name:${item.id}`}
+                  maxLength={160}
                   style={styles.input}
                   value={substitutionNames[item.id] || ""}
                   onChangeText={(value) =>
@@ -1766,7 +2084,7 @@ function SellerProposalEditor({
         <Text style={styles.totalBandValue}>{formatCurrency(total, list.currency)}</Text>
       </View>
       <Field label="¿Cuándo puedes entregarlo?">
-        <TextInput style={styles.input} value={deliveryEstimate} onChangeText={setDeliveryEstimate} placeholder="Ej. en 48 horas" placeholderTextColor={colors.mutedText} />
+        <TextInput testID="seller-proposal-delivery" accessibilityLabel="Plazo de entrega de la propuesta" style={styles.input} value={deliveryEstimate} onChangeText={setDeliveryEstimate} editable={draft.ready && !busy} maxLength={240} placeholder="Ej. en 48 horas" placeholderTextColor={colors.mutedText} />
       </Field>
       <Field
         label={
@@ -1778,6 +2096,8 @@ function SellerProposalEditor({
         <TextInput
           style={styles.input}
           value={shippingWeightKg}
+          testID="seller-proposal-shipping-weight"
+          editable={draft.ready && !busy}
           onChangeText={setShippingWeightKg}
           keyboardType="decimal-pad"
           placeholder="Ej. 12,5 kg"
@@ -1790,7 +2110,7 @@ function SellerProposalEditor({
         </Text>
       </Field>
       <Field label="Resume tu propuesta">
-        <TextInput style={styles.mediumInput} multiline textAlignVertical="top" value={description} onChangeText={setDescription} placeholder="Calidad, marcas y condiciones incluidas" placeholderTextColor={colors.mutedText} />
+        <TextInput testID="seller-proposal-description" accessibilityLabel="Descripción de la propuesta" style={styles.mediumInput} multiline textAlignVertical="top" value={description} onChangeText={setDescription} editable={draft.ready && !busy} maxLength={1500} placeholder="Calidad, marcas y condiciones incluidas" placeholderTextColor={colors.mutedText} />
       </Field>
       <ProposalValidityControl
         value={validForMinutes}
@@ -1799,7 +2119,19 @@ function SellerProposalEditor({
       {list.myProposal ? (
         <ProposalCountdown expiresAt={list.myProposal.validUntil} />
       ) : null}
-      <BigActionButton label={list.myProposal ? "Actualizar propuesta" : coversAllPending ? "Enviar propuesta completa" : "Enviar propuesta parcial"} tone="dark" onPress={() => void submit()} busy={busy} disabled={!complete} />
+      <BigActionButton label={list.myProposal ? "Actualizar propuesta" : coversAllPending ? "Enviar propuesta completa" : "Enviar propuesta parcial"} tone="dark" onPress={() => void submit()} busy={busy} disabled={!complete || !draft.ready || draft.requiresReview || busy} />
+      <View style={styles.draftActions}>
+        <TouchableOpacity testID="seller-proposal-save-exit" accessibilityRole="button" accessibilityLabel={draftCopy.saveExit} style={styles.textAction} disabled={busy || !draft.ready} onPress={() => void saveForExit().then(saved => { if (saved && mounted.current && isCurrentScope()) onExit?.(); })}><Text style={styles.textActionLabel}>{draftCopy.saveExit}</Text></TouchableOpacity>
+        <TouchableOpacity testID="seller-proposal-discard" accessibilityRole="button" accessibilityLabel={draftCopy.discard} style={styles.textAction} disabled={busy || draft.recovering} onPress={confirmDiscard}><Text style={styles.textActionLabel}>{draftCopy.discard}</Text></TouchableOpacity>
+      </View>
+      {lifecycle.canWithdraw ? (
+        <TouchableOpacity style={styles.cancelAction} onPress={confirmWithdrawal} disabled={busy} accessibilityRole="button">
+          <View style={styles.withdrawAction}>
+            <Trash2 size={17} color={colors.danger} />
+            <Text style={styles.cancelActionText}>{copy.withdraw}</Text>
+          </View>
+        </TouchableOpacity>
+      ) : null}
       <TouchableOpacity style={styles.messageButtonWide} onPress={onMessage}>
         <MessageCircle size={18} color={colors.primary} />
         <Text style={styles.messageButtonText}>Preguntar al comprador</Text>
@@ -1860,6 +2192,7 @@ function Fact({ icon, label, value }: { icon: React.ReactNode; label: string; va
 }
 
 const styles = StyleSheet.create({
+  overviewHeader: { gap: 11 },
   screen: { flex: 1, backgroundColor: colors.background },
   wizardHeading: { width: "100%", maxWidth: 900, alignSelf: "center", paddingHorizontal: 16, paddingTop: 8 },
   wizardFooter: { width: "100%", maxWidth: 900, alignSelf: "center", paddingHorizontal: 16, paddingTop: 8, borderTopWidth: 1, borderTopColor: colors.cardBorder, backgroundColor: colors.card, gap: 4 },
@@ -1910,6 +2243,7 @@ const styles = StyleSheet.create({
   finalSummary: { flexDirection: "row", alignItems: "center", gap: 10, padding: 13, borderRadius: 8, backgroundColor: colors.highlight },
   finalSummaryText: { flex: 1, color: colors.text, fontSize: 13, lineHeight: 19, fontWeight: "800" },
   error: { color: colors.danger, fontSize: 13, lineHeight: 19, fontWeight: "800" },
+  discoveryFailure: { gap: 8 },
   searchRow: { minHeight: 52, borderWidth: 1, borderColor: colors.cardBorder, borderRadius: 8, backgroundColor: colors.card, flexDirection: "row", alignItems: "center", gap: 8, paddingLeft: 12 },
   searchInput: { flex: 1, minWidth: 0, color: colors.text, fontSize: 15, paddingVertical: 10 },
   searchGo: { width: 44, height: 44, marginRight: 3, borderRadius: 7, backgroundColor: colors.primary, alignItems: "center", justifyContent: "center" },
@@ -1973,6 +2307,7 @@ const styles = StyleSheet.create({
   chooseButtonText: { color: "#FFFFFF", fontSize: 12, fontWeight: "900" },
   cancelAction: { minHeight: 44, alignItems: "center", justifyContent: "center" },
   cancelActionText: { color: colors.danger, fontSize: 13, fontWeight: "800" },
+  withdrawAction: { minHeight: 44, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 7 },
   priceItem: { borderBottomWidth: 1, borderBottomColor: colors.cardBorder, paddingVertical: 8, gap: 7 },
   priceItemUnavailable: { opacity: 0.55 },
   priceRow: { minHeight: 52, flexDirection: "row", alignItems: "center", gap: 8 },

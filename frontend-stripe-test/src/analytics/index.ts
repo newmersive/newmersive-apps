@@ -1,79 +1,85 @@
-import {
-  configureRuntimeConsent,
-  isRuntimeAnalyticsConfigured,
-  setRuntimeContext,
-  trackRuntimeEvent,
-  trackRuntimeScreen,
-  type RuntimeAnalyticsParams,
-} from "./analyticsRuntime";
+import { configureRuntimeConsent, isRuntimeAnalyticsConfigured, setRuntimeContext, trackRuntimeEvent, trackRuntimeScreen } from "./analyticsRuntime";
+import { analyticsGuardCurrent, sanitizeAnalyticsContext, sanitizeAnalyticsEvent, sanitizeAnalyticsScreen, type AnalyticsEventMap } from "./analyticsPolicy";
+import { captureAuthSession } from "../store/authSessionBridge";
+export type { AnalyticsEventMap } from "./analyticsPolicy";
+export { analyticsBuildConfig } from "./analyticsConfig";
 
 export const ANALYTICS_CONSENT_VERSION = "allwain-analytics-v1-2026-09-06";
-
 export type AnalyticsConsentState = "unknown" | "granted" | "denied";
+let granted = false;
+let revision = 0;
+let configuredRevision = -1;
+type ScreenRequest = { name: string; actorCurrent: () => boolean; dispatching: boolean };
+type ContextRequest = { properties: Record<string, string | null>; actorCurrent: () => boolean; dispatching: boolean };
+let currentScreen: ScreenRequest | null = null;
+let currentContext: ContextRequest | null = null;
 
-export type AnalyticsEventMap = {
-  app_mode_changed: { app_mode: "buy" | "sell" | "connector" };
-  login: { method: "password" | "google" | "apple" };
-  sign_up: { method: "password" | "google" | "apple" };
-  offer_created: { offer_type: "goods" | "food" | "service" | "other" };
-  request_created: {
-    source: "camera" | "image" | "barcode" | "text" | "guide" | "manual";
+export function getAnalyticsConsentSnapshot() {
+  const captured = revision;
+  const operational = granted && configuredRevision === captured;
+  return { granted: operational, revision: captured, isCurrent: () => granted && captured === revision && configuredRevision === captured };
+}
+export async function configureAnalyticsConsent(nextGranted: boolean) {
+  granted = nextGranted === true;
+  configuredRevision = -1;
+  if (!granted) { currentScreen = null; currentContext = null; }
+  const currentRevision = ++revision;
+  try { await configureRuntimeConsent(granted); }
+  catch { if (currentRevision === revision) { granted = false; ++revision; } return; }
+  if (!granted || currentRevision !== revision) return;
+  configuredRevision = currentRevision;
+  // Navigation announces the current screen in child effects before the provider
+  // completes consent configuration. Keep only that enum/context, never actions,
+  // and dispatch it once after configuration if its actor is still current.
+  const context = currentContext;
+  if (context && !context.dispatching && context.actorCurrent()) {
+    context.dispatching = true;
+    try { await setRuntimeContext(context.properties, () => granted && revision === currentRevision && configuredRevision === currentRevision && currentContext === context && context.actorCurrent()); } catch { /* Optional telemetry. */ }
+  }
+  const screen = currentScreen;
+  if (screen && !screen.dispatching && screen.actorCurrent()) {
+    screen.dispatching = true;
+    try { await trackRuntimeScreen(screen.name, () => granted && revision === currentRevision && configuredRevision === currentRevision && currentScreen === screen && screen.actorCurrent()); } catch { /* Optional telemetry. */ }
+  }
+}
+function actorGuard(current?: () => boolean) {
+  const session = captureAuthSession();
+  return () => {
+    const next = captureAuthSession();
+    const actorCurrent = session.owner === next.owner && session.generation === next.generation &&
+      (session.token ? session.isCurrent() : !next.token && !next.owner?.getIsTransitioning());
+    return actorCurrent && analyticsGuardCurrent(current);
   };
-  proposal_submitted: { source: "request" | "shopping_list" };
-  begin_checkout: {
-    currency: string;
-    value: number;
-    delivery_method: "local_connector" | "carrier" | "pickup" | "seller" | "other";
-    payment_mode: "payment" | "preorder";
-  };
-  checkout_opened: { payment_mode: "payment" | "setup" };
-  purchase_completed: { currency: string; value: number };
-  connector_activated: { radius_km: number };
-  delivery_accepted: { delivery_kind: "local_connector" };
-  chat_started: { context: "direct" | "offer" | "request" | "order" };
-  chat_message_translated: { target_locale: string; cached: boolean };
-  chat_auto_translation_changed: { enabled: boolean; target_locale: string };
-  analytics_consent_updated: { granted: boolean };
-};
-
-function safeParams(value: Record<string, unknown>): RuntimeAnalyticsParams {
-  return Object.entries(value).reduce<RuntimeAnalyticsParams>(
-    (result, [key, item]) => {
-      if (typeof item === "boolean") result[key] = item;
-      if (typeof item === "number" && Number.isFinite(item)) result[key] = item;
-      if (typeof item === "string") result[key] = item.slice(0, 80);
-      return result;
-    },
-    {},
-  );
 }
-
-export async function configureAnalyticsConsent(granted: boolean) {
-  await configureRuntimeConsent(granted);
+function trackingGuard(current?: () => boolean) {
+  const consent = getAnalyticsConsentSnapshot(), actorCurrent = actorGuard(current);
+  return () => consent.granted && consent.isCurrent() && actorCurrent();
 }
-
-export async function trackAnalyticsScreen(screenName: string) {
-  const safeName = String(screenName || "Unknown")
-    .replace(/[^A-Za-z0-9_]/g, "_")
-    .slice(0, 40);
-  await trackRuntimeScreen(safeName || "Unknown");
+/** true means accepted by the local SDK/queue, not confirmed network delivery. */
+export async function trackAnalyticsScreen(screenName: string, current?: () => boolean): Promise<boolean> {
+  try {
+    const name = sanitizeAnalyticsScreen(screenName), actorCurrent = actorGuard(current);
+    if (!name || !actorCurrent()) return false;
+    const request = {name, actorCurrent, dispatching: false}; currentScreen = request;
+    const valid = trackingGuard(current);
+    if (!valid()) return false;
+    request.dispatching = true;
+    return await trackRuntimeScreen(name, () => currentScreen === request && valid());
+  } catch { return false; }
 }
-
-export async function trackAnalyticsEvent<Name extends keyof AnalyticsEventMap>(
-  name: Name,
-  params: AnalyticsEventMap[Name],
-) {
-  await trackRuntimeEvent(name, safeParams(params as Record<string, unknown>));
+export async function trackAnalyticsEvent<Name extends keyof AnalyticsEventMap>(name: Name, params: AnalyticsEventMap[Name], current?: () => boolean): Promise<boolean> {
+  try { const safe = sanitizeAnalyticsEvent(name, params), valid = trackingGuard(current);
+    return safe && valid() ? await trackRuntimeEvent(name, safe, valid) : false; } catch { return false; }
 }
-
-export async function setAnalyticsContext(input: {
-  appMode?: string | null;
-  locale?: string | null;
-}) {
-  await setRuntimeContext({
-    app_mode: input.appMode?.slice(0, 24) || null,
-    app_locale: input.locale?.slice(0, 8) || null,
-  });
+export async function setAnalyticsContext(input: { appMode?: string | null; locale?: string | null }, current?: () => boolean): Promise<boolean> {
+  try {
+    const actorCurrent = actorGuard(current), properties = sanitizeAnalyticsContext({ app_mode: input.appMode, app_locale: input.locale });
+    if (!actorCurrent()) return false;
+    const request = {properties, actorCurrent, dispatching: false}; currentContext = request;
+    const valid = trackingGuard(current);
+    if (!valid()) return false;
+    request.dispatching = true;
+    return await setRuntimeContext(properties, () => currentContext === request && valid());
+  } catch { return false; }
 }
-
 export { isRuntimeAnalyticsConfigured as isAnalyticsConfigured };

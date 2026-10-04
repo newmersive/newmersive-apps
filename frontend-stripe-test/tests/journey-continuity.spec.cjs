@@ -38,6 +38,27 @@ test('queued draft writes cannot reappear after an explicit discard', async () =
   assert.equal(await api.readJourneyDraft('a', 'list'), null);
 });
 
+test('checked draft APIs distinguish a failed read from an absent draft and preserve legacy readers', async () => {
+  const { api, store } = moduleWithStore('src/utils/journeyDrafts.ts');
+  assert.deepEqual(await api.readJourneyDraftChecked('a', 'list'), { status: 'missing', value: null });
+  await api.writeJourneyDraft('a', 'list', { title: 'Mi propuesta' });
+  store.getItem = async () => { throw Error('storage unavailable'); };
+  assert.deepEqual(await api.readJourneyDraftChecked('a', 'list'), { status: 'failed', value: null });
+  assert.equal(await api.readJourneyDraft('a', 'list'), null);
+});
+
+test('checked discard reports failure, does not erase the saved draft and can be retried', async () => {
+  const { api, store } = moduleWithStore('src/utils/journeyDrafts.ts');
+  await api.writeJourneyDraft('a', 'list', { title: 'Conservar' });
+  const remove = store.removeItem;
+  store.removeItem = async () => { throw Error('storage unavailable'); };
+  assert.equal(await api.clearJourneyDraftChecked('a', 'list'), false);
+  assert.equal((await api.readJourneyDraftChecked('a', 'list')).value.title, 'Conservar');
+  store.removeItem = remove;
+  assert.equal(await api.clearJourneyDraftChecked('a', 'list'), true);
+  assert.equal((await api.readJourneyDraftChecked('a', 'list')).status, 'missing');
+});
+
 test('untrusted return routes are rejected and URL parameters are reduced to permitted identifiers', () => {
   const { api } = moduleWithStore('src/utils/pendingJourney.ts');
   for (const url of ['https://evil.example/app/ofertas', '//evil.example/app/ofertas', 'javascript:alert(1)', 'https://allwain.es.evil/app/ofertas', 'https://user@allwain.es/app/ofertas', '/app/administracion', '/app/ofertas/../../administracion', 'allwain://user@ofertas']) assert.equal(api.journeyFromUrl(url), null, url);

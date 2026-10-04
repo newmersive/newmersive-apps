@@ -1,7 +1,9 @@
+import WindowedRows from "../../components/WindowedRows";
+import {createScrollWindow} from "../../utils/scrollWindow";
 import { readJourneyDraft, writeJourneyDraft, clearJourneyDraft } from "../../utils/journeyDrafts";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { buyerCheckoutReturnUrl, buyerReviewAmount } from "../../utils/buyerJourney";
-import { sellerCanFulfill, sellerNeedsPreparation } from "../../utils/sellerJourney";
+import { sellerCanFulfill, preparationCountLabel } from "../../utils/sellerJourney";
 import { AppAlert as Alert } from "../../utils/appAlert";
 import React, {
   useCallback,
@@ -57,6 +59,17 @@ import OfferOrderForm, {
   type OfferDeliveryDraft,
 } from "../../components/OfferOrderForm";
 import OfferPurchaseWizard from "../../components/OfferPurchaseWizard";
+import CatalogOfferEditor from "../../components/CatalogOfferEditor";
+import {
+  buildCatalogEditPatch, catalogEditDraft, catalogPatchConfirmed, createOfferReadBarrier,
+  isProposalPublication, isTerminalPublication, type CatalogEditDraft,
+} from "../../utils/offerManagement";
+import { offerManagementCopy } from "./offerManagementCopy";
+import DiscoveryFilters, { CATALOG_DISCOVERY_FIELDS, ORDER_DISCOVERY_FIELDS } from "../../components/DiscoveryFilters";
+import DemandFilterFields from "../../components/DemandFilterFields";
+import { MARKET_REQUEST_FILTERS } from "../../utils/marketDiscovery";
+import { demandFilterSummary } from "../../i18n/demandFilterCopy";
+import { EMPTY_DISCOVERY_QUERY, discoveryPageUrl, discoveryQueryKey, setDiscoveryQuery, useDiscoveryQuery, type DiscoveryQuery } from "../../utils/discoveryFilters";
 import DeliveryCheckpointPanel from "../../components/DeliveryCheckpointPanel";
 import CatalogOfferWizard, {
   type CatalogOfferDraft,
@@ -101,6 +114,7 @@ import {
   resolveOfferDeepLink,
 } from "../../data/demoOffers";
 import { trackAnalyticsEvent } from "../../analytics";
+import { captureAnalyticsGuard, createDiscoveryAnalyticsState, observeConfirmedPurchases, recordAppliedFilters, recordDiscoveryResults, recordPublicationWithdrawal } from "../../analytics/purchaseAnalytics";
 import { useAppTranslation } from "../../i18n/useAppTranslation";
 import { allwainWebAppReturnUrl } from "../../utils/webAppUrl";
 import {
@@ -195,7 +209,7 @@ function hasAccepted(contract: AllwainContract, userId?: string) {
 }
 
 function isOwnOffer(offer: AllwainOffer, userId?: string) {
-  return offer.ownerUserId === userId || offer.provider?.id === userId;
+  return Boolean(userId) && (offer.ownerUserId || offer.provider?.id) === userId;
 }
 
 function isOrangesPilotOffer(offer: AllwainOffer) {
@@ -581,8 +595,11 @@ function mergePage<T extends { id: string }>(current: T[], incoming: T[]) {
   return Array.from(byId.values());
 }
 
+const rowId = (row:{id:string}) => row.id;
+
 export default function OffersScreen() {
   const { locale, t } = useAppTranslation();
+  const managementCopy = offerManagementCopy(locale);
   const route = useRoute<RouteProp<MainTabParamList, "Ofertas">>();
   const navigation =
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
@@ -591,6 +608,8 @@ export default function OffersScreen() {
   const appMode = useAuthStore((state) => state.appMode);
   const setAppMode = useAuthStore((state) => state.setAppMode);
   const userId = user?.id || "";
+  const actorSession = captureAuthSession();
+  const publicationActorCurrent = () => actorSession.isCurrent() && useAuthStore.getState().user?.id === userId && useAuthStore.getState().appMode === appMode;
   const insets = useSafeAreaInsets();
   const [sellerSection, setSellerSection] = useState<"orders" | "offers" | "preparation">("orders");
   const [termsExpanded, setTermsExpanded] = useState<Record<string, boolean>>({});
@@ -603,18 +622,26 @@ export default function OffersScreen() {
   const cardPositions = useRef<Record<string, number>>({});
   const paymentPositions = useRef<Record<string, number>>({});
   const scrollY = useRef(0);
+  const scrollWindow = useRef(createScrollWindow());
   const contractViews = useRef<Record<string, View | null>>({});
   const paymentViews = useRef<Record<string, View | null>>({});
   const checkoutAction = useRef(0);
   const loadRevision = useRef(0);
+  const offerReadBarrier = useRef(createOfferReadBarrier());
+  const offerWritePending = useRef(false);
   const explicitOrderRevision = useRef(0);
   const explicitOrders = useRef(new Map<string, {revision:number; order:AllwainOrder}>());
+  const analyticsState = useRef(createDiscoveryAnalyticsState()).current;
   const [preparedTotals, setPreparedTotals] = useState<Record<string,string>>({});
   const [preparingReview, setPreparingReview] = useState<string | null>(null);
   const reviewRevision = useRef(0);
+  const offerAcceptanceRevision = useRef(0);
+  useEffect(() => () => { offerAcceptanceRevision.current++; }, [userId, appMode]);
   useEffect(() => () => { checkoutAction.current++; loadRevision.current++; }, [userId]);
   const isSeller = appMode === "sell";
   const [buyerSection, setBuyerSection] = useState<"orders" | "offers">("offers");
+  const discoveryVisibleRef = useRef(false);
+  discoveryVisibleRef.current = isSeller ? sellerSection === "offers" : buyerSection === "offers";
   useEffect(() => {
     const params = route.params;
     if (params?.contractId || params?.orderId || params?.section === "orders") setSellerSection("orders");
@@ -626,13 +653,14 @@ export default function OffersScreen() {
   const platformDirect =
     user?.participation?.seller?.commercialModel === "platform_direct";
 
-  const [offers, setOffers] = useState<AllwainOffer[]>([]);
-  const [contracts, setContracts] = useState<AllwainContract[]>([]);
-  const [orders, setOrders] = useState<AllwainOrder[]>([]);
+  const [storedOffers, setOffers] = useState<AllwainOffer[]>([]);
+  const [storedContracts, setContracts] = useState<AllwainContract[]>([]);
+  const [storedOrders, setOrders] = useState<AllwainOrder[]>([]);
+  const [preparationCount, setPreparationCount] = useState<number | null>(null);
   const [recurringPlans, setRecurringPlans] = useState<AllwainRecurringPlan[]>(
     [],
   );
-  const [marketRequests, setMarketRequests] = useState<AllwainMarketRequest[]>(
+  const [storedMarketRequests, setMarketRequests] = useState<AllwainMarketRequest[]>(
     [],
   );
   const [loading, setLoading] = useState(false);
@@ -642,6 +670,13 @@ export default function OffersScreen() {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const discoveryReturn = useRef<{account:string;mode:string;session:ReturnType<typeof captureAuthSession>;kind:"catalog"|"market"|"activity";query:DiscoveryQuery;restore:(query:DiscoveryQuery)=>void} | null>(null);
+  function restoreDiscoveryQuery(kind: "catalog"|"market"|"activity") {
+    const saved = discoveryReturn.current;
+    if (!saved || saved.kind !== kind) return;
+    discoveryReturn.current = null;
+    if (saved.session.isCurrent() && saved.account === useAuthStore.getState().user?.id && saved.mode === useAuthStore.getState().appMode) saved.restore(saved.query);
+  }
   const retireCheckoutAction = useCallback(() => {
     checkoutAction.current++;
     setBusyId(value => value?.startsWith("payment:") || value?.startsWith("recurring:") ? null : value);
@@ -653,6 +688,7 @@ export default function OffersScreen() {
     setPreparedTotals({});
     setPreparingReview(null);
     setExpandedId(contractId);
+    if (!contractId) restoreDiscoveryQuery("activity");
   }, [retireCheckoutAction]);
   const [selectedRequestId, setSelectedRequestId] = useState<string | null>(
     null,
@@ -665,6 +701,40 @@ export default function OffersScreen() {
   const [catalogDraft, setCatalogDraft] =
     useState<CatalogOfferDraft>(EMPTY_CATALOG_DRAFT);
   const [inventoryEditId, setInventoryEditId] = useState<string | null>(null);
+  const [publicationView, setPublicationView] = useState<"active" | "history">("active");
+  const [publicationType, setPublicationType] = useState<"catalog" | "proposal">("catalog");
+  const catalogDiscovery = useDiscoveryQuery(userId, isSeller ? `seller-catalog:${publicationView}:${publicationType}` : "catalog");
+  const marketDiscovery = useDiscoveryQuery(userId, "market-requests");
+  const activityDiscovery = useDiscoveryQuery(userId, `orders:${isSeller ? "seller" : "buyer"}`);
+  const offerDataKey = JSON.stringify([userId, appMode, publicationView, publicationType, discoveryQueryKey(catalogDiscovery.query)]);
+  const marketDataKey = JSON.stringify([userId, appMode, discoveryQueryKey(marketDiscovery.query)]);
+  const activityView = isSeller && sellerSection === "preparation" ? "preparation" : "all";
+  const activityDataKey = JSON.stringify([userId, appMode, activityView, discoveryQueryKey(activityDiscovery.query)]);
+  const discoveryReadKey = JSON.stringify([offerDataKey, marketDataKey, activityDataKey]);
+  const discoveryReadKeyRef = useRef(discoveryReadKey);
+  discoveryReadKeyRef.current = discoveryReadKey;
+  const [loadedKeys, setLoadedKeys] = useState({ offers: "", market: "", activity: "" });
+  // A result belongs to its applied query, including while an older request is still in flight.
+  const offers = loadedKeys.offers === offerDataKey ? storedOffers : [];
+  const marketRequests = loadedKeys.market === marketDataKey ? storedMarketRequests : [];
+  const contracts = loadedKeys.activity === activityDataKey ? storedContracts : [];
+  const orders = loadedKeys.activity === activityDataKey ? storedOrders : [];
+  const focusedListCache = useRef({keys:loadedKeys,readKey:discoveryReadKey});
+  focusedListCache.current = {keys:loadedKeys,readKey:discoveryReadKey};
+  const catalogFiltered = Object.entries(catalogDiscovery.query).some(([key,value]) => value !== "" && value != null && !(key === "sort" && value === "newest"));
+  const offerQueryUrl = (cursor?: string) => discoveryPageUrl("/allwain/offers", catalogDiscovery.query, {
+    cursor, allowed: [...CATALOG_DISCOVERY_FIELDS, ...(isSeller ? ["status"] : [])], fixed: isSeller ? {scope:"mine",view:publicationView,type:publicationType} : {scope:"market"},
+  });
+  const marketQueryUrl = (cursor?: string) => discoveryPageUrl("/allwain/market/requests", marketDiscovery.query, {cursor,allowed:MARKET_REQUEST_FILTERS});
+  const activityQueryUrl = (path: string, cursor?: string) => {
+    const url = discoveryPageUrl(path, activityDiscovery.query, {cursor, allowed:ORDER_DISCOVERY_FIELDS, fixed:{scope:isSeller ? "seller" : "buyer", ...(path === "/allwain/payments/activity" ? {view:activityView} : {})}});
+    if (path !== "/allwain/payments/orders") return url;
+    const [pathname, search] = url.split("?"); const params = new URLSearchParams(search);
+    for (const field of ["dateFrom","dateTo"]) {const value=params.get(field);if(value){params.delete(field);params.set(field === "dateFrom" ? "contractDateFrom" : "contractDateTo",value);}}
+    return `${pathname}?${params.toString()}`;
+  };
+  const [catalogEditOffer, setCatalogEditOffer] = useState<AllwainOffer | null>(null);
+  const [catalogEditValues, setCatalogEditValues] = useState<CatalogEditDraft | null>(null);
   const [inventoryDraft, setInventoryDraft] = useState<InventoryDraft>({
     stockQuantity: "",
     minQuantity: "1",
@@ -700,10 +770,17 @@ export default function OffersScreen() {
   const agreementsY = useRef(0);
   const consumedFocusKey = useRef<string | null>(null);
   const hydratingFocusKey = useRef<string | null>(null);
+  const discoveryFocusKey = useRef<string | null>(null);
 
   useEffect(() => {
     let current = true;
     setCatalogReady(false);
+    discoveryFocusKey.current = null;
+    discoveryReturn.current = null;
+    offerReadBarrier.current = createOfferReadBarrier(); offerWritePending.current = false;
+    setOffers([]); setMarketRequests([]);
+    setCatalogEditOffer(null); setCatalogEditValues(null); setInventoryEditId(null);
+    setPublicationView("active"); setPublicationType("catalog");
     explicitOrders.current.clear();
     explicitOrderRevision.current = 0;
     setCatalogFormOpen(false);
@@ -759,14 +836,18 @@ export default function OffersScreen() {
     ]);
   }
   function scrollToContract(id: string, payment = false) {
+    const session=captureAuthSession(),queryKey=discoveryReadKey;
+    const current=()=>session.isCurrent()&&queryKey===discoveryReadKeyRef.current&&navigation.isFocused();
+    if(!current())return;
     const target = payment ? paymentViews.current[id] : contractViews.current[id];
     if (target && scrollRef.current) {
       target.measureInWindow((_x, targetY) => scrollRef.current?.getNativeScrollRef()?.measureInWindow((_sx: number, containerY: number) => {
+        if(!current())return;
         scrollRef.current?.scrollTo({y:Math.max(0, scrollY.current + targetY - containerY - 8),animated:true});
       }));
       return;
     }
-    const y = ordersY.current + (contractPositions.current[id] || 0) +
+    const y = (contractPositions.current[id] || 0) +
       (payment ? (cardPositions.current[id] || 0) + (paymentPositions.current[id] || 0) : 0);
     scrollRef.current?.scrollTo({y: Math.max(0,y - 8),animated:true});
   }
@@ -825,21 +906,29 @@ export default function OffersScreen() {
   }
 
   const loadData = useCallback(async () => {
+    if (useAuthStore.getState().user?.id !== userId || useAuthStore.getState().appMode !== appMode) return;
+    if (!catalogDiscovery.ready || !marketDiscovery.ready || !activityDiscovery.ready) return;
+    const requestKey = discoveryReadKey;
+    if (requestKey !== discoveryReadKeyRef.current) return;
     const session = captureAuthSession();
+    const publicationRead = offerReadBarrier.current.read();
     const revision = ++loadRevision.current;
+    const analyticsCurrent = captureAnalyticsGuard(() => session.isCurrent() && revision === loadRevision.current && requestKey === discoveryReadKeyRef.current && publicationActorCurrent());
     const initialOrderRevision = explicitOrderRevision.current;
     setLoading(true);
+    setBusyId(value=>value?.startsWith("more:") ? null : value);
     setOffersRequestSettled(false);
     setVerifiedSections({ offers: false, orders: false, market: false });
     setError(null);
     const marketPromise = isSeller
       ? apiAuthGet<{ items?: AllwainMarketRequest[]; pageInfo?: PageInfo }>(
-          "/allwain/market/requests?limit=30",
+          marketQueryUrl(),
         )
       : Promise.resolve({
           items: [] as AllwainMarketRequest[],
           pageInfo: {} as PageInfo,
         });
+    const activityPromise = apiAuthGet<{contracts:AllwainContract[];orders:AllwainOrder[];pageInfo?:PageInfo;preparationCount?:number}>(activityQueryUrl("/allwain/payments/activity"));
     const [
       offersResult,
       ownOffersResult,
@@ -850,35 +939,37 @@ export default function OffersScreen() {
       paymentConfigResult,
     ] = await Promise.allSettled([
         apiAuthGet<{ items?: AllwainOffer[]; pageInfo?: PageInfo }>(
-          `/allwain/offers?scope=${isSeller ? "mine" : "market"}&limit=30`,
+          offerQueryUrl(),
         ),
         isSeller
           ? Promise.resolve({ items: [] as AllwainOffer[] })
           : apiAuthGet<{ items?: AllwainOffer[] }>(
-              "/allwain/offers?scope=mine&limit=30",
+              discoveryPageUrl("/allwain/offers", catalogDiscovery.query, {allowed:CATALOG_DISCOVERY_FIELDS,fixed:{scope:"mine"}}),
             ),
-        apiAuthGet<{ items?: AllwainContract[]; pageInfo?: PageInfo }>(
-          `/allwain/contracts?scope=${isSeller ? "seller" : "buyer"}&limit=30`,
-        ),
+        activityPromise.then(value => ({items:value.contracts,pageInfo:value.pageInfo})),
         marketPromise,
-        apiAuthGet<{ items?: AllwainOrder[]; pageInfo?: PageInfo }>(
-          `/allwain/payments/orders?scope=${isSeller ? "seller" : "buyer"}&limit=30`,
-        ),
+        activityPromise.then(value => ({items:value.orders,pageInfo:value.pageInfo,preparationCount:value.preparationCount})),
         apiAuthGet<{ items?: AllwainRecurringPlan[] }>(
           "/allwain/payments/recurring-plans",
         ),
         apiGet<AllwainPaymentConfig>("/allwain/payments/config"),
       ]);
 
-    if (!session.isCurrent() || revision !== loadRevision.current) return;
+    if (!session.isCurrent() || revision !== loadRevision.current || requestKey !== discoveryReadKeyRef.current || useAuthStore.getState().user?.id !== userId || useAuthStore.getState().appMode !== appMode) return;
+
+    setLoadedKeys(previous => ({
+      offers: publicationRead.isCurrent() && offersResult.status === "fulfilled" ? offerDataKey : previous.offers,
+      market: publicationRead.isCurrent() && marketResult.status === "fulfilled" ? marketDataKey : previous.market,
+      activity: contractsResult.status === "fulfilled" && ordersResult.status === "fulfilled" ? activityDataKey : previous.activity,
+    }));
 
     setVerifiedSections({
-      offers: offersResult.status === "fulfilled" && ownOffersResult.status === "fulfilled",
+      offers: publicationRead.isCurrent() && offersResult.status === "fulfilled" && ownOffersResult.status === "fulfilled",
       orders: contractsResult.status === "fulfilled" && ordersResult.status === "fulfilled",
       market: marketResult.status === "fulfilled",
     });
 
-    if (offersResult.status === "fulfilled") {
+    if (publicationRead.isCurrent() && offersResult.status === "fulfilled") {
       const marketOrSellerOffers = offersResult.value.items || [];
       const ownOffers =
         ownOffersResult.status === "fulfilled"
@@ -890,6 +981,7 @@ export default function OffersScreen() {
           : mergePage(ownOffers, marketOrSellerOffers),
       );
       setOffersPage(offersResult.value.pageInfo || {});
+      if (discoveryVisibleRef.current && Array.isArray(offersResult.value.items)) void recordDiscoveryResults({state:analyticsState,scope:`${userId}:${appMode}:${session.generation}`,queryKey:offerDataKey,query:catalogDiscovery.query,surface:"offers",appMode,current:() => analyticsCurrent() && discoveryVisibleRef.current,resultCount:marketOrSellerOffers.length,allowed:[...CATALOG_DISCOVERY_FIELDS,...(isSeller ? ["status"] : [])]});
     }
     setOffersRequestSettled(true);
     if (contractsResult.status === "fulfilled") {
@@ -899,13 +991,18 @@ export default function OffersScreen() {
       }));
       setContractsPage(contractsResult.value.pageInfo || {});
     }
-    if (marketResult.status === "fulfilled") {
+    if (publicationRead.isCurrent() && marketResult.status === "fulfilled") {
       setMarketRequests(marketResult.value.items || []);
       setMarketPage(marketResult.value.pageInfo || {});
+      if (discoveryVisibleRef.current && isSeller && Array.isArray(marketResult.value.items)) void recordDiscoveryResults({state:analyticsState,scope:`${userId}:${appMode}:${session.generation}`,queryKey:marketDataKey,query:marketDiscovery.query,surface:"market_requests",appMode,current:() => analyticsCurrent() && discoveryVisibleRef.current,resultCount:marketResult.value.items.length,allowed:MARKET_REQUEST_FILTERS});
     }
     if (ordersResult.status === "fulfilled") {
-      setOrders(mergePage(ordersResult.value.items || [], [...explicitOrders.current.values()].filter(item => item.revision > initialOrderRevision).map(item => item.order)));
+      const incoming = ordersResult.value.items || [];
+      const ids = new Set(incoming.map(order => order.id));
+      setOrders(mergePage(incoming, [...explicitOrders.current.values()].filter(item => item.revision > initialOrderRevision && ids.has(item.order.id)).map(item => item.order)));
       setOrdersPage(ordersResult.value.pageInfo || {});
+      setPreparationCount(typeof ordersResult.value.preparationCount === "number" ? ordersResult.value.preparationCount : null);
+      void observeConfirmedPurchases(incoming,userId,appMode,analyticsCurrent);
     }
     if (recurringResult.status === "fulfilled") {
       setRecurringPlans(recurringResult.value.items || []);
@@ -929,84 +1026,101 @@ export default function OffersScreen() {
       )
     ) {
       setError(
-        "Parte de la información no pudo actualizarse. Lo disponible sigue visible.",
+        "No se pudo completar esta consulta. Reintenta para cargar los resultados de los filtros elegidos.",
       );
     }
     setLoading(false);
-  }, [isSeller]);
+  }, [isSeller, publicationView, publicationType, userId, appMode, discoveryReadKey, catalogDiscovery.ready, marketDiscovery.ready, activityDiscovery.ready]);
+
+  useEffect(() => {
+    offerReadBarrier.current.reset();
+    setOffers([]); setOffersPage({}); setOffersRequestSettled(false);
+    setInventoryEditId(null);
+    setCatalogEditOffer(null); setCatalogEditValues(null);
+  }, [isSeller, publicationView, publicationType, offerDataKey]);
+
+  useEffect(() => {
+    setBusyId(value => value?.startsWith("more:") ? null : value);
+    setError(null);
+    setVerifiedSections({offers:false,orders:false,market:false});
+    setExpandedId(null);
+  }, [discoveryReadKey]);
 
   async function loadMoreOffers() {
-    if (!offersPage.nextCursor) return;
+    if (loading || !publicationActorCurrent() || loadedKeys.offers !== offerDataKey || !offersPage.nextCursor || offerWritePending.current || busyId === "more:offers") return;
+    const requestKey = discoveryReadKey;
+    const readRevision = loadRevision.current;
+    const session = captureAuthSession();
+    const publicationRead = offerReadBarrier.current.read();
     setBusyId("more:offers");
     try {
       const response = await apiAuthGet<{
         items?: AllwainOffer[];
         pageInfo?: PageInfo;
       }>(
-        `/allwain/offers?scope=${isSeller ? "mine" : "market"}&limit=30&cursor=${encodeURIComponent(offersPage.nextCursor)}`,
+        offerQueryUrl(offersPage.nextCursor),
       );
+      if (!session.isCurrent() || !publicationRead.isCurrent() || !publicationActorCurrent() || requestKey !== discoveryReadKeyRef.current || readRevision !== loadRevision.current) return;
       setOffers((current) => mergePage(current, response.items || []));
       setOffersPage(response.pageInfo || {});
     } catch (err: any) {
-      setError(err?.message || "No se pudieron cargar más ofertas.");
+      if (session.isCurrent() && publicationRead.isCurrent() && requestKey === discoveryReadKeyRef.current && readRevision === loadRevision.current) setError(err?.message || "No se pudieron cargar más ofertas.");
     } finally {
-      setBusyId(null);
+      if (session.isCurrent() && requestKey === discoveryReadKeyRef.current && readRevision === loadRevision.current) setBusyId(value => value === "more:offers" ? null : value);
     }
   }
 
   async function loadMoreMarketRequests() {
-    if (!marketPage.nextCursor) return;
+    if (loading || !publicationActorCurrent() || loadedKeys.market !== marketDataKey || !marketPage.nextCursor || busyId === "more:market") return;
+    const requestKey = discoveryReadKey;
+    const readRevision = loadRevision.current;
+    const session = captureAuthSession();
+    const publicationRead = offerReadBarrier.current.read();
     setBusyId("more:market");
     try {
       const response = await apiAuthGet<{
         items?: AllwainMarketRequest[];
         pageInfo?: PageInfo;
       }>(
-        `/allwain/market/requests?limit=30&cursor=${encodeURIComponent(marketPage.nextCursor)}`,
+        marketQueryUrl(marketPage.nextCursor),
       );
+      if (!session.isCurrent() || !publicationRead.isCurrent() || !publicationActorCurrent() || requestKey !== discoveryReadKeyRef.current || readRevision !== loadRevision.current) return;
       setMarketRequests((current) =>
         mergePage(current, response.items || []),
       );
       setMarketPage(response.pageInfo || {});
     } catch (err: any) {
-      setError(err?.message || "No se pudieron cargar más peticiones.");
+      if (session.isCurrent() && requestKey === discoveryReadKeyRef.current && readRevision === loadRevision.current) setError(err?.message || "No se pudieron cargar más peticiones.");
     } finally {
-      setBusyId(null);
+      if (session.isCurrent() && requestKey === discoveryReadKeyRef.current && readRevision === loadRevision.current) setBusyId(value => value === "more:market" ? null : value);
     }
   }
 
   async function loadMoreActivity() {
-    if (!contractsPage.nextCursor && !ordersPage.nextCursor) return;
+    if (loading || !publicationActorCurrent() || loadedKeys.activity !== activityDataKey || busyId === "more:activity" || (!contractsPage.nextCursor && !ordersPage.nextCursor)) return;
+    const session = captureAuthSession(), requestKey = discoveryReadKey;
+    const readRevision = loadRevision.current;
+    const analyticsCurrent = captureAnalyticsGuard(() => session.isCurrent() && publicationActorCurrent() && requestKey === discoveryReadKeyRef.current && readRevision === loadRevision.current);
     setBusyId("more:activity");
     try {
-      const [contractResult, orderResult] = await Promise.all([
-        contractsPage.nextCursor
-          ? apiAuthGet<{ items?: AllwainContract[]; pageInfo?: PageInfo }>(
-              `/allwain/contracts?scope=${isSeller ? "seller" : "buyer"}&limit=30&cursor=${encodeURIComponent(contractsPage.nextCursor)}`,
-            )
-          : Promise.resolve({ items: [], pageInfo: {} }),
-        ordersPage.nextCursor
-          ? apiAuthGet<{ items?: AllwainOrder[]; pageInfo?: PageInfo }>(
-              `/allwain/payments/orders?scope=${isSeller ? "seller" : "buyer"}&limit=30&cursor=${encodeURIComponent(ordersPage.nextCursor)}`,
-            )
-          : Promise.resolve({ items: [], pageInfo: {} }),
-      ]);
-      setContracts((current) =>
-        mergePage(current, contractResult.items || []),
-      );
-      setOrders((current) => mergePage(current, orderResult.items || []));
-      setContractsPage(contractResult.pageInfo || {});
-      setOrdersPage(orderResult.pageInfo || {});
+      const response = await apiAuthGet<{contracts:AllwainContract[];orders:AllwainOrder[];pageInfo?:PageInfo;preparationCount?:number}>(activityQueryUrl("/allwain/payments/activity", contractsPage.nextCursor || ordersPage.nextCursor || undefined));
+      if (!session.isCurrent() || !publicationActorCurrent() || requestKey !== discoveryReadKeyRef.current || readRevision !== loadRevision.current) return;
+      setContracts(current => mergePage(current,response.contracts || []));
+      setOrders(current => mergePage(current,response.orders || []));
+      void observeConfirmedPurchases(response.orders || [],userId,appMode,analyticsCurrent);
+      setContractsPage(response.pageInfo || {}); setOrdersPage(response.pageInfo || {});
+      if (typeof response.preparationCount === "number") setPreparationCount(response.preparationCount);
     } catch (err: any) {
-      setError(err?.message || "No se pudo cargar más actividad.");
+      if (session.isCurrent() && requestKey === discoveryReadKeyRef.current && readRevision === loadRevision.current) setError(err?.message || "No se pudo cargar más actividad.");
     } finally {
-      setBusyId(null);
+      if (session.isCurrent() && requestKey === discoveryReadKeyRef.current && readRevision === loadRevision.current) setBusyId(value => value === "more:activity" ? null : value);
     }
   }
 
   useFocusEffect(
     useCallback(() => {
-      loadData();
+      const cache = focusedListCache.current;
+      if (cache.readKey !== discoveryReadKey || cache.keys.offers !== offerDataKey || cache.keys.activity !== activityDataKey || cache.keys.market !== marketDataKey) loadData();
       void recheckReturnedPayment();
       return () => { retireCheckoutAction(); loadRevision.current++; resumeRevision.current++; reviewRevision.current++; setCheckingPayment(false); setPreparingReview(null); };
     }, [loadData, retireCheckoutAction, recheckReturnedPayment]),
@@ -1015,7 +1129,30 @@ export default function OffersScreen() {
   useEffect(() => {
     const params = route.params;
     if (!params) return;
-    const key = `${isSeller ? "sell" : "buy"}:${JSON.stringify(params)}`;
+    const key = `${userId}:${isSeller ? "sell" : "buy"}:${JSON.stringify(params)}`;
+    const hasActivityFilters = discoveryQueryKey(activityDiscovery.query) !== discoveryQueryKey(EMPTY_DISCOVERY_QUERY);
+    const hasMarketFilters = discoveryQueryKey(marketDiscovery.query) !== discoveryQueryKey(EMPTY_DISCOVERY_QUERY);
+    const externalFiltered = Boolean((params.contractId || params.orderId) && hasActivityFilters || params.offerId && catalogFiltered || params.requestId && hasMarketFilters);
+    if (externalFiltered) {
+      // A link to a specific operation opens its complete view, never a false match inside filtered results.
+      if (discoveryFocusKey.current !== key) {
+        const relevantKey = params.contractId || params.orderId ? "activity" : params.offerId ? "offers" : "market";
+        const desiredKey = relevantKey === "activity" ? activityDataKey : relevantKey === "offers" ? offerDataKey : marketDataKey;
+        // First let this query finish. A matching card does not need a separate operation view.
+        if (loadedKeys[relevantKey] !== desiredKey) return;
+        const matches = Boolean(params.contractId && contracts.some(item=>item.id===params.contractId) || params.orderId && orders.some(item=>item.id===params.orderId) || params.offerId && offers.some(item=>item.id===params.offerId) || params.requestId && marketRequests.some(item=>item.id===params.requestId));
+        if (matches) discoveryFocusKey.current = key;
+        else {
+        discoveryFocusKey.current = key;
+        const discovery = relevantKey === "activity" ? activityDiscovery : relevantKey === "offers" ? catalogDiscovery : marketDiscovery;
+        discoveryReturn.current = {account:userId,mode:appMode,session:captureAuthSession(),kind:relevantKey === "offers" ? "catalog" : relevantKey,query:discovery.query,restore:discovery.setQuery};
+        discovery.setQuery(EMPTY_DISCOVERY_QUERY);
+        return;
+        }
+      }
+      else if (!((params.contractId && contracts.some(item=>item.id===params.contractId)) || (params.orderId && orders.some(item=>item.id===params.orderId)) || (params.offerId && offers.some(item=>item.id===params.offerId)) || (params.requestId && marketRequests.some(item=>item.id===params.requestId)))) return;
+    }
+    discoveryFocusKey.current = key;
     const knownOrder = params.orderId
       ? orders.find((item) => item.id === params.orderId)
       : undefined;
@@ -1046,6 +1183,11 @@ export default function OffersScreen() {
     }
     if (hydratingFocusKey.current === key) return;
     hydratingFocusKey.current = key;
+    const session = captureAuthSession();
+    const publicationRead = offerReadBarrier.current.read();
+    let cancelled = false;
+    const requestKey = discoveryReadKey;
+    const currentRead = () => !cancelled && session.isCurrent() && publicationRead.isCurrent() && publicationActorCurrent() && requestKey === discoveryReadKeyRef.current;
 
     void (async () => {
       try {
@@ -1054,7 +1196,9 @@ export default function OffersScreen() {
           hydratedOrder = await apiAuthGet<AllwainOrder>(
             `/allwain/payments/orders/${params.orderId}`,
           );
+          if (!currentRead()) return;
           setOrders((current) => mergePage(current, [hydratedOrder!]));
+          void observeConfirmedPurchases([hydratedOrder!],userId,appMode,captureAnalyticsGuard(currentRead));
         }
         const resolvedContractId =
           params.contractId || hydratedOrder?.contractId;
@@ -1065,46 +1209,54 @@ export default function OffersScreen() {
           const contract = await apiAuthGet<AllwainContract>(
             `/allwain/contracts/${resolvedContractId}`,
           );
+          if (!currentRead()) return;
           setContracts((current) => mergePage(current, [contract]));
         }
         if (missingOffer && params.offerId) {
           const offer = await apiAuthGet<AllwainOffer>(
             `/allwain/offers/${params.offerId}`,
           );
+          if (!currentRead()) return;
           setOffers((current) => mergePage(current, [offer]));
         }
         if (missingRequest && params.requestId) {
           const request = await apiAuthGet<AllwainMarketRequest>(
             `/allwain/market/requests/${params.requestId}`,
           );
+          if (!currentRead()) return;
           setMarketRequests((current) => mergePage(current, [request]));
         }
       } catch (err: any) {
+        if (!currentRead()) return;
         setError(
           err?.message ||
             "El aviso apunta a un contenido que ya no está disponible.",
         );
       } finally {
-        hydratingFocusKey.current = null;
+        if (hydratingFocusKey.current === key) hydratingFocusKey.current = null;
       }
     })();
-  }, [contracts, isSeller, marketRequests, offers, orders, route.params]);
+    return () => { cancelled = true; if (hydratingFocusKey.current === key) hydratingFocusKey.current = null; };
+  }, [contracts, isSeller, marketRequests, offers, orders, route.params, discoveryReadKey]);
 
   const sortedContracts = useMemo(
-    () =>
-      contracts
-        .filter((contract) =>
+    () => {
+      const items=contracts.filter((contract) =>
           isSeller
             ? contract.providerUserId === userId
             : contract.requesterUserId === userId,
-        )
-        .sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
-    [contracts, isSeller, userId],
+        );
+      return activityView === "preparation" ? items : items.sort((a,b)=>b.createdAt.localeCompare(a.createdAt));
+    },
+    [contracts, isSeller, userId, activityView],
   );
 
   const visibleOffers = useMemo(
     () => {
-      if (isSeller) return offers.filter((offer) => isOwnOffer(offer, userId));
+      if (isSeller) return offers.filter((offer) => isOwnOffer(offer, userId) &&
+        (publicationType === "proposal" ? isProposalPublication(offer) : !isProposalPublication(offer)) &&
+        (publicationView === "history" ? isTerminalPublication(offer) : !isTerminalPublication(offer)));
+      if (catalogFiltered) return offers;
       const pinnedOffer = preferredOrangesOffer(offers);
       return [
         ...(pinnedOffer ? [pinnedOffer] : []),
@@ -1114,16 +1266,16 @@ export default function OffersScreen() {
         ),
       ];
     },
-    [isSeller, offers, userId],
+    [isSeller, offers, userId, publicationType, publicationView, catalogFiltered],
   );
 
   const featuredOffers = useMemo(
     () => {
-      if (isSeller) return [];
+      if (isSeller || catalogFiltered) return [];
       const offer = preferredOrangesOffer(offers);
       return offer ? [offer] : [];
     },
-    [isSeller, offers],
+    [isSeller, offers, catalogFiltered],
   );
 
   const stripeTestEnabled = isAllwainStripeTestMarketplace(paymentConfig);
@@ -1198,6 +1350,15 @@ export default function OffersScreen() {
       );
       if (!request) return;
       consumedFocusKey.current = focusKey;
+      if (request.myOffer && isTerminalPublication(request.myOffer)) {
+        restoreDiscoveryQuery("market");
+        if (request.myOffer.allwainStatus === "selected") void openProposalOrder(request.myOffer);
+        else {
+          setDiscoveryQuery(userId,"seller-catalog:history:proposal",{...EMPTY_DISCOVERY_QUERY,q:request.myOffer.title});
+          setPublicationType("proposal"); setPublicationView("history");
+        }
+        return;
+      }
       openOfferForm(request);
       return;
     }
@@ -1225,6 +1386,7 @@ export default function OffersScreen() {
   ]);
 
   function openOfferForm(request: AllwainMarketRequest) {
+    if (request.myOffer && isTerminalPublication(request.myOffer)) {setError(managementCopy.readonly);return;}
     const revision = ++offerDraftRevision.current;
     setMarketDraftReady(false);
     void readJourneyDraft<MarketOfferDraft>(userId, "market-offer:" + request.id).then(saved => {
@@ -1276,6 +1438,7 @@ export default function OffersScreen() {
     offerDraftRevision.current++;
     setMarketDraftReady(false);
     setError(null);
+    restoreDiscoveryQuery("market");
   }
 
   async function submitCatalogOffer() {
@@ -1434,6 +1597,7 @@ export default function OffersScreen() {
   }
 
   async function submitMarketOffer(request: AllwainMarketRequest) {
+    if (!publicationActorCurrent() || offerWritePending.current || (request.myOffer && isTerminalPublication(request.myOffer))) return;
     const price = parseNumber(offerDraft.price);
     const availableQuantity = offerDraft.availableQuantity
       ? parseNumber(offerDraft.availableQuantity)
@@ -1475,6 +1639,8 @@ export default function OffersScreen() {
     }
 
     setBusyId(`market:${request.id}`);
+    const session=captureAuthSession();
+    const endWrite=offerReadBarrier.current.beginWrite();offerWritePending.current=true;let saved=false;
     setError(null);
     setNotice(null);
     try {
@@ -1488,6 +1654,7 @@ export default function OffersScreen() {
           validForMinutes: offerDraft.validForMinutes,
         },
       );
+      if (!session.isCurrent() || !publicationActorCurrent()) return;
       if (
         !created.id ||
         Math.abs(Number(created.price) - price) > 0.0001 ||
@@ -1498,17 +1665,19 @@ export default function OffersScreen() {
       void trackAnalyticsEvent("proposal_submitted", { source: "request" });
       await clearJourneyDraft(userId, "market-offer:" + request.id);
       await clearJourneyDraft(userId, "market-offer-step:" + request.id);
+      if (!session.isCurrent() || !publicationActorCurrent()) return;
       setSelectedRequestId(null);
       setMarketDraftReady(false);
       offerDraftRevision.current++;
+      restoreDiscoveryQuery("market");
       setNotice(
         `Oferta enviada a ${request.requester.name}. Ya puede verla y aceptarla.`,
       );
-      await loadData();
+      saved=true;
     } catch (err: any) {
-      setError(err?.message || "No se pudo enviar la oferta.");
+      if(session.isCurrent() && publicationActorCurrent())setError(err?.message === "PROPOSAL_WITHDRAWN" || err?.message === "PROPOSAL_LOCKED" ? managementCopy.readonly : err?.message || "No se pudo enviar la oferta.");
     } finally {
-      setBusyId(null);
+      endWrite();if(session.isCurrent()){offerWritePending.current=false;setBusyId(null);if(saved && publicationActorCurrent())void loadData();}
     }
   }
 
@@ -1539,6 +1708,12 @@ export default function OffersScreen() {
     delivery: OfferDeliveryDraft,
     purchaseKey: string,
   ): Promise<boolean> {
+    if (!userId || appMode !== "buy" || !navigation.isFocused()) return false;
+    const session = captureAuthSession();
+    const revision = ++offerAcceptanceRevision.current;
+    const actorCurrent = () => session.isCurrent() && revision === offerAcceptanceRevision.current &&
+      useAuthStore.getState().user?.id === userId && useAuthStore.getState().appMode === "buy";
+    const current = () => actorCurrent() && navigation.isFocused();
     setBusyId(`offer:${offer.id}`);
     setError(null);
     setNotice(null);
@@ -1547,10 +1722,12 @@ export default function OffersScreen() {
         `/allwain/offers/${offer.id}/accept`,
         { quantity, ...delivery, purchaseKey },
       );
+      if (!current()) return false;
       if (
         !contract.id ||
         contract.offerId !== offer.id ||
         contract.requesterUserId !== userId ||
+        contract.providerUserId !== (offer.ownerUserId || offer.provider?.id) ||
         Math.abs(Number(contract.quantity) - quantity) > 0.0001
       ) {
         throw new Error("El servidor no confirmó el pedido completo.");
@@ -1562,20 +1739,21 @@ export default function OffersScreen() {
           : [contract, ...current];
       });
       await loadData();
+      if (!current()) return false;
       setBuyerSection("orders");
       selectContract(contract.id);
       setTimeout(() => {
-        scrollToContract(contract.id);
+        if (current()) scrollToContract(contract.id);
       }, 100);
       setNotice(
         `Pedido de ${quantityText(contract.quantity || quantity)} ${contract.unit || offerInventory(offer).unit} preparado. Revisa el total definitivo antes de continuar.`,
       );
       return true;
     } catch (err: any) {
-      setError(orderErrorMessage(err?.message, offer));
+      if (current()) setError(orderErrorMessage(err?.message, offer));
       return false;
     } finally {
-      setBusyId(null);
+      if (actorCurrent()) setBusyId(null);
     }
   }
 
@@ -1641,6 +1819,8 @@ export default function OffersScreen() {
   }
 
   async function saveInventory(offer: AllwainOffer) {
+    if (!publicationActorCurrent() || offerWritePending.current || !isOwnOffer(offer, userId) || isProposalPublication(offer) || isTerminalPublication(offer)) return;
+    const session = captureAuthSession();
     const stockQuantity = parseNumber(inventoryDraft.stockQuantity);
     const minQuantity = parseNumber(inventoryDraft.minQuantity);
     const quantityStep = parseNumber(inventoryDraft.quantityStep);
@@ -1657,6 +1837,9 @@ export default function OffersScreen() {
       return;
     }
     setBusyId(`inventory:${offer.id}`);
+    offerWritePending.current = true;
+    const endWrite = offerReadBarrier.current.beginWrite();
+    let saved = false;
     setError(null);
     try {
       const updated = await apiAuthPost<AllwainOffer>(
@@ -1666,9 +1849,11 @@ export default function OffersScreen() {
         quantityStep,
         },
       );
+      if (!session.isCurrent() || !publicationActorCurrent()) return;
       const savedInventory = offerInventory(updated);
       if (
         updated.id !== offer.id ||
+        !isOwnOffer(updated,userId) || isProposalPublication(updated) || isTerminalPublication(updated) ||
         savedInventory.stockQuantity !== stockQuantity ||
         savedInventory.minQuantity !== minQuantity ||
         savedInventory.quantityStep !== quantityStep
@@ -1680,15 +1865,17 @@ export default function OffersScreen() {
       );
       setInventoryEditId(null);
       setNotice("Inventario actualizado.");
-      await loadData();
+      saved = true;
     } catch (err: any) {
+      if (!session.isCurrent() || !publicationActorCurrent()) return;
       setError(
         err?.message === "STOCK_BELOW_COMMITTED"
           ? "El stock total no puede ser menor que las unidades reservadas y vendidas."
           : err?.message || "No se pudo actualizar el inventario.",
       );
     } finally {
-      setBusyId(null);
+      endWrite();
+      if (session.isCurrent()) { offerWritePending.current = false; setBusyId(null); if (saved && publicationActorCurrent()) void loadData(); }
     }
   }
 
@@ -1696,14 +1883,23 @@ export default function OffersScreen() {
     offer: AllwainOffer,
     status: "active" | "paused" | "closed",
   ) {
+    if (!publicationActorCurrent() || offerWritePending.current || !isOwnOffer(offer, userId) || isProposalPublication(offer) || isTerminalPublication(offer)) return;
+    const session = captureAuthSession();
+    const analyticsCurrent = captureAnalyticsGuard(() => session.isCurrent() && publicationActorCurrent());
+    offerWritePending.current = true;
+    const endWrite = offerReadBarrier.current.beginWrite();
+    let saved = false;
     setBusyId(`status:${offer.id}`);
     setError(null);
     setNotice(null);
     try {
       const updated = await apiAuthPatch<AllwainOffer>(
         `/allwain/offers/${offer.id}`,
-        { status },
+        { status, expectedUpdatedAt: offer.updatedAt || offer.createdAt },
       );
+      if (!session.isCurrent() || !publicationActorCurrent()) return;
+      if (updated.id !== offer.id || !isOwnOffer(updated, userId) || updated.allwainStatus !== status) throw new Error(managementCopy.failure);
+      if (status === "closed") void recordPublicationWithdrawal("catalog",appMode,analyticsCurrent);
       setOffers((current) =>
         status === "closed"
           ? current.filter((item) => item.id !== offer.id)
@@ -1711,31 +1907,95 @@ export default function OffersScreen() {
       );
       setNotice(
         status === "closed"
-          ? "Oferta cerrada. Conservamos su historial y sus pedidos."
+          ? managementCopy.retired
           : status === "paused"
-            ? "Oferta pausada. Nadie puede comprarla hasta que la actives."
-            : "Oferta activa de nuevo.",
+            ? managementCopy.paused
+            : managementCopy.activated,
       );
+      saved = true;
     } catch (err: any) {
-      setError(err?.message || "No se pudo actualizar la oferta.");
+      if (session.isCurrent() && publicationActorCurrent()) setError(err?.message === "OFFER_VERSION_CONFLICT" ? managementCopy.version : managementCopy.failure);
     } finally {
-      setBusyId(null);
+      endWrite();
+      if (session.isCurrent()) { offerWritePending.current = false; setBusyId(null); if (saved && publicationActorCurrent()) void loadData(); }
     }
   }
 
   function confirmCloseOffer(offer: AllwainOffer) {
+    if (!publicationActorCurrent()) return;
     Alert.alert(
-      "Cerrar oferta",
-      "Dejará de estar disponible, pero sus pedidos y movimientos seguirán guardados.",
+      managementCopy.withdraw,
+      managementCopy.confirm,
       [
-        { text: "Volver", style: "cancel" },
+        { text: managementCopy.cancel, style: "cancel" },
         {
-          text: "Cerrar oferta",
+          text: managementCopy.withdraw,
           style: "destructive",
-          onPress: () => void changeOfferStatus(offer, "closed"),
+          onPress: () => {if (publicationActorCurrent()) void changeOfferStatus(offer, "closed");},
         },
       ],
     );
+  }
+
+  async function withdrawProposal(offer: AllwainOffer) {
+    if (!publicationActorCurrent() || offerWritePending.current || !isOwnOffer(offer,userId) || !isProposalPublication(offer) || isTerminalPublication(offer)) return;
+    const session = captureAuthSession();
+    const analyticsCurrent = captureAnalyticsGuard(() => session.isCurrent() && publicationActorCurrent());
+    const endWrite = offerReadBarrier.current.beginWrite();
+    offerWritePending.current = true; setBusyId(`withdraw:${offer.id}`); setError(null); setNotice(null);
+    let saved = false;
+    try {
+      const updated = await apiAuthPost<AllwainOffer>(`/allwain/offers/${offer.id}/withdraw`, {expectedUpdatedAt:offer.updatedAt || offer.createdAt});
+      if (!session.isCurrent() || !publicationActorCurrent()) return;
+      if (updated.id !== offer.id || !isOwnOffer(updated,userId) || updated.allwainStatus !== "withdrawn") throw new Error(managementCopy.failure);
+      void recordPublicationWithdrawal("proposal",appMode,analyticsCurrent);
+      setOffers(items => items.filter(item => item.id !== offer.id));
+      setMarketRequests(items => items.map(item => item.myOffer?.id === offer.id ? {...item,myOffer:updated} : item));
+      setNotice(managementCopy.retired); saved = true;
+    } catch (err: any) {
+      if (session.isCurrent() && publicationActorCurrent()) setError(err?.message === "OFFER_VERSION_CONFLICT" ? managementCopy.version : err?.message === "PROPOSAL_LOCKED" ? managementCopy.proposalLocked : managementCopy.failure);
+    } finally {
+      endWrite();
+      if (session.isCurrent()) {offerWritePending.current = false;setBusyId(null);if(saved && publicationActorCurrent()) void loadData();}
+    }
+  }
+  function confirmWithdrawProposal(offer: AllwainOffer) {
+    if (!publicationActorCurrent()) return;
+    Alert.alert(managementCopy.withdraw,managementCopy.proposalConfirm,[{text:managementCopy.cancel,style:"cancel"},{text:managementCopy.withdraw,style:"destructive",onPress:()=>{if(publicationActorCurrent())void withdrawProposal(offer);}}]);
+  }
+  function openCatalogEditor(offer: AllwainOffer) {
+    if (!publicationActorCurrent() || offerWritePending.current || !isOwnOffer(offer,userId) || isProposalPublication(offer) || isTerminalPublication(offer)) return;
+    setCatalogEditOffer(offer);setCatalogEditValues(catalogEditDraft(offer));setInventoryEditId(null);setError(null);
+  }
+  async function saveCatalogEdit() {
+    if (!publicationActorCurrent() || !catalogEditOffer || !catalogEditValues || offerWritePending.current) return;
+    const offer = catalogEditOffer;
+    const patch = buildCatalogEditPatch(offer,catalogEditValues);
+    if(typeof patch === "string") {setError(managementCopy[patch === "confirmation" ? "failure" : patch]);return;}
+    if(Object.keys(patch).length === 1) {setCatalogEditOffer(null);setCatalogEditValues(null);return;}
+    const session = captureAuthSession();const endWrite=offerReadBarrier.current.beginWrite();offerWritePending.current=true;
+    setBusyId(`edit:${offer.id}`);setError(null);let saved=false;
+    try {
+      const updated = await apiAuthPatch<AllwainOffer>(`/allwain/offers/${offer.id}`,patch);
+      if(!session.isCurrent() || !publicationActorCurrent()) return;
+      if(!catalogPatchConfirmed(offer,updated,patch)) throw new Error("OFFER_CONFIRMATION_FAILED");
+      setOffers(items=>items.map(item=>item.id===offer.id?updated:item));setCatalogEditOffer(null);setCatalogEditValues(null);setNotice(managementCopy.saved);saved=true;
+    }catch(err:any){
+      if(session.isCurrent() && publicationActorCurrent())setError(err?.message === "OFFER_VERSION_CONFLICT" ? managementCopy.version : err?.message === "OFFER_TERMS_LOCKED" ? managementCopy.locked : managementCopy.failure);
+    }finally{endWrite();if(session.isCurrent()){offerWritePending.current=false;setBusyId(null);if(saved && publicationActorCurrent())void loadData();}}
+  }
+  async function openProposalOrder(offer: AllwainOffer) {
+    if (!publicationActorCurrent() || busyId) return;
+    const session=captureAuthSession();const read=offerReadBarrier.current.read();setBusyId(`proposal-order:${offer.id}`);setError(null);
+    try {
+      const result=await apiAuthGet<{items?:AllwainContract[];pageInfo?:PageInfo}>(`/allwain/contracts?scope=seller&offerId=${encodeURIComponent(offer.id)}&limit=2`);
+      if(!session.isCurrent() || !read.isCurrent() || !publicationActorCurrent()) return;
+      const items=(result.items || []).filter(item=>item.app==="allwain" && item.offerId===offer.id && item.providerUserId===userId);
+      if(!items.length) throw new Error(managementCopy.noOrder);
+      if(items.length>1 || result.pageInfo?.hasNextPage) setNotice(managementCopy.multipleOrders);
+      navigation.navigate("MainTabs",{screen:"Ofertas",params:{section:"orders",...(items.length===1&&!result.pageInfo?.hasNextPage ? {contractId:items[0].id} : {}),focusKey:String(Date.now())}});
+    }catch{if(session.isCurrent()&&read.isCurrent()&&publicationActorCurrent())setError(managementCopy.noOrder);}
+    finally{if(session.isCurrent())setBusyId(value=>value===`proposal-order:${offer.id}`?null:value);}
   }
 
   async function updateAgreement(
@@ -1909,6 +2169,8 @@ export default function OffersScreen() {
     // offers, payment configuration or the rest of the page load.
     explicitOrders.current.set(order.id, {revision:++explicitOrderRevision.current,order});
     setOrders((current) => mergePage(current, [order]));
+    const session = captureAuthSession();
+    void observeConfirmedPurchases([order],userId,appMode,captureAnalyticsGuard(() => session.isCurrent() && publicationActorCurrent()));
     const inventoryStatus = order.inventoryStatus === "reserved" || order.inventoryStatus === "sold" || order.inventoryStatus === "released"
       ? order.inventoryStatus : undefined;
     setContracts((current) => current.map(contract => contract.id === order.contractId
@@ -1960,43 +2222,23 @@ export default function OffersScreen() {
   }
 
   async function chargePreorder(contract: AllwainContract) {
-    if (!paymentEnvironmentReady) {
-      setNotice(null);
-      setError(t("offers.paymentEnvironmentUnavailable"));
-      return;
-    }
-    setBusyId(`charge:${contract.id}`);
-    setError(null);
-    setNotice(null);
+    if (!paymentEnvironmentReady) { setNotice(null); setError(t("offers.paymentEnvironmentUnavailable")); return; }
+    const current = beginCheckoutAction();
+    if (!current() || contract.providerUserId !== userId) return;
+    setBusyId(`charge:${contract.id}`); setError(null); setNotice(null);
     try {
-      const orders = await apiAuthGet<{
-        items?: { id: string; contractId: string }[];
-      }>("/allwain/payments/orders");
-      const order = orders.items?.find(
-        (item) => item.contractId === contract.id,
-      );
-      if (!order) throw new Error("No encontramos el pedido de esta reserva.");
-      const charge = await apiAuthPost<{
-        orderId: string;
-        paymentIntentId?: string;
-        status?: string;
-      }>(`/allwain/payments/orders/${order.id}/charge`, {});
-      if (
-        charge.orderId !== order.id ||
-        !charge.paymentIntentId ||
-        !charge.status
-      ) {
-        throw new Error("El servidor no confirmó la solicitud de cobro.");
-      }
-      setNotice(
-        "Cobro solicitado a Stripe. El estado se actualizará al confirmarse.",
-      );
-      await loadData();
-    } catch (err: any) {
-      setError(err?.message || "No se pudo cobrar la reserva.");
-    } finally {
-      setBusyId(null);
-    }
+      const known = orders.find(item => item.contractId === contract.id);
+      const order = await apiAuthGet<AllwainOrder>(known
+        ? `/allwain/payments/orders/${encodeURIComponent(known.id)}`
+        : `/allwain/payments/contracts/${encodeURIComponent(contract.id)}/order`);
+      if (!current()) return;
+      if (order.contractId !== contract.id || order.sellerUserId !== userId || order.paymentMode !== "preorder") throw new Error("El servidor no confirmó el pedido de esta reserva.");
+      const charge = await apiAuthPost<{orderId:string;paymentIntentId?:string;status?:string}>(`/allwain/payments/orders/${encodeURIComponent(order.id)}/charge`, {});
+      if (!current()) return;
+      if (charge.orderId !== order.id || !charge.paymentIntentId || !charge.status) throw new Error("El servidor no confirmó la solicitud de cobro.");
+      setNotice("Cobro solicitado a Stripe. El estado se actualizará al confirmarse."); await loadData();
+    } catch (err:any) {if(current()) setError(err?.message || "No se pudo cobrar la reserva.");}
+    finally {if(current()) setBusyId(null);}
   }
 
   async function updateFulfillment(order: AllwainOrder, action: string) {
@@ -2197,7 +2439,8 @@ export default function OffersScreen() {
     <View style={styles.screen}>
       <ScrollView
         ref={scrollRef}
-        onScroll={event => {scrollY.current = event.nativeEvent.contentOffset.y;}}
+        onScroll={event => {scrollY.current = event.nativeEvent.contentOffset.y;scrollWindow.current.update({y:scrollY.current});}}
+        onLayout={event => {const height=event.nativeEvent.layout.height;scrollRef.current?.getNativeScrollRef()?.measureInWindow((_x:number,y:number)=>scrollWindow.current.update({height,containerY:y}));}}
         scrollEventThrottle={16}
         style={styles.container}
         contentContainerStyle={styles.content}
@@ -2233,7 +2476,7 @@ export default function OffersScreen() {
             <Text style={styles.muted}>{t("offers.loading")}</Text>
           </View>
         ) : null}
-        {error && (!expandedId || (isSeller ? sellerSection === "offers" : buyerSection === "offers")) && !selectedOffer && !catalogFormOpen && !selectedMarketRequest ? (
+        {error && (!expandedId || (isSeller ? sellerSection === "offers" : buyerSection === "offers")) && !selectedOffer && !catalogFormOpen && !catalogEditOffer && !selectedMarketRequest ? (
           <View style={styles.loadNotice} accessibilityLiveRegion="polite">
             <Text style={styles.loadNoticeText}>{error}</Text>
             <BigActionButton label="Actualizar información" tone="light" busy={loading} onPress={() => void loadData()} />
@@ -2285,7 +2528,22 @@ export default function OffersScreen() {
             </TouchableOpacity>
           ))}
         </View> : null}
-        <View style={(isSeller ? sellerSection !== "offers" : buyerSection === "orders") ? { display: "none" } : Platform.OS === "web" ? ({ display: "contents" } as any) : undefined}>
+        {(isSeller ? sellerSection === "offers" : buyerSection === "offers") ? <View style={Platform.OS === "web" ? ({ display: "contents" } as any) : undefined}>
+        {isSeller ? <View style={{gap:10}}>
+          <View style={{flexDirection:"row",flexWrap:"wrap",gap:8}}>
+            {([["catalog",managementCopy.catalog],["proposal",managementCopy.proposals]] as const).map(([value,label]) => <TouchableOpacity key={value} accessibilityRole="tab" accessibilityState={{selected:publicationType===value}} style={[styles.fullSoftButton,styles.softButton,{flexGrow:1,flexBasis:145},publicationType===value&&{borderColor:colors.primary}]} disabled={Boolean(busyId)||Boolean(catalogEditOffer)} onPress={()=>setPublicationType(value)}><Text style={styles.softButtonText}>{label}</Text></TouchableOpacity>)}
+          </View>
+          <View style={{flexDirection:"row",flexWrap:"wrap",gap:8}}>
+            {([["active",managementCopy.active],["history",managementCopy.history]] as const).map(([value,label]) => <TouchableOpacity key={value} accessibilityRole="tab" accessibilityState={{selected:publicationView===value}} style={[styles.fullSoftButton,styles.softButton,{flexGrow:1,flexBasis:145},publicationView===value&&{borderColor:colors.primary}]} disabled={Boolean(busyId)||Boolean(catalogEditOffer)} onPress={()=>setPublicationView(value)}><Text style={styles.softButtonText}>{label}</Text></TouchableOpacity>)}
+          </View>
+        </View> : null}
+        <DiscoveryFilters value={catalogDiscovery.query} onApply={next => { const current = captureAnalyticsGuard(publicationActorCurrent); void recordAppliedFilters({state:analyticsState,scope:`${userId}:${appMode}:${actorSession.generation}`,queryKey:discoveryQueryKey(next),query:next,surface:"offers",appMode,current,allowed:[...CATALOG_DISCOVERY_FIELDS,...(isSeller ? ["status"] : [])]},discoveryQueryKey(catalogDiscovery.query)); catalogDiscovery.setQuery(next); }} kind="catalog"
+          allowed={[...CATALOG_DISCOVERY_FIELDS, ...(isSeller ? ["status"] : [])]}
+          statuses={isSeller ? publicationView === "history" ? [
+            {value:"closed",label:managementCopy.withdrawn},{value:"withdrawn",label:managementCopy.withdrawn},
+            {value:"selected",label:managementCopy.selected},{value:"not_selected",label:managementCopy.notSelected},
+          ] : [{value:"active",label:managementCopy.active},{value:"paused",label:managementCopy.paused},{value:"sold_out",label:t("offers.noStock")}] : undefined}
+          disabled={!catalogDiscovery.ready || Boolean(busyId) || Boolean(catalogEditOffer) || Boolean(selectedOffer)} />
         {ownBuyerOffers.length > 0 ? (
           <View style={styles.ownPublicationsSection}>
             <View style={styles.featuredHeading}>
@@ -2298,7 +2556,7 @@ export default function OffersScreen() {
                 </Text>
               </View>
             </View>
-            {ownBuyerOffers.map((offer) => {
+            <WindowedRows data={ownBuyerOffers} keyExtractor={rowId} renderItem={(offer) => {
               const imageUrl = offerMetaText(offer, "imageUrl");
               const imageIllustrative = offer.meta?.imageIllustrative === true;
               const inventory = offerInventory(offer, t("home.buyer.unit"));
@@ -2332,7 +2590,7 @@ export default function OffersScreen() {
                   leadingVariant="image"
                 />
               );
-            })}
+            }} viewport={scrollWindow.current} queryKey={offerDataKey} estimatedHeight={350} pinnedId={inventoryEditId} testID="offers-ownBuyerOffers"  />
           </View>
         ) : null}
 
@@ -2425,7 +2683,7 @@ export default function OffersScreen() {
           </>
         ) : null}
 
-        {isSeller ? (
+        {isSeller && publicationView === "active" && publicationType === "catalog" ? (
           <>
             <View style={styles.publishSection}>
               <View style={styles.publishHeader}>
@@ -2454,6 +2712,7 @@ export default function OffersScreen() {
             <Text style={styles.sectionHelp}>
               {t("offers.activeRequestsBody")}
             </Text>
+            <DiscoveryFilters value={marketDiscovery.query} onApply={next => { const current = captureAnalyticsGuard(publicationActorCurrent); void recordAppliedFilters({state:analyticsState,scope:`${userId}:${appMode}:${actorSession.generation}`,queryKey:discoveryQueryKey(next),query:next,surface:"market_requests",appMode,current,allowed:MARKET_REQUEST_FILTERS},discoveryQueryKey(marketDiscovery.query)); marketDiscovery.setQuery(next); }} kind="requests" allowed={MARKET_REQUEST_FILTERS} disabled={!marketDiscovery.ready || Boolean(busyId) || Boolean(selectedMarketRequest)} extra={(draft,setDraft) => <DemandFilterFields value={draft} onChange={setDraft} />} extraSummary={value => demandFilterSummary(locale,value)} />
             {marketRequests.length === 0 && !loading && verifiedSections.market ? (
               <EmptyState
                 title={t("offers.emptyRequests")}
@@ -2467,7 +2726,7 @@ export default function OffersScreen() {
               />
             ) : null}
 
-            {marketRequests.map((request) => {
+            <WindowedRows data={marketRequests} keyExtractor={rowId} renderItem={(request) => {
               const sending = busyId === `market:${request.id}`;
               const myOffer = request.myOffer;
               const targetPrice = request.extracted.targetPrice;
@@ -2564,7 +2823,7 @@ export default function OffersScreen() {
                           {t("offers.delivery", { value: deliveryEstimate })}
                         </Text>
                       ) : null}
-                      <ProposalCountdown
+                      {!isTerminalPublication(myOffer) ? <ProposalCountdown
                         expiresAt={
                           myOffer.proposalExpiresAt ||
                           (typeof myOffer.meta?.validUntil === "string"
@@ -2572,16 +2831,16 @@ export default function OffersScreen() {
                             : null)
                         }
                         compact
-                      />
-                      <TouchableOpacity
+                      /> : <Text style={styles.ownHelp}>{myOffer.allwainStatus === "selected" ? managementCopy.selected : managementCopy.withdrawn}</Text>}
+                      {!isTerminalPublication(myOffer) ? <><TouchableOpacity
                         style={styles.fullPrimaryButton}
                         onPress={() => openOfferForm(request)}
-                        disabled={sending}
+                        disabled={sending || Boolean(busyId)}
                       >
                         <Text style={styles.primaryButtonText}>
-                          Mejorar o renovar
+                          {managementCopy.renew}
                         </Text>
-                      </TouchableOpacity>
+                      </TouchableOpacity><TouchableOpacity style={[styles.fullSoftButton,styles.softButton]} disabled={Boolean(busyId)} onPress={()=>confirmWithdrawProposal(myOffer)}><Text style={styles.softButtonText}>{managementCopy.withdraw}</Text></TouchableOpacity></> : myOffer.allwainStatus === "selected" ? <TouchableOpacity style={[styles.fullSoftButton,styles.softButton]} disabled={Boolean(busyId)} onPress={()=>void openProposalOrder(myOffer)}><Text style={styles.softButtonText}>{managementCopy.orders}</Text></TouchableOpacity> : <Text style={styles.ownHelp}>{managementCopy.readonly}</Text>}
                     </View>
                   ) : (
                     <TouchableOpacity
@@ -2596,12 +2855,12 @@ export default function OffersScreen() {
                   )}
                 </View>
               );
-            })}
-            {marketPage.hasNextPage ? (
+            }} viewport={scrollWindow.current} queryKey={marketDataKey} estimatedHeight={360} pinnedId={selectedMarketRequest?.id} testID="offers-marketRequests"  />
+            {loadedKeys.market === marketDataKey && marketPage.hasNextPage ? (
               <TouchableOpacity
                 style={[styles.fullSoftButton, styles.softButton]}
                 onPress={() => void loadMoreMarketRequests()}
-                disabled={busyId === "more:market"}
+                disabled={loading || busyId === "more:market"}
               >
                 <Text style={styles.softButtonText}>
                   {busyId === "more:market"
@@ -2618,14 +2877,14 @@ export default function OffersScreen() {
           <View style={isSeller ? ({ order: 10 } as any) : undefined}>
             <Text style={styles.sectionTitle}>
               {isSeller
-                ? t("offers.sellerListTitle")
+                ? publicationType === "proposal" ? managementCopy.proposals : managementCopy.catalog
                 : featuredOffers.length > 0
                   ? t("offers.moreOffers")
                   : t("offers.availableOffers")}
             </Text>
             {regularOffers.length === 0 && !loading && verifiedSections.offers ? (
               <EmptyState
-                title={isSeller ? t("offers.emptySeller") : t("offers.emptyBuyer")}
+                title={isSeller && (publicationView === "history" || publicationType === "proposal") ? managementCopy.empty : isSeller ? t("offers.emptySeller") : t("offers.emptyBuyer")}
                 body={
                   isSeller
                     ? t("offers.emptySellerBody")
@@ -2642,7 +2901,7 @@ export default function OffersScreen() {
               />
             ) : null}
 
-            {regularOffers.map((offer) => {
+            <WindowedRows data={regularOffers} keyExtractor={rowId} renderItem={(offer) => {
               const mine = isOwnOffer(offer, userId);
               const imageUrl = offerMetaText(offer, "imageUrl");
               const imageIllustrative = offer.meta?.imageIllustrative === true;
@@ -2655,6 +2914,16 @@ export default function OffersScreen() {
               const inventoryBusy = busyId === `inventory:${offer.id}`;
               const editingInventory = inventoryEditId === offer.id;
               const previousOrders = previousOrdersForOffer(offer);
+              if(isSeller && isProposalPublication(offer)) {
+                const terminal=isTerminalPublication(offer);
+                return <View key={offer.id} style={[styles.card,styles.ownCard]}>
+                  <Text style={styles.offerTitle}>{offer.title}</Text>
+                  <Text style={styles.price}>{typeof offer.price === "number" ? formatCurrency(offer.price,offer.currency || "EUR",locale) : t("offers.pricePending")}</Text>
+                  {offer.description ? <Text style={styles.muted}>{offer.description}</Text> : null}
+                  <Text style={styles.ownFeaturedLabel}>{offer.allwainStatus === "selected" ? managementCopy.selected : offer.allwainStatus === "not_selected" ? managementCopy.notSelected : terminal ? managementCopy.withdrawn : t("offers.active")}</Text>
+                  {!terminal ? <><ProposalCountdown expiresAt={offer.proposalExpiresAt || offerMetaText(offer,"validUntil")} compact /><TouchableOpacity style={[styles.fullSoftButton,styles.softButton]} disabled={Boolean(busyId)} onPress={()=>confirmWithdrawProposal(offer)}><Text style={styles.softButtonText}>{managementCopy.withdraw}</Text></TouchableOpacity></> : offer.allwainStatus === "selected" ? <TouchableOpacity style={[styles.fullSoftButton,styles.softButton]} disabled={Boolean(busyId)} onPress={()=>void openProposalOrder(offer)}><Text style={styles.softButtonText}>{managementCopy.orders}</Text></TouchableOpacity> : <Text style={styles.ownHelp}>{managementCopy.readonly}</Text>}
+                </View>;
+              }
               if (!isSeller) {
                 return (
                   <OfferCard
@@ -2737,7 +3006,7 @@ export default function OffersScreen() {
                   ) : null}
                   {mine ? (
                     <Text style={styles.ownFeaturedLabel}>
-                      {offer.allwainStatus === "paused"
+                      {offer.allwainStatus === "closed" ? managementCopy.withdrawn : offer.allwainStatus === "paused"
                         ? t("offers.paused")
                         : offer.allwainStatus === "sold_out"
                           ? t("offers.noStock")
@@ -2751,10 +3020,14 @@ export default function OffersScreen() {
                           ? "Inventario sin configurar"
                           : `${quantityText(inventory.availableQuantity)} ${inventory.unit} disponibles · ${quantityText(inventory.reservedQuantity)} reservados · ${quantityText(inventory.soldQuantity)} vendidos`}
                       </Text>
-                      {!offer.meta?.requestId && !editingInventory ? (
+                      {!isTerminalPublication(offer) && !editingInventory ? (
+                        <TouchableOpacity style={styles.inventoryEditButton} disabled={Boolean(busyId)} onPress={()=>openCatalogEditor(offer)}><Text style={styles.inventoryEditText}>{managementCopy.edit}</Text></TouchableOpacity>
+                      ) : null}
+                      {!isTerminalPublication(offer) && !editingInventory ? (
                         <TouchableOpacity
                           style={styles.inventoryEditButton}
                           onPress={() => openInventoryEditor(offer)}
+                          disabled={Boolean(busyId)}
                         >
                           <Text style={styles.inventoryEditText}>
                             Ajustar stock y mínimo
@@ -2835,11 +3108,11 @@ export default function OffersScreen() {
                           </View>
                         </View>
                       ) : null}
-                      {!offer.meta?.requestId && !editingInventory ? (
+                      {!isTerminalPublication(offer) && !editingInventory ? (
                         <View style={styles.actionsRow}>
                           <TouchableOpacity
                             style={[styles.actionBtn, styles.softButton]}
-                            disabled={busyId === `status:${offer.id}`}
+                            disabled={Boolean(busyId)}
                             onPress={() =>
                               void changeOfferStatus(
                                 offer,
@@ -2857,16 +3130,15 @@ export default function OffersScreen() {
                           </TouchableOpacity>
                           <TouchableOpacity
                             style={[styles.actionBtn, styles.softButton]}
-                            disabled={busyId === `status:${offer.id}`}
+                            disabled={Boolean(busyId)}
                             onPress={() => confirmCloseOffer(offer)}
                           >
-                            <Text style={styles.softButtonText}>Cerrar</Text>
+                            <Text style={styles.softButtonText}>{managementCopy.withdraw}</Text>
                           </TouchableOpacity>
                         </View>
                       ) : null}
                       <Text style={styles.ownHelp}>
-                        Cuando un comprador solicite una cantidad aparecerá en
-                        Acuerdos.
+                        {isTerminalPublication(offer) ? managementCopy.readonly : managementCopy.terms}
                       </Text>
                     </View>
                   ) : (
@@ -2901,12 +3173,12 @@ export default function OffersScreen() {
                   )}
                 </View>
               );
-            })}
-            {offersPage.hasNextPage ? (
+            }} viewport={scrollWindow.current} queryKey={offerDataKey} estimatedHeight={460} pinnedId={inventoryEditId} testID="offers-regularOffers"  />
+            {loadedKeys.offers === offerDataKey && offersPage.hasNextPage ? (
               <TouchableOpacity
                 style={[styles.fullSoftButton, styles.softButton]}
                 onPress={() => void loadMoreOffers()}
-                disabled={busyId === "more:offers"}
+                disabled={loading || busyId === "more:offers"}
               >
                 <Text style={styles.softButtonText}>
                   {busyId === "more:offers"
@@ -2918,8 +3190,8 @@ export default function OffersScreen() {
           </View>
         ) : null}
 
-        </View>
-        <View onLayout={event => {ordersY.current = event.nativeEvent.layout.y;}} style={(isSeller ? sellerSection === "offers" : buyerSection === "offers") ? {display:"none"} : undefined}>
+        </View> : null}
+        {(isSeller ? sellerSection !== "offers" : buyerSection === "orders") ? <View onLayout={event => {ordersY.current = event.nativeEvent.layout.y;}}>
         {visibleRecurringPlans.length > 0 ? (
           <View style={styles.recurringSection}>
             <Text style={styles.sectionTitle}>Entregas programadas</Text>
@@ -2927,7 +3199,7 @@ export default function OffersScreen() {
               Cada fecha crea su propio pedido y cobro. Puedes detener las
               siguientes sin alterar las ya realizadas.
             </Text>
-            {visibleRecurringPlans.map((plan) => {
+            <WindowedRows data={visibleRecurringPlans} keyExtractor={rowId} renderItem={(plan) => {
               const isBusy = busyId === `recurring:${plan.id}`;
               const nextRun = plan.nextRunAt
                 ? new Date(plan.nextRunAt).toLocaleDateString("es-ES", {
@@ -3083,7 +3355,7 @@ export default function OffersScreen() {
                   ) : null}
                 </View>
               );
-            })}
+            }} viewport={scrollWindow.current} queryKey={activityDataKey} estimatedHeight={350} pinnedId={null} testID="offers-visibleRecurringPlans"  />
           </View>
         ) : null}
 
@@ -3094,10 +3366,12 @@ export default function OffersScreen() {
           }}
         />
         <Text style={styles.sectionTitle}>{isSeller && sellerSection === "preparation" ? "Pendientes de preparar o entregar" : "Mis pedidos"}</Text>
+        {isSeller && sellerSection === "preparation" && preparationCount !== null && verifiedSections.orders ? <Text style={styles.sectionHelp}>{preparationCountLabel(locale,preparationCount)}</Text> : null}
         <Text style={styles.sectionHelp}>
           {isSeller ? "Cada acuerdo te muestra el estado y el siguiente paso." : "Oferta aceptada → revisión y pago → preparación y entrega. Cada compra conserva aquí su ficha y su historial."}
         </Text>
-        {sortedContracts.filter(contract => !isSeller || sellerSection !== "preparation" || sellerNeedsPreparation(orderByContract.get(contract.id))).length === 0 && !loading && verifiedSections.orders ? (
+        <DiscoveryFilters value={activityDiscovery.query} onApply={activityDiscovery.setQuery} kind="orders" allowed={ORDER_DISCOVERY_FIELDS} disabled={!activityDiscovery.ready || Boolean(busyId)} />
+        {sortedContracts.length === 0 && !loading && verifiedSections.orders ? (
           <EmptyState
             title={isSeller && sellerSection === "preparation" ? "No hay pedidos que preparar" : "Sin pedidos todavía"}
             body={
@@ -3114,7 +3388,7 @@ export default function OffersScreen() {
           />
         ) : null}
 
-        {sortedContracts.filter(contract => !isSeller || sellerSection !== "preparation" || sellerNeedsPreparation(orderByContract.get(contract.id))).map((contract) => {
+        <WindowedRows data={sortedContracts} keyExtractor={rowId} renderItem={(contract) => {
           const active =
             contract.status !== "accepted" && contract.status !== "rejected";
           const acceptedByUser = hasAccepted(contract, userId);
@@ -3201,7 +3475,7 @@ export default function OffersScreen() {
                 : "Ver pedido";
 
           return (
-            <View ref={node => {contractViews.current[contract.id] = node;}} key={contract.id} onLayout={event => {contractPositions.current[contract.id] = event.nativeEvent.layout.y;}} style={styles.contractGroup}>
+            <View ref={node => {contractViews.current[contract.id] = node;}} key={contract.id} style={styles.contractGroup}>
               <OrderCard
                 title={contract.offerTitle || "Pedido Allwain"}
                 meta={`${quantitySummary}${totalSummary}`}
@@ -3979,12 +4253,12 @@ export default function OffersScreen() {
               ) : null}
             </View>
           );
-        })}
-        {contractsPage.hasNextPage || ordersPage.hasNextPage ? (
+        }} viewport={scrollWindow.current} queryKey={activityDataKey} estimatedHeight={300} pinnedId={expandedId} testID="offers-sortedContracts" onOffsets={offsets => {contractPositions.current = offsets;}} />
+        {loadedKeys.activity === activityDataKey && (contractsPage.hasNextPage || ordersPage.hasNextPage) ? (
           <TouchableOpacity
             style={[styles.fullSoftButton, styles.softButton]}
             onPress={() => void loadMoreActivity()}
-            disabled={busyId === "more:activity"}
+            disabled={loading || busyId === "more:activity"}
           >
             <Text style={styles.softButtonText}>
               {busyId === "more:activity"
@@ -3993,7 +4267,7 @@ export default function OffersScreen() {
             </Text>
           </TouchableOpacity>
         ) : null}
-        </View>
+        </View> : null}
       </ScrollView>
       {(() => {
         const contract = contracts.find(item => item.id === expandedId);
@@ -4030,6 +4304,7 @@ export default function OffersScreen() {
             consumedFocusKey.current = null;
           }
           setSelectedOffer(null);
+          restoreDiscoveryQuery("catalog");
         }}
         onSubmit={requestOffer}
         onOpenReputation={(providerId) => {
@@ -4075,6 +4350,10 @@ export default function OffersScreen() {
         }}
         onSubmit={() => void submitCatalogOffer()}
       />
+      <CatalogOfferEditor offer={catalogEditOffer} draft={catalogEditValues} busy={Boolean(catalogEditOffer && busyId === `edit:${catalogEditOffer.id}`)} error={error}
+        onChange={patch=>setCatalogEditValues(current=>current?{...current,...patch}:current)}
+        onClose={()=>{if(offerWritePending.current)return;setCatalogEditOffer(null);setCatalogEditValues(null);setError(null);}}
+        onSave={()=>void saveCatalogEdit()} />
     </View>
   );
 }

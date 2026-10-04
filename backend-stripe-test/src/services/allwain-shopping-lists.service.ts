@@ -1,6 +1,8 @@
 import { randomUUID } from "node:crypto";
 import { parse as parseCsv } from "csv-parse/sync";
 import { Prisma } from "@prisma/client";
+import { discoveryCursor, discoveryDate, discoveryWhere, validateDiscovery, type AllwainDiscoveryInput } from "./allwain-discovery";
+import { allwainDiscoveryNearbyIdsPg } from "./data.store.allwain.pg";
 
 import { ENV } from "../config/env";
 import { getPrisma } from "../db/prisma";
@@ -601,7 +603,6 @@ async function hydrateShoppingLists(
           where: {
             shoppingListId: { in: listIds },
             owner: "allwain",
-            allwainStatus: { notIn: ["withdrawn"] },
             ...(options.includeAllProposals
               ? {}
               : { ownerUserId: viewerUserId }),
@@ -622,7 +623,7 @@ async function hydrateShoppingLists(
       where: {
         shoppingListId: { in: listIds },
         owner: "allwain",
-        allwainStatus: { notIn: ["withdrawn"] },
+        allwainStatus: "active",
         OR: [
           { proposalExpiresAt: null },
           { proposalExpiresAt: { gt: new Date() } },
@@ -672,6 +673,8 @@ async function hydrateShoppingLists(
       price: offer.price,
       currency: offer.currency || "EUR",
       status: offer.allwainStatus || "active",
+      createdAt: offer.createdAt?.toISOString?.() || offer.createdAt || null,
+      updatedAt: offer.updatedAt?.toISOString?.() || offer.updatedAt || offer.createdAt?.toISOString?.() || offer.createdAt || null,
       deliveryEstimate:
         typeof offer.meta?.deliveryEstimate === "string"
           ? offer.meta.deliveryEstimate
@@ -694,8 +697,6 @@ async function hydrateShoppingLists(
         completedOrders: Number(reputation?.completedOrders || 0),
       },
       meta: offer.meta || {},
-      createdAt: offer.createdAt.toISOString(),
-      updatedAt: offer.updatedAt.toISOString(),
     });
     proposalsByList.set(offer.shoppingListId, collection);
   }
@@ -1196,7 +1197,7 @@ export async function publishAllwainShoppingList(
   )[0];
 }
 
-function normalizeListQuery(input: {
+function normalizeListQuery(input: AllwainDiscoveryInput & {
   limit?: unknown;
   cursor?: unknown;
   query?: unknown;
@@ -1206,12 +1207,32 @@ function normalizeListQuery(input: {
     50,
     Math.max(1, Math.trunc(Number(input.limit) || 20)),
   );
-  const cursor = optionalText(input.cursor, 64);
+  const cursor = optionalText(input.cursor, 2048);
   const query = optionalText(input.query, 120);
   const status = optionalText(input.status, 30);
   if (status && !LIST_STATUSES.has(status))
     throw new Error("INVALID_SHOPPING_LIST_STATUS");
-  return { limit, cursor, query, status };
+  const params = { ...input, limit, cursor, query, status };
+  validateDiscovery(params);
+  return params;
+}
+
+async function shoppingListDiscoveryWhere(input: AllwainDiscoveryInput, userId: string, market: boolean) {
+  const { category, subcategory, productKind, unit, minPrice, maxPrice, currency, ...listFields } = input;
+  const filters = discoveryWhere({ ...listFields, currency });
+  if (category || subcategory || productKind || unit || minPrice != null || maxPrice != null) {
+    const itemFilters = discoveryWhere({ category, subcategory, productKind, unit, minPrice: minPrice == null ? null : Math.round(minPrice * 100), maxPrice: maxPrice == null ? null : Math.round(maxPrice * 100) }, { titleField: "productName", priceField: "targetUnitPriceAmount" });
+    filters.push({ items: { some: { reviewStatus: "selected", AND: itemFilters } } });
+  }
+  if (input.deliveryChannel) filters.push({ preferredDeliveryChannel: input.deliveryChannel });
+  const before = discoveryDate(input.proposalDeadlineBefore, true), after = discoveryDate(input.proposalDeadlineAfter);
+  if (before || after) filters.push({ proposalDeadlineAt: { ...(before ? { lte: before } : {}), ...(after ? { gte: after } : {}) } });
+  if (input.radiusKm != null) filters.push({ id: { in: await allwainDiscoveryNearbyIdsPg("AllwainShoppingList", input) } });
+  if (market && input.responseStatus) {
+    const state: any = input.responseStatus === "expired" ? { allwainStatus: "active", proposalExpiresAt: { lte: new Date() } } : input.responseStatus === "active" ? { allwainStatus: "active", OR: [{ proposalExpiresAt: null }, { proposalExpiresAt: { gt: new Date() } }] } : input.responseStatus === "none" || input.responseStatus === "any" ? {} : { allwainStatus: input.responseStatus };
+    filters.push({ offers: { [input.responseStatus === "none" ? "none" : "some"]: { owner: "allwain", ownerUserId: userId, ...state } } });
+  }
+  return filters;
 }
 
 function listSearch(query: string | null) {
@@ -1232,7 +1253,7 @@ function listSearch(query: string | null) {
 
 export async function listMyAllwainShoppingLists(
   userId: string,
-  input: {
+  input: AllwainDiscoveryInput & {
     limit?: unknown;
     cursor?: unknown;
     query?: unknown;
@@ -1241,24 +1262,18 @@ export async function listMyAllwainShoppingLists(
 ) {
   requirePostgres();
   const params = normalizeListQuery(input);
+  const pageCursor = discoveryCursor(params, "shopping-lists-mine", userId);
   const prisma = getPrisma() as any;
-  if (params.cursor) {
-    const cursor = await prisma.allwainShoppingList.findFirst({
-      where: { id: params.cursor, buyerUserId: userId },
-      select: { id: true },
-    });
-    if (!cursor) throw new Error("INVALID_SHOPPING_LIST_CURSOR");
-  }
   const rows = await prisma.allwainShoppingList.findMany({
     where: {
       buyerUserId: userId,
       ...(params.status ? { status: params.status } : {}),
       ...listSearch(params.query),
+      AND: [...await shoppingListDiscoveryWhere(params, userId, false), pageCursor.where()],
     },
     include: listSelect(),
-    orderBy: [{ updatedAt: "desc" }, { id: "desc" }],
+    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
     take: params.limit + 1,
-    ...(params.cursor ? { cursor: { id: params.cursor }, skip: 1 } : {}),
   });
   const hasNextPage = rows.length > params.limit;
   const pageRows = rows.slice(0, params.limit);
@@ -1269,30 +1284,19 @@ export async function listMyAllwainShoppingLists(
     }),
     pageInfo: {
       hasNextPage,
-      nextCursor: hasNextPage ? pageRows.at(-1)?.id || null : null,
+      nextCursor: hasNextPage ? pageCursor.encode(pageRows.at(-1)) : null,
     },
   };
 }
 
 export async function listAllwainShoppingListMarket(
   userId: string,
-  input: { limit?: unknown; cursor?: unknown; query?: unknown },
+  input: AllwainDiscoveryInput & { limit?: unknown; cursor?: unknown; query?: unknown },
 ) {
   requirePostgres();
   const params = normalizeListQuery(input);
+  const pageCursor = discoveryCursor(params, "shopping-lists-market", userId);
   const prisma = getPrisma() as any;
-  if (params.cursor) {
-    const cursor = await prisma.allwainShoppingList.findFirst({
-      where: {
-        id: params.cursor,
-        status: { in: [...ALLWAIN_OPEN_SHOPPING_LIST_STATUSES] },
-        visibility: "public",
-        buyerUserId: { not: userId },
-      },
-      select: { id: true },
-    });
-    if (!cursor) throw new Error("INVALID_SHOPPING_LIST_CURSOR");
-  }
   const rows = await prisma.allwainShoppingList.findMany({
     where: {
       status: { in: [...ALLWAIN_OPEN_SHOPPING_LIST_STATUSES] },
@@ -1306,12 +1310,12 @@ export async function listAllwainShoppingListMarket(
           ],
         },
         listSearch(params.query),
+        ...await shoppingListDiscoveryWhere(params, userId, true), pageCursor.where(),
       ],
     },
     include: listSelect(),
-    orderBy: [{ publishedAt: "desc" }, { id: "desc" }],
+    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
     take: params.limit + 1,
-    ...(params.cursor ? { cursor: { id: params.cursor }, skip: 1 } : {}),
   });
   const hasNextPage = rows.length > params.limit;
   const pageRows = rows.slice(0, params.limit);
@@ -1322,7 +1326,7 @@ export async function listAllwainShoppingListMarket(
     }),
     pageInfo: {
       hasNextPage,
-      nextCursor: hasNextPage ? pageRows.at(-1)?.id || null : null,
+      nextCursor: hasNextPage ? pageCursor.encode(pageRows.at(-1)) : null,
     },
   };
 }
@@ -1647,6 +1651,7 @@ export async function upsertAllwainShoppingListProposal(
     await tx.$executeRaw(
       Prisma.sql`SELECT pg_advisory_xact_lock(hashtext(${`shopping_list:${shoppingListId}`}))`,
     );
+    await tx.$queryRaw(Prisma.sql`SELECT "id" FROM "AllwainShoppingList" WHERE "id" = ${shoppingListId} FOR UPDATE`);
     const locked = await tx.allwainShoppingList.findUnique({
       where: { id: shoppingListId },
       include: { items: { orderBy: { position: "asc" } } },
@@ -1666,6 +1671,7 @@ export async function upsertAllwainShoppingListProposal(
     if (existing?.allwainStatus === "selected") {
       throw new Error("SHOPPING_LIST_PROPOSAL_ALREADY_SELECTED");
     }
+    if (existing?.allwainStatus === "withdrawn") throw new Error("PROPOSAL_NOT_EDITABLE");
     const existingLines = new Map<string, number>(
       (existing?.shoppingListProposalItems || []).map(
         (line: any) =>

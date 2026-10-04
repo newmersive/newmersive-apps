@@ -1,0 +1,579 @@
+{
+  "dependencies": [
+    {
+      "project": "frontend-stripe-test",
+      "packageSha256": "2cabd9f69d9c07cf349a0dd549199444b58ea1c6c69a1abe54ebb0e5dd143ca5",
+      "lockSha256": "c210ea46ce5079eb257e2d131904e5d51d52425273d64f843e33838a264fae71",
+      "lockfileVersion": 3,
+      "lockedPackageCount": 1094,
+      "changesSinceFirstBase": []
+    },
+    {
+      "project": "backend-stripe-test",
+      "packageSha256": "52f0408a128beda4420ba0396b851e08ce5c133d0cca036d3b3fad599f6c0bad",
+      "lockSha256": "20d65f659a7ac0c77eeb4366e01a3c2427a7924c308ae06c56786394d0978ce3",
+      "lockfileVersion": 3,
+      "lockedPackageCount": 431,
+      "changesSinceFirstBase": [
+        {
+          "section": "devDependencies",
+          "name": "@electric-sql/pglite",
+          "before": null,
+          "current": "0.4.3"
+        },
+        {
+          "section": "devDependencies",
+          "name": "@electric-sql/pglite-socket",
+          "before": null,
+          "current": "0.1.3"
+        }
+      ]
+    }
+  ],
+  "migrationSqlCount": 82,
+  "migrationFiles": [
+    {
+      "path": "backend-stripe-test/prisma/migrations/20251213075251_init/migration.sql",
+      "bytes": 4072,
+      "sha256": "2b72df0239ad5fbe2fa1c304cfb550f3adfd563d7697b9ed1175468d4c3a8f00",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20251213145852_add_offer_mode/migration.sql",
+      "bytes": 94,
+      "sha256": "4de612eba982631cc63979fc6ae6fe9d0dc31780c7849cad50f1952f23377382",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260613133000_add_allwain_scan_requests/migration.sql",
+      "bytes": 785,
+      "sha256": "3b233ef9ddc77b4e7b288e3ae69b9d779f3e4e8ac92cc207c57e10fd26972ac9",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260613144000_add_trueqia_chat_messages/migration.sql",
+      "bytes": 615,
+      "sha256": "ef33717c2daa64c443cfa708c0cfbd4ef7741dd3c7d883b9665db76e97f14a5e",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260613150500_add_trueqia_chat_trade_id/migration.sql",
+      "bytes": 195,
+      "sha256": "e499d622e7c46597b62dac63d520543206915983718aca5096d7e4d8e79cc8e3",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260613152500_add_trueqia_contract_metadata/migration.sql",
+      "bytes": 880,
+      "sha256": "2d648b1a621d10b807923290bda450c0e4da59566c043ad02fa7762375b087c4",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260613163500_add_trueqia_contract_acceptance_fields/migration.sql",
+      "bytes": 139,
+      "sha256": "576c6eb7880994245be0fdcdbc26c691e9ee2244a7ce411a8a3b60bc67ed0d6a",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260613171000_add_trueqia_contract_template_fields/migration.sql",
+      "bytes": 215,
+      "sha256": "e301d2b8fbb24c5e5be0e388ab42b6d3eedacfb24003eeabfcafcf3718839e4c",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260827124500_add_course_entitlements/migration.sql",
+      "bytes": 751,
+      "sha256": "5474e8183ec3be1d16fa9b0a3e78a23aad659e6138e5cb34f961144b87543877",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260827152500_add_course_campus_runtime/migration.sql",
+      "bytes": 3737,
+      "sha256": "c9ffd0b42a52aee4b269a2889606ed038933bdd6d2d8b05f933054e367c6a5c8",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260827160000_add_course_operations/migration.sql",
+      "bytes": 3463,
+      "sha256": "67bdecb985937658e76875f9067454c0f42a2bcc598c58c31500c75683096eb3",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260830004500_add_trueqia_trade_lifecycle/migration.sql",
+      "bytes": 1366,
+      "sha256": "1a7fca398b49ad1c121b255ed3372fef7b91bd402cf8924ccdc9f86eced5b965",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260830012500_repair_legacy_trueqia_activation/migration.sql",
+      "bytes": 2033,
+      "sha256": "06b405fbc48f204d213d06a01734e8930e782ad8f483d2611589b00c592e5c2e",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260830160000_add_allwain_order_inventory/migration.sql",
+      "bytes": 295,
+      "sha256": "9fc333bc51791eccb2a6326e468a30f850d31e6b591bdf633a2736fc8f1abb29",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260831010000_add_allwain_stripe_connect/migration.sql",
+      "bytes": 6630,
+      "sha256": "0ceb0eb73fb18cc8ce2654a9d31178c9a49ee2d7c60d3163c8efcad8f0cb8b77",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260831173000_harden_allwain_payments_audit/migration.sql",
+      "bytes": 5865,
+      "sha256": "6e9d5dcbc21b19430920a0be178d1cd4ca0bfc371bc94bcdbffa4518525c3925",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260831193000_add_allwain_participation/migration.sql",
+      "bytes": 6311,
+      "sha256": "486d69d01a4ca921105e9cb356aa7e1b829ecb20b7a94ac9f63817df7a699cab",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260831231500_connector_revenue_and_logistics/migration.sql",
+      "bytes": 1379,
+      "sha256": "6b72789cda9c5b774ab6cb816e04375069c93f95a3700e127deb00eae3c004e8",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260831234500_allwain_notifications/migration.sql",
+      "bytes": 696,
+      "sha256": "2f00391cca77cb9e1204ffed38d3e17507edf1a39f49ea10cb18761fb0b0cae8",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260901000500_user_account_deletion/migration.sql",
+      "bytes": 114,
+      "sha256": "844c03a5a61a07f3924d04f5770ce3371f9ad17f5b9d4f62c44e5c41f5817376",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260901013000_allwain_private_logistics_location/migration.sql",
+      "bytes": 571,
+      "sha256": "34055f439b80981b79f9cf7e68dd6164df4705669c7ce0ec9da9b6cad625475f",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260901123500_shared_user_chat/migration.sql",
+      "bytes": 3422,
+      "sha256": "3a11dc4ddc5459d97d807137de1dcabeab88bf3f6578b592a52e963c3968fbd7",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260901193000_allwain_compliance_ledger/migration.sql",
+      "bytes": 27114,
+      "sha256": "82fb601f49a06ab2e2c2580b7d4cbb7b6a0b4122aff117f3ada370026b5fd34f",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260902055000_allwain_lot_recalls/migration.sql",
+      "bytes": 1527,
+      "sha256": "e73c0dd2f1c49d28ccf78f3d51ca10ed83eb44cc617f12ae284d9aafc63acb90",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260902093000_add_apple_auth_challenges/migration.sql",
+      "bytes": 574,
+      "sha256": "877f713b9727337b2f33b8498803b93fc0eaa3428bc33025813e06dac946601b",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260902193000_allwain_transactional_email/migration.sql",
+      "bytes": 937,
+      "sha256": "d80f92e07eeb8a1663f0786893d05be312f3f0b5bd3d525e044bf426e0395a4c",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260902223000_normalize_allwain_marketplace/migration.sql",
+      "bytes": 4448,
+      "sha256": "965a4c8bcbfc9329d9ef06aed5b6b17efb54976fd5756c81a81f4aebe635d8f0",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260903003000_user_locale/migration.sql",
+      "bytes": 54,
+      "sha256": "1769fe63f787511723ce528f1945b64edc503638097192353ef4d21f31cd63c3",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260903021500_allwain_search_indexes/migration.sql",
+      "bytes": 1345,
+      "sha256": "dc1609f262f4f8d53a9147b3642fe5c202a87e3a30ad69d75306bfb9a90ee027",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260903174500_allwain_legal_payment_gate/migration.sql",
+      "bytes": 18164,
+      "sha256": "e1921ec4889d376b3bc9216c976f027500de7a24a3be660ac6df208d46dc72f9",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260903233000_allwain_guided_quality_logistics/migration.sql",
+      "bytes": 13659,
+      "sha256": "d5806344092bd31e9e14a5311b732ef9fca977c910f2d4ac0429d183257c6218",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260904020000_allwain_operational_archives/migration.sql",
+      "bytes": 1922,
+      "sha256": "b7826fe83c43a1c2b0e67ffc95c88c563c3330862a0d2e17e2bbedf0be7c505a",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260904023000_hide_operational_archives/migration.sql",
+      "bytes": 200,
+      "sha256": "d96e8c1769a7110dd72bd797a6b0286baf13021512d93132f4a86ba6d4fdb109",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260904030000_publish_curated_demo_catalog/migration.sql",
+      "bytes": 3147,
+      "sha256": "55d129ba52bf1e8f1c35cd687632c7b79c0a69b6d09c0c4d1fddb08fd1dea487",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260904090000_allwain_local_delivery_pricing/migration.sql",
+      "bytes": 10350,
+      "sha256": "21157f1d923e66aede44e557c831f876d07b446f4576a3274aa4eda1301e3d9f",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260904113000_allwain_sendcloud_carrier/migration.sql",
+      "bytes": 14514,
+      "sha256": "13266a99956150ad628e62c08c6ed800dabb1203a5a8b75f9f511bba2aa2b5ff",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260904153000_allwain_preorder_reminders/migration.sql",
+      "bytes": 68,
+      "sha256": "cc69cc0fb2ce0c6a3e6f624e5f2d0a7eafce58585099a5ff525ae05697fd9019",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260905011500_auth_sessions/migration.sql",
+      "bytes": 1695,
+      "sha256": "effa9a200000211942cd8043862b043db9ac9a23c769ff8aa43e8ea5d780442b",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260905023000_auth_login_defense/migration.sql",
+      "bytes": 263,
+      "sha256": "a5fc36e7b4301601264748c7647b6aba9968c43bbf724d35a64692ab8d5db974",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260905143000_allwain_platform_direct_services/migration.sql",
+      "bytes": 15455,
+      "sha256": "f749acd4156f5e8955cf68509be579383328af74a51ef57c76ccc63983fb36d5",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260905152000_publish_allwain_demo_requests/migration.sql",
+      "bytes": 658,
+      "sha256": "b556faf6c4198c560e6185653bfe4ceed16d2027261955ca6d30f9720d55e7c5",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260905153000_allwain_ai_usage_events/migration.sql",
+      "bytes": 1496,
+      "sha256": "cb68a248ade112b265142de3c9dc2239de472fdde762a97397c4f2aa2f1e540d",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260905170000_allwain_direct_chat_requests/migration.sql",
+      "bytes": 288,
+      "sha256": "1956bb97338923eea1f40c1a06ef1230c8f591e45dfe32cdedeb5e5404b8d703",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260905203000_allwain_shopping_lists/migration.sql",
+      "bytes": 9109,
+      "sha256": "9ad56b0d338fc1bceb261a4d18de0b3299fe5fe095333ef127504b9222804e54",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260906080500_auth_analytics_consent/migration.sql",
+      "bytes": 154,
+      "sha256": "a89fa4be81f88b3f78c5e634664ad22343c3fe42f6ebbe86522e5dee8d2161d4",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260906113000_allwain_partial_shopping_list_proposals/migration.sql",
+      "bytes": 13767,
+      "sha256": "667fc2028de12abd8c6f17cb2338d5fcafe90ba36285b8b0074dfff4275ac8dc",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260906130000_allwain_support_inbox/migration.sql",
+      "bytes": 5831,
+      "sha256": "07a137945c313ef1c645251e770f71c61ec470ae8a2bfacce32d768ba12cc510",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260906143000_allwain_chat_translation/migration.sql",
+      "bytes": 996,
+      "sha256": "94269d2e337f30a9c2c9910d0a5a230108dae5a7582fecc935220509d00a681c",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260906193000_promote_newmersive_admin/migration.sql",
+      "bytes": 563,
+      "sha256": "334c150db4e42db516a652daf21c8719e540ebf5a54c8bfae078fe44c1a1612c",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260906220500_add_allwain_agent_controls/migration.sql",
+      "bytes": 667,
+      "sha256": "92dd0dcbd823a7b7a74a596106fec20ee43586ab200f3ca47962f8b6ee379790",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260906233000_add_allwain_app_tester_progress/migration.sql",
+      "bytes": 1879,
+      "sha256": "def1137e17aa16d8771ef4fdcb1c94da007fd327266c09baf3f94e0c94e2c5d7",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260906234500_allow_scoped_tester_account_erasure/migration.sql",
+      "bytes": 2880,
+      "sha256": "ed6eae5771145a62cd9f1cd26c5ff07603e12dec8f8dec4510e8b6f0122207ea",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260907003000_expand_allwain_app_tester_routes/migration.sql",
+      "bytes": 416,
+      "sha256": "cbd48d75517e564d3d3fc8bc918d3d6ce4806030fe1009a1a3a8c16ab61bdfdd",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260907014500_add_allwain_app_tester_action_progress/migration.sql",
+      "bytes": 4606,
+      "sha256": "05603e0110f3625c0f8cf837b42474af5b49054ad350cdd87071de2f276d2e99",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260907120000_allwain_ocr_savings_proposals/migration.sql",
+      "bytes": 15947,
+      "sha256": "e9cac6a89dc27622b73e257f23a3233237f2061b2452533a0572a407bdbd9686",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260909090000_allwain_economic_policy/migration.sql",
+      "bytes": 2176,
+      "sha256": "3415875aef4090b5aea836767135a44493e80f5ec2693261e82297449c4317c9",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260909100000_allwain_transfer_execution/migration.sql",
+      "bytes": 1814,
+      "sha256": "aaee95ca04c36ebe87518e2b74d00cea6a1f451b05fe87c628690337165c8a13",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260909110000_allwain_refund_request_integrity/migration.sql",
+      "bytes": 1328,
+      "sha256": "07466db991b80fa770cf9bdbddcdbed7a59ada87df4a33fbf2938f572b8268c5",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260909120000_allwain_net_transfer_allocation/migration.sql",
+      "bytes": 1303,
+      "sha256": "b802a3f8bccf8582426d32a33a83e25dfa38e0b05c2699a1d3066d758cb7cb36",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260909122000_admin_mfa/migration.sql",
+      "bytes": 794,
+      "sha256": "5cba9c4aa71ba30591623c9a52a102ba264e24ef3616fa30a40c444afc1c55e3",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260909130000_allwain_checkout_presentation/migration.sql",
+      "bytes": 543,
+      "sha256": "2c6e3bf232dc4e13d23886950446becabe90b33e62e8fcf63e3519433f23a3bd",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260909140000_email_delivery_durability/migration.sql",
+      "bytes": 393,
+      "sha256": "96bef61a157bf3cf030364c8e2d0de857cef602d00f16d2a7707c70c9b4f11bc",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260909141000_email_legacy_attempts_review/migration.sql",
+      "bytes": 283,
+      "sha256": "4bf5e337dba4a2b50a0552867091bdee67e3be3c521bfdbedf40814ecac9d775",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260909170000_beneficiary_snapshot/migration.sql",
+      "bytes": 1331,
+      "sha256": "8e55338b73a6c66719d5f37b08b93ad993ed3864d0c83e79295dc792746cabfd",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260909190000_beneficiary_economic_guard/migration.sql",
+      "bytes": 1180,
+      "sha256": "3e0824a9c8d4f996fd514e89ec66a61e43e77e4142c81bffbe55fb660c935eca",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260909200000_versioned_referral_terms/migration.sql",
+      "bytes": 1854,
+      "sha256": "512e439ac978b16a2c4e7bc301ccf0ec046daebf09b4d9b8c02307702d344d6d",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260909210000_beneficiary_allocations/migration.sql",
+      "bytes": 5704,
+      "sha256": "8a0ad5bc743203b9188c2ec9ced44f41e2bdcdc9db9d2d98fe08ecd866d5bca6",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260909220000_beneficiary_execution_version/migration.sql",
+      "bytes": 11164,
+      "sha256": "61ffa612d899e0d469470450a46425ccc9d6b41440866498c83f2e07cdf3d893",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260909230000_beneficiary_restoration_tranches/migration.sql",
+      "bytes": 7300,
+      "sha256": "e503d20c0e396c3139a689c39cc1a3a7627054e2b50bb32b8a6da86964dbd8da",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260910000000_dispute_balance_movements/migration.sql",
+      "bytes": 7709,
+      "sha256": "77d58e2439752d6460f97de06a74c09dcb3d891f171491617c1c1527083ec833",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260910010000_recurring_charge_execution/migration.sql",
+      "bytes": 13245,
+      "sha256": "5b19095d3151c195903c32b3a9f16cb5e5277c2420bba05aa70eafed7aab2dcc",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260910020000_deferred_charge_execution/migration.sql",
+      "bytes": 21611,
+      "sha256": "4beb17b6c06b1a089e66b63027b996b81353b8bc44121626b78c6689257ccf2d",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260910030000_automatic_refund_execution/migration.sql",
+      "bytes": 19174,
+      "sha256": "d8086355809fd9e2aadeed6e62cdc172baa9b61af8eb567f125c74c28c5d4a4a",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260910200000_allwain_guide_execution/migration.sql",
+      "bytes": 979,
+      "sha256": "9f264458e76a58a6fb0e7a8047056050c79435e2ba13118c22f44df5c533c5fe",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260910210000_allwain_guide_history/migration.sql",
+      "bytes": 691,
+      "sha256": "667ecbef3b62ad93ab1a6fee6ac6e9fa8898f6648848116b9769d576c86ea485",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260910213000_allwain_guide_manual_review/migration.sql",
+      "bytes": 573,
+      "sha256": "9d27c417df8bf9816cc86de14667dd1b63b32139eaabd32919e8c8c3b41d2ea0",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260913133000_noa_product_survey/migration.sql",
+      "bytes": 1237,
+      "sha256": "c72190936e4ca06f8fe8489c07a01e58d962331c128f0153cb71d2c836ecbe1e",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260913170000_trueqia_human_skills/migration.sql",
+      "bytes": 577,
+      "sha256": "28a91bfedab6264292957666303a56d93d2424b501e0cd8fa05800e776df5ba9",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260913180000_trueqia_needs/migration.sql",
+      "bytes": 1269,
+      "sha256": "92eda542ebb23fe6128172ad0b452a0c2f18911b675a3fbf5656699789359434",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260913190000_noa_account_consent/migration.sql",
+      "bytes": 557,
+      "sha256": "28cf1648d42a2aeb1d8aab61d3a18c25e52d20ce2404c8573c94a1165eabb154",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260913200000_trueqia_tester_classroom/migration.sql",
+      "bytes": 1374,
+      "sha256": "9ec6c5e99732a358d9755fc4c85ec0a7e9f834bd99a2a806d82dfb9affb3c317",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260919130000_noa_japanese_locale/migration.sql",
+      "bytes": 436,
+      "sha256": "9276fe3a3b9627b26049b20afe783b862fd799f1546fd6d6731a9421ee3c7c53",
+      "kind": "migration"
+    }
+  ],
+  "migrationMetadataFiles": [
+    {
+      "path": "backend-stripe-test/prisma/migrations/migration_lock.toml",
+      "bytes": 131,
+      "sha256": "bc487c02c71ad9cae8694647129e3ea7f32b1fe7007d0a6ced064e51022cd3fb",
+      "kind": "migration_metadata"
+    }
+  ],
+  "schemaFiles": [
+    {
+      "path": "backend-stripe-test/prisma/backfill-allwain-card-images.ts",
+      "bytes": 3432,
+      "sha256": "61ec1ab7cc7b8dabe287120684f1ed319730fd20ab9f258879ab09bc165123ba",
+      "kind": "schema_and_prisma"
+    },
+    {
+      "path": "backend-stripe-test/prisma/schema.prisma",
+      "bytes": 85663,
+      "sha256": "5ffaf762f7f198f295b083c8d20a9b15f92a43237f41e4b4c213e1178950d3ef",
+      "kind": "schema_and_prisma"
+    },
+    {
+      "path": "backend-stripe-test/prisma/seed-allwain-production-catalog.ts",
+      "bytes": 26848,
+      "sha256": "ce984f25c9ba0b0be798593f17eb138490d5c71475958b047f88564eb1d7e079",
+      "kind": "schema_and_prisma"
+    },
+    {
+      "path": "backend-stripe-test/prisma/seed-products.ts",
+      "bytes": 1737,
+      "sha256": "59077cb4b16769ba1207a3f10c1c8f5260bbca659976f5ffeb4f035ebc37bbe9",
+      "kind": "schema_and_prisma"
+    },
+    {
+      "path": "backend-stripe-test/prisma/seed.ts",
+      "bytes": 6972,
+      "sha256": "be59b419ff46002ca83c5976d47ac85ccc813adfd5d200a509da1d2eb4e9c73e",
+      "kind": "schema_and_prisma"
+    }
+  ],
+  "migrationsChangedInSixPasses": [],
+  "migrationDifferencesSinceFirstBase": {
+    "matching": 83,
+    "changed": 0,
+    "missing": 0,
+    "excluded": 0,
+    "details": []
+  },
+  "canonicalMigrationReplayGreen": false,
+  "knownReplayBlocker": "20260913190000_noa_account_consent: NoaAccountConsent created twice after 79 previous migrations; compare the active shared runtime before history repair",
+  "installedNodeModulesInventoried": false
+}

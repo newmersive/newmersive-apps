@@ -1,4 +1,5 @@
 import { Prisma } from "@prisma/client";
+import { discoveryCursor, discoveryDate, validateDiscovery, allwainAgreementStatusFilters, type AllwainDiscoveryInput } from "./allwain-discovery";
 import { assertTrueqiaSigningAllowed } from "./trueqia.workspace.service";
 import { getPrisma } from "../db/prisma";
 import {
@@ -426,7 +427,7 @@ export async function getLeadsGlobalPg(): Promise<LeadGlobal[]> {
    CONTRACTS
 ========================= */
 
-function mapContractPg(row: any): Contract {
+export function mapContractPg(row: any): Contract {
   return {
     ...row,
     createdAt: row.createdAt instanceof Date ? row.createdAt.toISOString() : row.createdAt,
@@ -458,14 +459,31 @@ export async function getContractsPg(): Promise<Contract[]> {
 
 export async function getAllwainContractPagePg(
   userId: string,
-  input: {
+  input: AllwainDiscoveryInput & {
     limit: number;
     cursor?: string | null;
     scope?: "buyer" | "seller" | null;
     statuses?: string[] | null;
     query?: string | null;
+    offerId?: string | null;
+    paymentStatuses?: string[] | null;
+    fulfillmentStatuses?: string[] | null;
   },
 ) {
+  validateDiscovery(input);
+  input = { ...input, contractStatuses: allwainAgreementStatusFilters(input.contractStatuses) };
+  const pageCursor = discoveryCursor(input, "contracts", userId);
+  const from = discoveryDate(input.dateFrom), to = discoveryDate(input.dateTo, true);
+  const additional: any[] = [pageCursor.where()];
+  if (input.contractStatuses?.length) additional.push({ status: { in: input.contractStatuses } });
+  if (input.paymentStatuses?.length) additional.push({ paymentStatus: { in: input.paymentStatuses } });
+  if (input.deliveryChannel) additional.push({ deliveryChannel: input.deliveryChannel });
+  if (from || to) additional.push({ createdAt: { ...(from ? { gte: from } : {}), ...(to ? { lte: to } : {}) } });
+  if (input.fulfillmentStatuses?.length) {
+    const orders = await getPrisma().allwainOrder.findMany({ where: { operationalArchivedAt: null, OR: [{ buyerUserId: userId }, { sellerUserId: userId }], fulfillmentStatus: { in: input.fulfillmentStatuses } }, select: { contractId: true } });
+    additional.push({ id: { in: orders.map((order) => order.contractId) } });
+  }
+  const matchingOrderContractIds = input.query ? (await getPrisma().allwainOrder.findMany({ where: { operationalArchivedAt: null, AND: [{ OR: [{ buyerUserId: userId }, { sellerUserId: userId }] }, { OR: [{ id: { contains: input.query, mode: "insensitive" } }, { contractId: { contains: input.query, mode: "insensitive" } }] } ] }, select: { contractId: true } })).map((order) => order.contractId) : [];
   const participant: Prisma.ContractWhereInput =
     input.scope === "buyer"
       ? { requesterUserId: userId }
@@ -480,14 +498,18 @@ export async function getAllwainContractPagePg(
   const where: Prisma.ContractWhereInput = {
     app: "allwain",
     operationalArchivedAt: null,
+    ...(input.offerId ? { offerId: input.offerId } : {}),
     AND: [
       participant,
+      ...additional,
       input.query
         ? {
             OR: [
               { offerTitle: { contains: input.query, mode: "insensitive" } },
               { requesterName: { contains: input.query, mode: "insensitive" } },
               { providerName: { contains: input.query, mode: "insensitive" } },
+              { id: { contains: input.query, mode: "insensitive" } },
+              { id: { in: matchingOrderContractIds } },
             ],
           }
         : {},
@@ -498,7 +520,6 @@ export async function getAllwainContractPagePg(
     where,
     orderBy: [{ createdAt: "desc" }, { id: "desc" }],
     take: input.limit + 1,
-    ...(input.cursor ? { cursor: { id: input.cursor }, skip: 1 } : {}),
   });
   const hasNextPage = rows.length > input.limit;
   const pageRows = hasNextPage ? rows.slice(0, input.limit) : rows;
@@ -507,7 +528,7 @@ export async function getAllwainContractPagePg(
     pageInfo: {
       hasNextPage,
       nextCursor: hasNextPage
-        ? pageRows[pageRows.length - 1]?.id || null
+        ? pageCursor.encode(pageRows[pageRows.length - 1])
         : null,
     },
   };

@@ -1,5 +1,7 @@
 import { Request, Response, Router } from "express";
+import { readDiscoveryQuery, isDiscoveryError } from "../services/allwain-discovery";
 import { ENV } from "../config/env";
+import { getAllwainContractOrderForUser, listAllwainActivityForUser } from "../services/allwain-activity.service";
 import {
   AuthRequest,
   adminOnly,
@@ -35,6 +37,27 @@ import {
 } from "../services/allwain-recurring.service";
 
 const router = Router();
+
+router.get("/activity", authRequired, async (req: AuthRequest, res: Response) => {
+  try {
+    if (req.query.view != null && !["all", "preparation"].includes(String(req.query.view))) return void res.status(400).json({error:"INVALID_ACTIVITY_VIEW"});
+    const csv = (value: unknown) => typeof value === "string" ? value.split(",").map(item=>item.trim()).filter(Boolean) : null;
+    const requested = Number(req.query.limit);
+    res.setHeader("Cache-Control", "private, no-store");
+    res.json(await listAllwainActivityForUser(userIdFrom(req), {
+      ...readDiscoveryQuery(req.query), limit: Math.max(1, Math.min(100, Number.isFinite(requested) ? Math.trunc(requested) : 30)),
+      cursor: typeof req.query.cursor === "string" ? req.query.cursor : null,
+      scope: req.query.scope === "seller" ? "seller" : "buyer", view: req.query.view === "preparation" ? "preparation" : "all",
+      query: typeof req.query.q === "string" ? req.query.q.trim().slice(0,160) : null,
+      contractStatuses: csv(req.query.contractStatus), paymentStatuses: csv(req.query.paymentStatus), fulfillmentStatuses: csv(req.query.fulfillmentStatus),
+    }));
+  } catch (error) { sendPaymentError(error, res); }
+});
+
+router.get("/contracts/:id/order", authRequired, async (req: AuthRequest, res: Response) => {
+  try { res.setHeader("Cache-Control", "private, no-store"); res.json(await getAllwainContractOrderForUser(userIdFrom(req), req.params.id)); }
+  catch (error) { sendPaymentError(error, res); }
+});
 
 function userIdFrom(req: AuthRequest) {
   const userId = req.user?.id;
@@ -134,6 +157,7 @@ export function allwainPaymentErrorStatus(code: string) {
 }
 
 function sendPaymentError(error: unknown, res: Response) {
+  if (isDiscoveryError(error)) return void res.status(400).json({ error: (error as Error).message });
   const code = error instanceof Error ? error.message : "INTERNAL_ERROR";
   const status = allwainPaymentErrorStatus(code);
   if (status !== null) return void res.status(status).json({ error: code });
@@ -299,7 +323,7 @@ router.get("/orders", authRequired, async (req: AuthRequest, res: Response) => {
     const requestedLimit = Number(req.query.limit);
     const limit = Math.max(
       1,
-      Math.min(100, Number.isFinite(requestedLimit) ? requestedLimit : 30),
+      Math.min(100, Number.isFinite(requestedLimit) ? Math.trunc(requestedLimit) : 30),
     );
     const scope =
       req.query.scope === "buyer" || req.query.scope === "seller"
@@ -313,7 +337,12 @@ router.get("/orders", authRequired, async (req: AuthRequest, res: Response) => {
         scope,
         statuses: list(req.query.status),
         paymentStatuses: list(req.query.paymentStatus),
+        contractStatuses: list(req.query.contractStatus),
         fulfillmentStatuses: list(req.query.fulfillmentStatus),
+        query: typeof req.query.q === "string" ? req.query.q.trim().slice(0, 160) : null,
+        contractDateFrom: typeof req.query.contractDateFrom === "string" ? req.query.contractDateFrom.trim() : null,
+        contractDateTo: typeof req.query.contractDateTo === "string" ? req.query.contractDateTo.trim() : null,
+        ...readDiscoveryQuery(req.query),
       }),
     );
   } catch (error) {

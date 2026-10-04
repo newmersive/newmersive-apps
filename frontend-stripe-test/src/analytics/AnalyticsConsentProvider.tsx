@@ -19,6 +19,7 @@ import {
 import { BarChart3, ShieldCheck } from "lucide-react-native";
 
 import { useAuthStore } from "../store/auth.store";
+import { captureAuthSession } from "../store/authSessionBridge";
 import { colors } from "../theme/colors";
 import {
   ANALYTICS_CONSENT_VERSION,
@@ -74,6 +75,19 @@ export default function AnalyticsConsentProvider({
   const [error, setError] = useState<string | null>(null);
   const syncedUserId = useRef<string | null>(null);
   const busyRef = useRef(false);
+
+  useEffect(() => {
+    let generation = captureAuthSession().generation;
+    return useAuthStore.subscribe((state, previous) => {
+      const next = captureAuthSession().generation;
+      if (next !== generation || state.user?.id !== previous.user?.id ||
+        (previous.token && !state.token) || state.user?.analyticsConsent === false) {
+        syncedUserId.current = null;
+        void configureAnalyticsConsent(false);
+      }
+      generation = next;
+    });
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -138,16 +152,24 @@ export default function AnalyticsConsentProvider({
       setError(null);
       setStatus(nextStatus);
       try {
+        const actor = user?.id, session = captureAuthSession();
+        const current = () => {
+          const next = captureAuthSession();
+          return useAuthStore.getState().user?.id === actor && next.owner === session.owner && next.generation === session.generation &&
+            (session.token ? session.isCurrent() : !next.token && !next.owner?.getIsTransitioning());
+        };
         await applyAnalyticsConsentDecision(granted, {
           configure: configureAnalyticsConsent,
+          current,
           store: (value) => AsyncStorage.setItem(STORAGE_KEY, value),
           sync: user?.id ? async () => {
             await setAccountAnalyticsConsent(granted);
+            if (!current()) throw new Error("ANALYTICS_CONSENT_SUPERSEDED");
             syncedUserId.current = user.id;
           } : undefined,
         });
         if (granted) {
-          await trackAnalyticsEvent("analytics_consent_updated", { granted: true });
+          await trackAnalyticsEvent("analytics_consent_updated", { granted: true }, current);
         }
       } catch {
         setStatus("denied");

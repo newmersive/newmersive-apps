@@ -1,4 +1,7 @@
 import { createHash } from "node:crypto";
+import { allwainPurchaseAnalyticsReceipt, confirmedAllwainPurchaseMetadata } from "./allwain-purchase-analytics";
+import { allwainAttemptHasSettledFunds, recoverAllwainRequestAfterUnpaidAttemptTx } from "./allwain-request-recovery";
+import { discoveryCursor, discoveryDate, validateDiscovery, allwainAgreementStatusFilters, type AllwainDiscoveryInput } from "./allwain-discovery";
 import jwt from "jsonwebtoken";
 import { Prisma } from "@prisma/client";
 import Stripe from "stripe";
@@ -1703,6 +1706,7 @@ function allwainPreorderDeadlineLabel(value: Date | string | null | undefined) {
 function orderDto(order: any, payment?: any, offer?: Offer | null) {
   return {
     ...order,
+    purchaseAnalytics: allwainPurchaseAnalyticsReceipt(order, payment),
     offerTitle: offer?.title || null,
     imageMeta: offer ? allwainOfferCardImageMeta(offer) : null,
     createdAt: mapDate(order.createdAt),
@@ -2208,16 +2212,23 @@ export async function listAllwainOrdersForUser(userId: string) {
 
 export async function listAllwainOrderPageForUser(
   userId: string,
-  input: {
+  input: AllwainDiscoveryInput & {
     limit: number;
     cursor?: string | null;
     scope?: "buyer" | "seller" | null;
     statuses?: string[] | null;
     paymentStatuses?: string[] | null;
     fulfillmentStatuses?: string[] | null;
+    view?: "all" | "preparation";
   },
 ) {
   requirePostgres();
+  validateDiscovery(input);
+  input = { ...input, contractStatuses: allwainAgreementStatusFilters(input.contractStatuses) };
+  const pageCursor = discoveryCursor(input, "orders", userId);
+  const from = discoveryDate(input.dateFrom), to = discoveryDate(input.dateTo, true);
+  const contractFrom = discoveryDate(input.contractDateFrom), contractTo = discoveryDate(input.contractDateTo, true);
+  const filterAgreement = Boolean(input.contractStatuses?.length || contractFrom || contractTo);
   const prisma = getPrisma() as any;
   const participant =
     input.scope === "buyer"
@@ -2225,8 +2236,10 @@ export async function listAllwainOrderPageForUser(
       : input.scope === "seller"
         ? { sellerUserId: userId }
         : { OR: [{ buyerUserId: userId }, { sellerUserId: userId }] };
+  const matchingContracts = input.query ? await prisma.contract.findMany({ where: { app: "allwain", operationalArchivedAt: null, AND: [{ OR: [{ requesterUserId: userId }, { providerUserId: userId }] }, { OR: ["id", "offerTitle", "requesterName", "providerName"].map((field) => ({ [field]: { contains: input.query, mode: "insensitive" } })) }] }, select: { id: true } }) : [];
+  const statusContracts = filterAgreement ? await prisma.contract.findMany({ where: { app: "allwain", operationalArchivedAt: null, ...(input.contractStatuses?.length ? { status: { in: input.contractStatuses } } : {}), ...(contractFrom || contractTo ? { createdAt: { ...(contractFrom ? { gte: contractFrom } : {}), ...(contractTo ? { lte: contractTo } : {}) } } : {}), OR: [{ requesterUserId: userId }, { providerUserId: userId }] }, select: { id: true } }) : [];
   const where = {
-    AND: [participant],
+    AND: [participant, pageCursor.where(), ...(input.view === "preparation" ? [allwainPreparationWhere()] : []), ...(filterAgreement ? [{ contractId: { in: statusContracts.map((row: any) => row.id) } }] : []), ...(input.query ? [{ OR: [...["id", "contractId", "offerId"].map((field) => ({ [field]: { contains: input.query, mode: "insensitive" } })), { contractId: { in: matchingContracts.map((row: any) => row.id) } }] }] : [])],
     operationalArchivedAt: null,
     ...(input.statuses?.length ? { status: { in: input.statuses } } : {}),
     ...(input.paymentStatuses?.length
@@ -2235,15 +2248,32 @@ export async function listAllwainOrderPageForUser(
     ...(input.fulfillmentStatuses?.length
       ? { fulfillmentStatus: { in: input.fulfillmentStatuses } }
       : {}),
+    ...(input.deliveryChannel ? { deliveryChannel: input.deliveryChannel } : {}),
+    ...(from || to ? { createdAt: { ...(from ? { gte: from } : {}), ...(to ? { lte: to } : {}) } } : {}),
   };
   const rows = await prisma.allwainOrder.findMany({
     where,
     orderBy: [{ createdAt: "desc" }, { id: "desc" }],
     take: input.limit + 1,
-    ...(input.cursor ? { cursor: { id: input.cursor }, skip: 1 } : {}),
   });
   const hasNextPage = rows.length > input.limit;
   const pageRows = hasNextPage ? rows.slice(0, input.limit) : rows;
+  return { items: await allwainOrderDtos(pageRows), pageInfo: {
+    hasNextPage, nextCursor: hasNextPage ? pageCursor.encode(pageRows[pageRows.length - 1]) : null,
+  } };
+}
+
+export function allwainPreparationWhere() {
+  return {
+    paymentStatus: { in: ["paid", "partially_refunded", "refund_pending", "legacy_confirmed"] },
+    fulfillmentStatus: { notIn: ["delivered", "completed", "canceled"] },
+    OR: [{ disputeStatus: null }, { disputeStatus: { in: ["won", "closed_won", "warning_closed"] } }],
+  };
+}
+
+// Enrichment is restricted to the orders belonging to this entity page.
+export async function allwainOrderDtos(pageRows: any[]) {
+  const prisma = getPrisma() as any;
   const payments = pageRows.length
     ? await prisma.allwainPayment.findMany({
         where: { orderId: { in: pageRows.map((order: any) => order.id) } },
@@ -2257,21 +2287,13 @@ export async function listAllwainOrderPageForUser(
     }
   }
   const offersById = await allwainOrderOffersById(pageRows);
-  return {
-    items: pageRows.map((order: any) =>
+  return pageRows.map((order: any) =>
       orderDto(
         order,
         latestByOrder.get(order.id),
         offersById.get(order.offerId),
       ),
-    ),
-    pageInfo: {
-      hasNextPage,
-      nextCursor: hasNextPage
-        ? pageRows[pageRows.length - 1]?.id || null
-        : null,
-    },
-  };
+    );
 }
 
 export async function getAllwainOrderSummaryForUser(
@@ -2303,6 +2325,8 @@ export async function getAllwainOrderSummaryForUser(
     readyCount,
     completedCount,
     toPrepare,
+    preparationCount,
+    pendingActionCount,
     pendingIncome,
   ] = await Promise.all([
     prisma.allwainOrder.count({ where: visibleParticipant }),
@@ -2337,6 +2361,14 @@ export async function getAllwainOrderSummaryForUser(
           _sum: { quantity: true },
         })
       : Promise.resolve([]),
+    scope === "seller" ? prisma.allwainOrder.count({ where: { ...visibleParticipant, AND: [allwainPreparationWhere()] } }) : Promise.resolve(0),
+    scope === "buyer" ? prisma.allwainOrder.count({ where: { ...visibleParticipant, status: nonTerminalStatuses, AND: [
+      { OR: [{ disputeStatus: null }, { disputeStatus: { in: ["won", "closed_won", "warning_closed"] } }] },
+      { OR: [
+        { paymentStatus: { in: ["awaiting_payment", "checkout_open", "payment_failed", "requires_customer_action"] } },
+        { paymentStatus: { in: payableStatuses }, fulfillmentStatus: "delivered" },
+      ] },
+    ] } }) : Promise.resolve(0),
     scope === "seller"
       ? prisma.allwainOrder.groupBy({
           by: ["currency"],
@@ -2357,6 +2389,8 @@ export async function getAllwainOrderSummaryForUser(
     newCount,
     readyCount,
     completedCount,
+    preparationCount,
+    pendingActionCount,
     toPrepare: toPrepare.map((item: any) => ({
       unit: item.unit,
       quantity: Number(item._sum.quantity || 0),
@@ -2398,14 +2432,12 @@ export async function cancelAllwainOrder(
   if (preview.buyerUserId !== userId && actor.role !== "admin") {
     throw new Error("FORBIDDEN");
   }
-  if (preview.status === "canceled" && preview.paymentStatus === "canceled") {
-    return orderDto(preview, previewPayment);
-  }
-  if (!CANCELABLE_PAYMENT_STATUSES.has(preview.paymentStatus)) {
+  const alreadyCanceled = preview.status === "canceled" && preview.paymentStatus === "canceled";
+  if (!alreadyCanceled && !CANCELABLE_PAYMENT_STATUSES.has(preview.paymentStatus)) {
     throw new Error("ORDER_NO_LONGER_CANCELABLE");
   }
 
-  if (previewPayment?.stripeCheckoutSessionId) {
+  if (!alreadyCanceled && previewPayment?.stripeCheckoutSessionId) {
     const stripe = getStripe();
     const session = await stripe.checkout.sessions.retrieve(
       previewPayment.stripeCheckoutSessionId,
@@ -2429,7 +2461,12 @@ export async function cancelAllwainOrder(
     }
   }
 
+  let replayed = false;
   const canceled = await prisma.$transaction(async (tx: any) => {
+    const contractPreview = await tx.contract.findUnique({ where: { id: preview.contractId } });
+    if (contractPreview?.app === "allwain" && contractPreview.requestId) {
+      await tx.$queryRaw(Prisma.sql`SELECT * FROM "AllwainScanRequest" WHERE "id" = ${contractPreview.requestId} FOR UPDATE`);
+    }
     const orderRows = (await tx.$queryRaw(
       Prisma.sql`SELECT * FROM "AllwainOrder" WHERE "id" = ${orderId} FOR UPDATE`,
     )) as any[];
@@ -2439,11 +2476,15 @@ export async function cancelAllwainOrder(
       throw new Error("FORBIDDEN");
     }
     if (order.status === "canceled" && order.paymentStatus === "canceled") {
+      replayed = true;
+      await recoverAllwainRequestAfterUnpaidAttemptTx(tx, { contract: contractPreview, reason: "order_canceled", actorUserId: userId, actorRole: actor.role, requestId });
       return order;
     }
     if (!CANCELABLE_PAYMENT_STATUSES.has(order.paymentStatus)) {
       throw new Error("ORDER_NO_LONGER_CANCELABLE");
     }
+    const paymentEvidence = await tx.allwainPayment.findMany({ where: { orderId: order.id } });
+    if (allwainAttemptHasSettledFunds(contractPreview, [order], paymentEvidence)) throw new Error("ORDER_NO_LONGER_CANCELABLE");
 
     let inventoryStatus = order.inventoryStatus;
     if (order.inventoryStatus === "reserved") {
@@ -2488,7 +2529,7 @@ export async function cancelAllwainOrder(
         canceledAt: now,
       },
     });
-    await tx.contract.update({
+    const canceledContract = await tx.contract.update({
       where: { id: order.contractId },
       data: {
         paymentStatus: "canceled",
@@ -2550,6 +2591,7 @@ export async function cancelAllwainOrder(
         },
       });
     }
+    await recoverAllwainRequestAfterUnpaidAttemptTx(tx, { contract: canceledContract, reason: "order_canceled", actorUserId: userId, actorRole: actor.role, requestId, now });
     await tx.allwainOrderStatusEvent.create({
       data: {
         orderId,
@@ -2578,7 +2620,7 @@ export async function cancelAllwainOrder(
     return next;
   });
 
-  await notifyAllwainOrderParticipants(orderId, {
+  if (!replayed) await notifyAllwainOrderParticipants(orderId, {
     excludeUserId: userId,
     type: "order.canceled",
     title: "Pedido cancelado",
@@ -4005,7 +4047,9 @@ async function markAllwainOrderPaid(
       typeof charge?.balance_transaction === "string"
         ? charge.balance_transaction
         : balanceTransaction?.id || null;
+    const purchaseMetadata = confirmedAllwainPurchaseMetadata(order, payment, intent);
     const accountingData = {
+      ...(purchaseMetadata ? { metadata: purchaseMetadata } : {}),
       ...(intent?.id ? { stripePaymentIntentId: intent.id } : {}),
       ...(chargeId ? { stripeChargeId: chargeId } : {}),
       ...(balanceTransactionId
@@ -4018,7 +4062,7 @@ async function markAllwainOrderPaid(
         ? { processorNetAmount: balanceTransaction.net }
         : {}),
     };
-    const accountingChanged =
+    const accountingChanged = Boolean(purchaseMetadata) ||
       (intent?.id && payment.stripePaymentIntentId !== intent.id) ||
       (chargeId && payment.stripeChargeId !== chargeId) ||
       (balanceTransactionId &&

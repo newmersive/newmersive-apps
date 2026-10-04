@@ -1,0 +1,84 @@
+{
+  "checkedAt": "2026-10-04T16:19:17.293Z",
+  "fixture": "output/audit-20261004/pass7/inventory-fixture-E7lgD7",
+  "fixtureSourceOnly": true,
+  "fixtureRetained": true,
+  "productionTouched": false,
+  "privateFixturesRead": false,
+  "buildPerformed": false,
+  "migrationsExecuted": false,
+  "baseFiles": 444,
+  "targetFiles": 519,
+  "deltaFiles": 129,
+  "checks": [
+    {
+      "name": "excluded_paths_rejected",
+      "passed": true,
+      "cases": 8
+    },
+    {
+      "name": "private_key_content_rejected",
+      "passed": true
+    },
+    {
+      "name": "first_base_copied_and_verified",
+      "passed": true,
+      "files": 444,
+      "missing": [],
+      "changed": [],
+      "unexpected": []
+    },
+    {
+      "name": "normalized_consolidated_patch_applies_to_first_base",
+      "passed": true,
+      "exitCode": 0
+    },
+    {
+      "name": "unrelated_tracked_source_drift_rejected_before_apply",
+      "passed": true,
+      "path": "backend-stripe-test/src/controllers/auth.controller.ts"
+    },
+    {
+      "name": "unexpected_source_rejected_before_apply",
+      "passed": true
+    },
+    {
+      "name": "base_to_target",
+      "passed": true,
+      "status": "applied",
+      "writes": 129,
+      "files": 519
+    },
+    {
+      "name": "target_second_apply_idempotent",
+      "passed": true,
+      "status": "already_target",
+      "writes": 0
+    },
+    {
+      "name": "unrelated_source_drift_rejected_before_restore",
+      "passed": true,
+      "path": "backend-stripe-test/src/controllers/auth.controller.ts"
+    },
+    {
+      "name": "target_to_original_base",
+      "passed": true,
+      "status": "restored",
+      "writes": 129,
+      "files": 444
+    },
+    {
+      "name": "base_second_restore_idempotent",
+      "passed": true,
+      "status": "already_base",
+      "writes": 0
+    },
+    {
+      "name": "all_original_project_files_unchanged",
+      "passed": true,
+      "files": 528
+    }
+  ],
+  "allPassed": true,
+  "limitations": "Verifies exact selective source application/restore in an isolated copy only; does not exercise systemd, database, active runtime, new compilation or native devices."
+}

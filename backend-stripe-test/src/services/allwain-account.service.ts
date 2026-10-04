@@ -20,6 +20,14 @@ export async function deleteAllwainAccount(userId: string) {
     const user = await tx.user.findUnique({ where: { id: userId } });
     if (!user || user.deletedAt) throw new Error("USER_NOT_FOUND");
 
+    // Serialize publication/stock writes before checking for open orders, then
+    // archive the current locked inventory without discarding historical counters.
+    const ownedOffers = await tx.$queryRaw(Prisma.sql`
+      SELECT "id", "meta" FROM "Offer"
+      WHERE "owner" = 'allwain' AND "ownerUserId" = ${userId}
+      ORDER BY "id" FOR UPDATE
+    `) as { id: string; meta: Record<string, unknown> | null }[];
+
     const openOrders = await tx.allwainOrder.count({
       where: {
         OR: [
@@ -41,10 +49,6 @@ export async function deleteAllwainAccount(userId: string) {
     if (openTrades > 0) throw new Error("ACCOUNT_HAS_OPEN_TRADES");
 
     const deletedAt = new Date();
-    const ownedOffers = await tx.offer.findMany({
-      where: { owner: "allwain", ownerUserId: userId },
-      select: { id: true, meta: true },
-    });
     const testerTickets = await tx.allwainSupportTicket.findMany({
       where: { requesterUserId: userId, source: "web_tester" },
       select: { id: true },
@@ -84,10 +88,13 @@ export async function deleteAllwainAccount(userId: string) {
         where: { userId },
         data: { status: "archived" },
       }),
-      ...ownedOffers.map((offer: any) =>
+      ...ownedOffers.map((offer) =>
         tx.offer.update({
           where: { id: offer.id },
-          data: { meta: archiveAllwainOfferMeta(offer.meta, deletedAt) },
+          data: {
+            allwainStatus: "closed",
+            meta: archiveAllwainOfferMeta(offer.meta, deletedAt),
+          },
         }),
       ),
     ];

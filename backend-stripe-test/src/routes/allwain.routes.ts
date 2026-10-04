@@ -1,4 +1,5 @@
 import { Router, Request, Response } from "express";
+import { allwainDiscoveryOptions, readDiscoveryQuery, isDiscoveryError } from "../services/allwain-discovery";
 import fs from "node:fs";
 import path from "node:path";
 import {
@@ -9,6 +10,8 @@ import {
   listAllwainScanRequests,
   listAllwainScanRequestPage,
   getAllwainScanRequestForUser,
+  getAllwainBuyerRequestPendingSummary,
+  listAllwainRequestProposalPage,
   canReadAllwainRequestImage,
   updateAllwainScanRequest,
   confirmAllwainScanRequest,
@@ -22,6 +25,7 @@ import {
   createAllwainOffer,
   updateAllwainOfferInventory,
   updateAllwainOffer,
+  withdrawAllwainProposal,
   registerAllwainOfferInterest,
   createAllwainAgreement,
   listAllwainContractPage,
@@ -41,7 +45,7 @@ import {
   allwainAiRateLimit,
   allwainOcrRateLimit,
 } from "../middleware/operation-rate-limit.middleware";
-import { AllwainScanSourceType } from "../shared/types";
+import { AllwainScanSourceType, type AllwainScanRequest } from "../shared/types";
 import { notifyAllwainUser } from "../services/allwain-notifications.service";
 import { searchAllwain } from "../services/allwain-search.service";
 import {
@@ -57,6 +61,7 @@ import { ENV } from "../config/env";
 import { getAllwainPurchaseDetails } from "../services/allwain-purchase-details.service";
 
 const router = Router();
+router.get("/discovery-options", authRequired, (_req: Request, res: Response) => { res.json(allwainDiscoveryOptions); });
 
 router.get("/purchase-details", authRequired, async (req: Request, res: Response) => {
   const userId = (req as any).user?.id as string | undefined;
@@ -74,6 +79,7 @@ router.get(
   "/media/uploads/:filename",
   authRequired,
   async (req: Request, res: Response) => {
+    res.setHeader("Cache-Control", "private, no-store");
     const userId = (req as any).user?.id as string | undefined;
     const filename = String(req.params.filename || "");
     const match = filename.match(/^([0-9a-f-]{36})\.(?:jpg|png)$/i);
@@ -88,7 +94,6 @@ router.get(
       if (!filePath.startsWith(`${uploadRoot}${path.sep}`) || !fs.existsSync(filePath)) {
         return void res.status(404).json({ error: "IMAGE_NOT_FOUND" });
       }
-      res.setHeader("Cache-Control", "private, max-age=86400");
       res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
       res.setHeader("X-Content-Type-Options", "nosniff");
       return void res.sendFile(filePath);
@@ -158,6 +163,7 @@ function sendScanFlowError(err: unknown, res: Response) {
       "IMAGE_DIMENSIONS_BLOCKED",
       "INVALID_SCAN_SOURCE",
       "INVALID_BARCODE",
+      "INVALID_REQUEST_CREATION_KEY",
     ].includes(err.message)
   ) {
     res.status(400).json({ error: err.message });
@@ -185,6 +191,7 @@ function sendScanFlowError(err: unknown, res: Response) {
       "EVIDENCE_ALREADY_USED",
       "OCR_PRICE_LOCKED_RESTART_REQUIRED",
       "OCR_DOCUMENT_REVIEW_REQUIRED",
+      "REQUEST_CREATION_CONFLICT",
     ].includes(err.message)
   ) {
     res.status(409).json({ error: err.message });
@@ -258,7 +265,7 @@ router.post("/publications/review", authRequired, allwainAiRateLimit, async (req
 
 function pageLimit(value: unknown, fallback = 30) {
   const parsed = Number(value);
-  return Math.max(1, Math.min(100, Number.isFinite(parsed) ? parsed : fallback));
+  return Math.max(1, Math.min(100, Number.isFinite(parsed) ? Math.trunc(parsed) : fallback));
 }
 
 function queryText(value: unknown) {
@@ -464,13 +471,14 @@ router.post(
     const startedAt = Date.now();
     try {
       const userId = (req as any).user?.id as string | undefined;
-      const { sourceType, rawText, imageBase64, barcode, provider } =
+      const { sourceType, rawText, imageBase64, barcode, provider, creationKey } =
         req.body as {
           sourceType?: AllwainScanSourceType;
           rawText?: string;
           imageBase64?: string;
           barcode?: string;
           provider?: "mock" | "google";
+          creationKey?: string;
         };
 
       if (!userId) {
@@ -489,9 +497,10 @@ router.post(
         imageBase64,
         barcode,
         provider,
+        creationKey,
       });
 
-      await recordAllwainAiUsage({
+      if (!(request as AllwainScanRequest & { creationReplayed?: boolean }).creationReplayed) await recordAllwainAiUsage({
         userId,
         operation: "request_creation",
         provider: request.ai.provider,
@@ -558,14 +567,36 @@ router.get(
           productKind: queryText(req.query.productKind),
           unit: queryText(req.query.unit),
           currency: queryText(req.query.currency),
+          ...readDiscoveryQuery(req.query),
         }),
       );
     } catch (err) {
+      if (isDiscoveryError(err)) return void res.status(400).json({ error: (err as Error).message });
       console.error("Error in GET /allwain/scan-requests:", err);
       res.status(500).json({ error: "INTERNAL_ERROR" });
     }
   },
 );
+
+router.get("/scan-requests/summary", authRequired, async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user?.id as string | undefined;
+    if (!userId) return void res.status(401).json({ error: "UNAUTHORIZED" });
+    res.json(await getAllwainBuyerRequestPendingSummary(userId, Math.min(10, pageLimit(req.query.limit, 3))));
+  } catch (error) { console.error("Error in GET /allwain/scan-requests/summary:", error); res.status(500).json({ error: "INTERNAL_ERROR" }); }
+});
+
+router.get("/scan-requests/:id/proposals", authRequired, async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user?.id as string | undefined;
+    if (!userId) return void res.status(401).json({ error: "UNAUTHORIZED" });
+    res.json(await listAllwainRequestProposalPage(userId, req.params.id, { limit: Math.min(20, pageLimit(req.query.limit, 20)), cursor: queryText(req.query.cursor), sort: queryText(req.query.sort) as any, view: queryText(req.query.view) as any }));
+  } catch (error) {
+    if (error instanceof Error && error.message === "SCAN_REQUEST_NOT_FOUND") return void res.status(404).json({ error: error.message });
+    if (isDiscoveryError(error) || error instanceof Error && ["INVALID_PROPOSAL_SORT", "INVALID_PROPOSAL_VIEW"].includes(error.message)) return void res.status(400).json({ error: (error as Error).message });
+    console.error("Error in GET /allwain/scan-requests/:id/proposals:", error); res.status(500).json({ error: "INTERNAL_ERROR" });
+  }
+});
 
 router.get(
   "/scan-requests/:id",
@@ -574,7 +605,7 @@ router.get(
     try {
       const userId = (req as any).user?.id as string | undefined;
       if (!userId) return void res.status(401).json({ error: "UNAUTHORIZED" });
-      res.json(await getAllwainScanRequestForUser(userId, req.params.id));
+      res.json(await getAllwainScanRequestForUser(userId, req.params.id, { includeProposals: req.query.includeProposals !== "false" }));
     } catch (err) {
       if (sendScanFlowError(err, res)) return;
       console.error("Error in GET /allwain/scan-requests/:id:", err);
@@ -661,12 +692,14 @@ router.get(
           productKind: queryText(req.query.productKind),
           unit: queryText(req.query.unit),
           currency: queryText(req.query.currency),
+          ...readDiscoveryQuery(req.query),
         }),
       );
     } catch (err) {
       if (err instanceof Error && err.message === "SELLER_ROLE_REQUIRED") {
         return void res.status(403).json({ error: "SELLER_ROLE_REQUIRED" });
       }
+      if (isDiscoveryError(err)) return void res.status(400).json({ error: (err as Error).message });
       console.error("Error in GET /allwain/market/requests:", err);
       res.status(500).json({ error: "INTERNAL_ERROR" });
     }
@@ -793,6 +826,8 @@ router.get("/offers", authRequired, async (req: Request, res: Response) => {
       status:
         typeof req.query.status === "string" ? req.query.status.trim() : null,
       ownerUserId: req.query.scope === "mine" ? userId : null,
+      type: req.query.type === "proposal" || req.query.type === "all" ? req.query.type : "catalog",
+      view: req.query.view === "history" ? "history" : req.query.view === "active" ? "active" : undefined,
       excludeOwnerUserId: req.query.scope === "market" ? userId : null,
       minPrice: numberParam(req.query.minPrice),
       maxPrice: numberParam(req.query.maxPrice),
@@ -800,9 +835,11 @@ router.get("/offers", authRequired, async (req: Request, res: Response) => {
         req.query.sort === "price_asc" || req.query.sort === "price_desc"
           ? req.query.sort
           : "newest",
+      ...readDiscoveryQuery(req.query),
     });
     res.json(page);
   } catch (err) {
+    if (isDiscoveryError(err)) return void res.status(400).json({ error: (err as Error).message });
     console.error("Error in GET /allwain/offers:", err);
     res.status(500).json({ error: "INTERNAL_ERROR" });
   }
@@ -919,6 +956,16 @@ router.patch("/offers/:id", authRequired, async (req: Request, res: Response) =>
             : String(req.body.description),
         price,
         status: req.body?.status,
+        expectedUpdatedAt: req.body?.expectedUpdatedAt,
+        unit: req.body?.unit,
+        category: req.body?.category,
+        subcategory: req.body?.subcategory,
+        productKind: req.body?.productKind,
+        locationLabel: req.body?.locationLabel,
+        deliveryEstimate: req.body?.deliveryEstimate,
+        shippingWeightKgPerUnit: req.body?.shippingWeightKgPerUnit,
+        saleMode: req.body?.saleMode,
+        preorderChargeDeadlineAt: req.body?.preorderChargeDeadlineAt,
       }),
     );
   } catch (err) {
@@ -933,6 +980,7 @@ router.patch("/offers/:id", authRequired, async (req: Request, res: Response) =>
         [
           "MISSING_OFFER_FIELDS",
           "INVALID_OFFER_PRICE",
+          "INVALID_OFFER_FIELD", "INVALID_OFFER_VERSION", "PREORDER_CHARGE_DEADLINE_REQUIRED", "INVALID_PREORDER_CHARGE_DEADLINE", "PREORDER_CHARGE_DEADLINE_PASSED", "PREORDER_CHARGE_DEADLINE_TOO_FAR",
         ].includes(err.message)
       ) {
         return void res.status(400).json({ error: err.message });
@@ -942,12 +990,30 @@ router.patch("/offers/:id", authRequired, async (req: Request, res: Response) =>
           "OFFER_EDIT_NOT_ALLOWED",
           "INVALID_OFFER_TRANSITION",
           "INSUFFICIENT_STOCK",
+          "OFFER_VERSION_CONFLICT", "OFFER_TERMS_LOCKED", "PRODUCT_IDENTITY_CHANGE_REQUIRES_NEW_OFFER",
         ].includes(err.message)
       ) {
         return void res.status(409).json({ error: err.message });
       }
     }
     console.error("Error in PATCH /allwain/offers/:id:", err);
+    res.status(500).json({ error: "INTERNAL_ERROR" });
+  }
+});
+
+router.post("/offers/:id/withdraw", authRequired, async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user?.id as string | undefined;
+    if (!userId) return void res.status(401).json({ error: "UNAUTHORIZED" });
+    res.json(await withdrawAllwainProposal(userId, req.params.id, { expectedUpdatedAt: req.body?.expectedUpdatedAt }));
+  } catch (err) {
+    if (err instanceof Error) {
+      if (err.message === "OFFER_NOT_FOUND") return void res.status(404).json({ error: err.message });
+      if (err.message === "SELLER_ROLE_REQUIRED") return void res.status(403).json({ error: err.message });
+      if (["INVALID_OFFER_VERSION", "PROPOSAL_REQUIRED"].includes(err.message)) return void res.status(400).json({ error: err.message });
+      if (["PROPOSAL_LOCKED", "PROPOSAL_NOT_EDITABLE", "OFFER_VERSION_CONFLICT", "OFFER_NOT_AVAILABLE"].includes(err.message)) return void res.status(409).json({ error: err.message });
+    }
+    console.error("Error in POST /allwain/offers/:id/withdraw:", err);
     res.status(500).json({ error: "INTERNAL_ERROR" });
   }
 });
@@ -1149,6 +1215,7 @@ router.post(
           err.message === "SHOPPING_LIST_PROPOSAL_ITEMS_MISSING" ||
           err.message === "SHOPPING_LIST_ORDER_NOT_CREATED" ||
           err.message === "OFFER_NOT_AVAILABLE" ||
+          err.message === "OFFER_VERSION_CONFLICT" ||
           err.message === "DEMO_OFFER_READ_ONLY" ||
           err.message === "PREORDER_CHARGE_DEADLINE_PASSED" ||
           err.message === "IDEMPOTENCY_KEY_REUSED"
@@ -1188,9 +1255,15 @@ router.get("/contracts", authRequired, async (req: Request, res: Response) => {
         query: queryText(req.query.q),
         scope,
         statuses,
+        offerId: queryText(req.query.offerId),
+        paymentStatuses: queryText(req.query.paymentStatus)?.split(",").map((value) => value.trim()).filter(Boolean),
+        contractStatuses: queryText(req.query.contractStatus)?.split(",").map((value) => value.trim()).filter(Boolean),
+        fulfillmentStatuses: queryText(req.query.fulfillmentStatus)?.split(",").map((value) => value.trim()).filter(Boolean),
+        ...readDiscoveryQuery(req.query),
       }),
     );
   } catch (err) {
+    if (isDiscoveryError(err)) return void res.status(400).json({ error: (err as Error).message });
     console.error("Error in GET /allwain/contracts:", err);
     res.status(500).json({ error: "INTERNAL_ERROR" });
   }

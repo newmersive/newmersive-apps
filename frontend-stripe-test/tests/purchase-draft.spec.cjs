@@ -55,7 +55,7 @@ test('tampered envelopes do not reveal a different account or invalid purchase q
   for (const change of [{ userId: 'another-user' }, { quantity: -1 }, { savedAt: Date.now() + 120_000 }]) {
     const driver = storage();
     await createPurchaseDraftStore(driver).save('u', 'o', purchase());
-    const [key, json] = [...driver.entries][0];
+    const [key, json] = [...driver.entries].find(([key]) => key.startsWith('allwain.purchase.v1.'));
     driver.entries.set(key, JSON.stringify({ ...JSON.parse(json), ...change }));
     assert.equal((await createPurchaseDraftStore(driver).read('u', 'o')).draft, null);
   }
@@ -64,7 +64,7 @@ test('tampered envelopes do not reveal a different account or invalid purchase q
 test('corrupt storage is reported without crashing or restoring partial recipient data', async () => {
   const driver = storage();
   await createPurchaseDraftStore(driver).save('u', 'o', purchase());
-  const [key] = [...driver.entries.keys()];
+  const key = [...driver.entries.keys()].find(key => key.startsWith('allwain.purchase.v1.'));
   driver.entries.set(key, '{broken-json');
   const result = await createPurchaseDraftStore(driver).read('u', 'o');
   assert.equal(result.draft, null);
@@ -85,7 +85,10 @@ test('quota failure is explicit and the open-session edit remains recoverable', 
 test('discard waits for a pending write and cannot resurrect its draft afterward', async () => {
   const driver = storage();
   let release;
-  driver.setItem = async (key, value) => { await new Promise(resolve => { release = resolve; }); driver.entries.set(key, value); };
+  driver.setItem = async (key, value) => {
+    if (key.startsWith('allwain.purchase.v1.')) await new Promise(resolve => { release = resolve; });
+    driver.entries.set(key, value);
+  };
   const store = createPurchaseDraftStore(driver);
   const save = store.save('u', 'o', purchase());
   await new Promise(resolve => setImmediate(resolve));

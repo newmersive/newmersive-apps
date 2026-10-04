@@ -2,22 +2,22 @@ import assert from "node:assert";
 import { after, before, describe, it } from "node:test";
 import { app } from "../src/server";
 import { TestClient } from "./helpers/test-client";
+import { createSyntheticAdmin } from "./helpers/synthetic-admin";
 
 const client = new TestClient(app);
 
 describe("TrueQIA contract routes", () => {
   let token: string;
+  let fixtureUserId: string;
   let providerToken: string;
   let providerUserId: string;
   let contractId: string;
 
   before(async () => {
     await client.start();
-    const login = await client.post("/auth/login", {
-      email: "admin@newmersive.local",
-      password: "HighAssuranceTestOnly!2026",
-    });
-    token = login.body.token;
+    const login = await createSyntheticAdmin(client, "trueqia-contract-admin");
+    token = login.token;
+    fixtureUserId = login.user.id;
 
     const providerEmail = `contract-provider+${Date.now()}@test.local`;
     const provider = await client.post("/auth/register", {
@@ -101,7 +101,7 @@ describe("TrueQIA contract routes", () => {
     contractId = res.body.id;
     assert.equal(res.body.tradeId, trade.body.id);
     assert.equal(res.body.offerId, trade.body.offerId);
-    assert.equal(res.body.requesterUserId, "1");
+    assert.equal(res.body.requesterUserId, fixtureUserId);
     assert.equal(res.body.tokens, trade.body.tokens);
     assert.equal(res.body.templateId, "trueqia-content-rights");
     assert.equal(res.body.templateVersion, "1.0.0");

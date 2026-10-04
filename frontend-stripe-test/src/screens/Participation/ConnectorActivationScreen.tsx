@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   ScrollView,
@@ -18,6 +18,9 @@ import { useAuthStore } from "../../store/auth.store";
 import { colors } from "../../theme/colors";
 import { getAllwainCurrentLocation } from "../../utils/currentLocation";
 import { trackAnalyticsEvent } from "../../analytics";
+import { captureAuthSession } from "../../store/authSessionBridge";
+import { useAppTranslation } from "../../i18n/useAppTranslation";
+import { connectorDiscoveryCopy } from "../../i18n/connectorDiscoveryCopy";
 
 const radii = [1, 5, 10, 20, 50] as const;
 
@@ -25,37 +28,65 @@ export default function ConnectorActivationScreen() {
   const navigation = useNavigation<any>();
   const setParticipation = useAuthStore((state) => state.setParticipation);
   const connector = useAuthStore((state) => state.user?.participation?.connector);
+  const userId = useAuthStore((state) => state.user?.id);
+  const appMode = useAuthStore((state) => state.appMode);
+  const { locale } = useAppTranslation();
+  const copy = connectorDiscoveryCopy[locale] || connectorDiscoveryCopy.es;
+  const renderedSession = captureAuthSession();
+  const scope = `${userId}:${appMode}:${renderedSession.generation}`;
+  const scopeRef = useRef(scope); scopeRef.current = scope;
+  const mounted = useRef(true);
+  const locationRevision = useRef(0);
+  const writePending = useRef(false);
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [radiusKm, setRadiusKm] = useState<(typeof radii)[number]>(connector?.radiusKm || 5);
   const [available, setAvailable] = useState(Boolean(connector?.available));
   const [locationLabel, setLocationLabel] = useState(connector?.locationLabel || "");
   const [coordinates, setCoordinates] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [clearCoordinates, setClearCoordinates] = useState(false);
   const [locating, setLocating] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
+  useEffect(() => () => { mounted.current = false; locationRevision.current += 1; }, []);
+  useLayoutEffect(() => {
+    locationRevision.current += 1;
+    writePending.current = false;
+    setLocating(false); setBusy(false); setError(null); setStep(1);
     setRadiusKm(connector?.radiusKm || 5);
     setAvailable(Boolean(connector?.available));
     setLocationLabel(connector?.locationLabel || "");
     setCoordinates(null);
+    setClearCoordinates(false);
   }, [
+    scope,
     connector?.available,
     connector?.locationLabel,
     connector?.radiusKm,
+    connector?.locationMode,
   ]);
 
+  function currentActor(session: ReturnType<typeof captureAuthSession>, actorScope: string) {
+    const actor = useAuthStore.getState();
+    return mounted.current && session.isCurrent() && scopeRef.current === actorScope && actor.user?.id === userId && actor.appMode === appMode;
+  }
+
   async function fillCurrentLocation() {
+    if (locating || writePending.current) return;
+    const session = captureAuthSession(), actorScope = scope, revision = ++locationRevision.current;
+    const current = () => currentActor(session, actorScope) && revision === locationRevision.current;
     setLocating(true);
     setError(null);
     try {
       const location = await getAllwainCurrentLocation();
+      if (!current()) return;
       setCoordinates({ latitude: location.latitude, longitude: location.longitude });
+      setClearCoordinates(false);
       setLocationLabel(location.locationLabel);
     } catch (locationError: any) {
-      setError(locationError?.message || "No pudimos obtener tu ubicación.");
+      if (current()) setError(locationError?.message || copy.locationError);
     } finally {
-      setLocating(false);
+      if (current()) setLocating(false);
     }
   }
 
@@ -69,6 +100,11 @@ export default function ConnectorActivationScreen() {
   }
 
   async function activate() {
+    if (writePending.current || locating || !locationLabel.trim()) return;
+    const session = captureAuthSession(), actorScope = scope;
+    if (!currentActor(session, actorScope)) return;
+    writePending.current = true;
+    const expectedLocationMode = coordinates ? "coordinates" : clearCoordinates || !connector?.enabled ? "label" : connector?.locationMode;
     setBusy(true);
     setError(null);
     try {
@@ -78,6 +114,7 @@ export default function ConnectorActivationScreen() {
           locationLabel: locationLabel.trim(),
           latitude: coordinates?.latitude,
           longitude: coordinates?.longitude,
+          clearCoordinates,
       };
       const participation = connector?.enabled
         ? await apiAuthPatch<AllwainParticipation>(
@@ -88,23 +125,26 @@ export default function ConnectorActivationScreen() {
             "/allwain/participation/connector/activate",
             payload,
           );
+      if (!currentActor(session, actorScope)) return;
       if (
         !participation.connector.enabled ||
         participation.connector.radiusKm !== radiusKm ||
         participation.connector.locationLabel !== locationLabel.trim() ||
-        participation.connector.available !== available
+        participation.connector.available !== available ||
+        (expectedLocationMode && participation.connector.locationMode !== expectedLocationMode)
       ) {
-        throw new Error("El servidor no confirmó todos los cambios de Conector.");
+        throw new Error(copy.saveReceipt);
       }
       await setParticipation(participation);
+      if (!currentActor(session, actorScope)) return;
       if (!connector?.enabled) {
         void trackAnalyticsEvent("connector_activated", { radius_km: radiusKm });
       }
       navigation.navigate("MainTabs", { screen: "Inicio" });
     } catch (activationError: any) {
-      setError(activationError?.message || "No pudimos activar Conector.");
+      if (currentActor(session, actorScope)) setError(activationError?.message || "No pudimos activar Conector.");
     } finally {
-      setBusy(false);
+      if (currentActor(session, actorScope)) { writePending.current = false; setBusy(false); }
     }
   }
 
@@ -127,9 +167,13 @@ export default function ConnectorActivationScreen() {
             style={styles.input}
             value={locationLabel}
             onChangeText={(value) => {
+              locationRevision.current += 1;
+              setLocating(false);
               setLocationLabel(value);
               setCoordinates(null);
+              setClearCoordinates(true);
             }}
+            editable={!busy}
             placeholder="Foios, València..."
             placeholderTextColor={colors.mutedText}
             maxLength={120}
@@ -140,13 +184,13 @@ export default function ConnectorActivationScreen() {
             accessibilityState={{ disabled: locating, busy: locating }}
             style={styles.locationButton}
             onPress={() => void fillCurrentLocation()}
-            disabled={locating}
+            disabled={locating || busy}
           >
             {locating ? <ActivityIndicator color={colors.primary} /> : <><Navigation size={18} color={colors.primary} /><Text style={styles.locationText}>Usar mi zona actual</Text></>}
           </TouchableOpacity>
-          <Text style={styles.privacy}>Solo guardamos una zona aproximada. Tu ubicación exacta no se muestra.</Text>
+          <Text style={styles.privacy}>{coordinates || (!clearCoordinates && connector?.locationMode === "coordinates") ? copy.coordinateHint : copy.labelHint}</Text>
           {error ? <Text style={styles.error}>{error}</Text> : null}
-          <BigActionButton label="Siguiente" onPress={continueFromLocation} />
+          <BigActionButton label="Siguiente" disabled={locating} onPress={continueFromLocation} />
         </View>
       ) : null}
 
@@ -178,26 +222,26 @@ export default function ConnectorActivationScreen() {
 
       {step === 3 ? (
         <View style={styles.step}>
-          <BackButton onPress={() => setStep(2)} />
+          <BackButton disabled={busy} onPress={() => setStep(2)} />
           <Text style={styles.title}>¿Puedes hacer entregas ahora?</Text>
           <View style={styles.availability}>
             <View style={styles.availabilityCopy}>
               <Text style={styles.availabilityTitle}>{available ? "Sí, estoy disponible" : "Ahora no"}</Text>
               <Text style={styles.privacy}>Podrás cambiarlo cuando quieras.</Text>
             </View>
-            <Switch value={available} onValueChange={setAvailable} trackColor={{ false: colors.cardBorder, true: colors.primary }} thumbColor={colors.card} />
+            <Switch disabled={busy} value={available} onValueChange={setAvailable} trackColor={{ false: colors.cardBorder, true: colors.primary }} thumbColor={colors.card} />
           </View>
           {error ? <Text style={styles.error}>{error}</Text> : null}
-          <BigActionButton label={connector?.enabled ? "Guardar cambios" : "Activar Conector"} busy={busy} onPress={() => void activate()} />
+          <BigActionButton label={connector?.enabled ? "Guardar cambios" : "Activar Conector"} busy={busy} disabled={busy || locating} onPress={() => void activate()} />
         </View>
       ) : null}
     </ScrollView>
   );
 }
 
-function BackButton({ onPress }: { onPress: () => void }) {
+function BackButton({ onPress, disabled = false }: { onPress: () => void; disabled?: boolean }) {
   return (
-    <TouchableOpacity style={styles.back} onPress={onPress}>
+    <TouchableOpacity style={styles.back} disabled={disabled} onPress={onPress}>
       <ArrowLeft size={18} color={colors.text} />
       <Text style={styles.backText}>Atrás</Text>
     </TouchableOpacity>

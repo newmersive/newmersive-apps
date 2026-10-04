@@ -1,0 +1,3176 @@
+{
+  "createdAt": "2026-10-04T16:19:15.240Z",
+  "hashAlgorithm": "sha256",
+  "scope": "Source/tests/scripts/Prisma and explicit build/dependency configuration; hashes only for source assets; no environment, credentials, installed dependencies or runtime data",
+  "files": [
+    {
+      "path": "backend-stripe-test/.gitignore",
+      "bytes": 230,
+      "sha256": "6a1f71e12b7cc21e60cc541bf1fa7c7f678992028a111e4555a21dc03ee62b88",
+      "kind": "configuration"
+    },
+    {
+      "path": "backend-stripe-test/app.json",
+      "bytes": 16,
+      "sha256": "b7c55adf9886178318b9a475422a1a361cb6a3211b82f774104c77e460a1ec88",
+      "kind": "configuration"
+    },
+    {
+      "path": "backend-stripe-test/package-lock.json",
+      "bytes": 196852,
+      "sha256": "20d65f659a7ac0c77eeb4366e01a3c2427a7924c308ae06c56786394d0978ce3",
+      "kind": "dependency_manifest"
+    },
+    {
+      "path": "backend-stripe-test/package.json",
+      "bytes": 1921,
+      "sha256": "52f0408a128beda4420ba0396b851e08ce5c133d0cca036d3b3fad599f6c0bad",
+      "kind": "dependency_manifest"
+    },
+    {
+      "path": "backend-stripe-test/prisma.config.ts",
+      "bytes": 340,
+      "sha256": "6042f4eaa9229505858913df3c14ce97edce2818a4a6a1f0caf86175483f7d0f",
+      "kind": "configuration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/backfill-allwain-card-images.ts",
+      "bytes": 3432,
+      "sha256": "61ec1ab7cc7b8dabe287120684f1ed319730fd20ab9f258879ab09bc165123ba",
+      "kind": "schema_and_prisma"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20251213075251_init/migration.sql",
+      "bytes": 4072,
+      "sha256": "2b72df0239ad5fbe2fa1c304cfb550f3adfd563d7697b9ed1175468d4c3a8f00",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20251213145852_add_offer_mode/migration.sql",
+      "bytes": 94,
+      "sha256": "4de612eba982631cc63979fc6ae6fe9d0dc31780c7849cad50f1952f23377382",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260613133000_add_allwain_scan_requests/migration.sql",
+      "bytes": 785,
+      "sha256": "3b233ef9ddc77b4e7b288e3ae69b9d779f3e4e8ac92cc207c57e10fd26972ac9",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260613144000_add_trueqia_chat_messages/migration.sql",
+      "bytes": 615,
+      "sha256": "ef33717c2daa64c443cfa708c0cfbd4ef7741dd3c7d883b9665db76e97f14a5e",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260613150500_add_trueqia_chat_trade_id/migration.sql",
+      "bytes": 195,
+      "sha256": "e499d622e7c46597b62dac63d520543206915983718aca5096d7e4d8e79cc8e3",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260613152500_add_trueqia_contract_metadata/migration.sql",
+      "bytes": 880,
+      "sha256": "2d648b1a621d10b807923290bda450c0e4da59566c043ad02fa7762375b087c4",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260613163500_add_trueqia_contract_acceptance_fields/migration.sql",
+      "bytes": 139,
+      "sha256": "576c6eb7880994245be0fdcdbc26c691e9ee2244a7ce411a8a3b60bc67ed0d6a",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260613171000_add_trueqia_contract_template_fields/migration.sql",
+      "bytes": 215,
+      "sha256": "e301d2b8fbb24c5e5be0e388ab42b6d3eedacfb24003eeabfcafcf3718839e4c",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260827124500_add_course_entitlements/migration.sql",
+      "bytes": 751,
+      "sha256": "5474e8183ec3be1d16fa9b0a3e78a23aad659e6138e5cb34f961144b87543877",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260827152500_add_course_campus_runtime/migration.sql",
+      "bytes": 3737,
+      "sha256": "c9ffd0b42a52aee4b269a2889606ed038933bdd6d2d8b05f933054e367c6a5c8",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260827160000_add_course_operations/migration.sql",
+      "bytes": 3463,
+      "sha256": "67bdecb985937658e76875f9067454c0f42a2bcc598c58c31500c75683096eb3",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260830004500_add_trueqia_trade_lifecycle/migration.sql",
+      "bytes": 1366,
+      "sha256": "1a7fca398b49ad1c121b255ed3372fef7b91bd402cf8924ccdc9f86eced5b965",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260830012500_repair_legacy_trueqia_activation/migration.sql",
+      "bytes": 2033,
+      "sha256": "06b405fbc48f204d213d06a01734e8930e782ad8f483d2611589b00c592e5c2e",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260830160000_add_allwain_order_inventory/migration.sql",
+      "bytes": 295,
+      "sha256": "9fc333bc51791eccb2a6326e468a30f850d31e6b591bdf633a2736fc8f1abb29",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260831010000_add_allwain_stripe_connect/migration.sql",
+      "bytes": 6630,
+      "sha256": "0ceb0eb73fb18cc8ce2654a9d31178c9a49ee2d7c60d3163c8efcad8f0cb8b77",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260831173000_harden_allwain_payments_audit/migration.sql",
+      "bytes": 5865,
+      "sha256": "6e9d5dcbc21b19430920a0be178d1cd4ca0bfc371bc94bcdbffa4518525c3925",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260831193000_add_allwain_participation/migration.sql",
+      "bytes": 6311,
+      "sha256": "486d69d01a4ca921105e9cb356aa7e1b829ecb20b7a94ac9f63817df7a699cab",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260831231500_connector_revenue_and_logistics/migration.sql",
+      "bytes": 1379,
+      "sha256": "6b72789cda9c5b774ab6cb816e04375069c93f95a3700e127deb00eae3c004e8",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260831234500_allwain_notifications/migration.sql",
+      "bytes": 696,
+      "sha256": "2f00391cca77cb9e1204ffed38d3e17507edf1a39f49ea10cb18761fb0b0cae8",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260901000500_user_account_deletion/migration.sql",
+      "bytes": 114,
+      "sha256": "844c03a5a61a07f3924d04f5770ce3371f9ad17f5b9d4f62c44e5c41f5817376",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260901013000_allwain_private_logistics_location/migration.sql",
+      "bytes": 571,
+      "sha256": "34055f439b80981b79f9cf7e68dd6164df4705669c7ce0ec9da9b6cad625475f",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260901123500_shared_user_chat/migration.sql",
+      "bytes": 3422,
+      "sha256": "3a11dc4ddc5459d97d807137de1dcabeab88bf3f6578b592a52e963c3968fbd7",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260901193000_allwain_compliance_ledger/migration.sql",
+      "bytes": 27114,
+      "sha256": "82fb601f49a06ab2e2c2580b7d4cbb7b6a0b4122aff117f3ada370026b5fd34f",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260902055000_allwain_lot_recalls/migration.sql",
+      "bytes": 1527,
+      "sha256": "e73c0dd2f1c49d28ccf78f3d51ca10ed83eb44cc617f12ae284d9aafc63acb90",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260902093000_add_apple_auth_challenges/migration.sql",
+      "bytes": 574,
+      "sha256": "877f713b9727337b2f33b8498803b93fc0eaa3428bc33025813e06dac946601b",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260902193000_allwain_transactional_email/migration.sql",
+      "bytes": 937,
+      "sha256": "d80f92e07eeb8a1663f0786893d05be312f3f0b5bd3d525e044bf426e0395a4c",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260902223000_normalize_allwain_marketplace/migration.sql",
+      "bytes": 4448,
+      "sha256": "965a4c8bcbfc9329d9ef06aed5b6b17efb54976fd5756c81a81f4aebe635d8f0",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260903003000_user_locale/migration.sql",
+      "bytes": 54,
+      "sha256": "1769fe63f787511723ce528f1945b64edc503638097192353ef4d21f31cd63c3",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260903021500_allwain_search_indexes/migration.sql",
+      "bytes": 1345,
+      "sha256": "dc1609f262f4f8d53a9147b3642fe5c202a87e3a30ad69d75306bfb9a90ee027",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260903174500_allwain_legal_payment_gate/migration.sql",
+      "bytes": 18164,
+      "sha256": "e1921ec4889d376b3bc9216c976f027500de7a24a3be660ac6df208d46dc72f9",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260903233000_allwain_guided_quality_logistics/migration.sql",
+      "bytes": 13659,
+      "sha256": "d5806344092bd31e9e14a5311b732ef9fca977c910f2d4ac0429d183257c6218",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260904020000_allwain_operational_archives/migration.sql",
+      "bytes": 1922,
+      "sha256": "b7826fe83c43a1c2b0e67ffc95c88c563c3330862a0d2e17e2bbedf0be7c505a",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260904023000_hide_operational_archives/migration.sql",
+      "bytes": 200,
+      "sha256": "d96e8c1769a7110dd72bd797a6b0286baf13021512d93132f4a86ba6d4fdb109",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260904030000_publish_curated_demo_catalog/migration.sql",
+      "bytes": 3147,
+      "sha256": "55d129ba52bf1e8f1c35cd687632c7b79c0a69b6d09c0c4d1fddb08fd1dea487",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260904090000_allwain_local_delivery_pricing/migration.sql",
+      "bytes": 10350,
+      "sha256": "21157f1d923e66aede44e557c831f876d07b446f4576a3274aa4eda1301e3d9f",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260904113000_allwain_sendcloud_carrier/migration.sql",
+      "bytes": 14514,
+      "sha256": "13266a99956150ad628e62c08c6ed800dabb1203a5a8b75f9f511bba2aa2b5ff",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260904153000_allwain_preorder_reminders/migration.sql",
+      "bytes": 68,
+      "sha256": "cc69cc0fb2ce0c6a3e6f624e5f2d0a7eafce58585099a5ff525ae05697fd9019",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260905011500_auth_sessions/migration.sql",
+      "bytes": 1695,
+      "sha256": "effa9a200000211942cd8043862b043db9ac9a23c769ff8aa43e8ea5d780442b",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260905023000_auth_login_defense/migration.sql",
+      "bytes": 263,
+      "sha256": "a5fc36e7b4301601264748c7647b6aba9968c43bbf724d35a64692ab8d5db974",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260905143000_allwain_platform_direct_services/migration.sql",
+      "bytes": 15455,
+      "sha256": "f749acd4156f5e8955cf68509be579383328af74a51ef57c76ccc63983fb36d5",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260905152000_publish_allwain_demo_requests/migration.sql",
+      "bytes": 658,
+      "sha256": "b556faf6c4198c560e6185653bfe4ceed16d2027261955ca6d30f9720d55e7c5",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260905153000_allwain_ai_usage_events/migration.sql",
+      "bytes": 1496,
+      "sha256": "cb68a248ade112b265142de3c9dc2239de472fdde762a97397c4f2aa2f1e540d",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260905170000_allwain_direct_chat_requests/migration.sql",
+      "bytes": 288,
+      "sha256": "1956bb97338923eea1f40c1a06ef1230c8f591e45dfe32cdedeb5e5404b8d703",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260905203000_allwain_shopping_lists/migration.sql",
+      "bytes": 9109,
+      "sha256": "9ad56b0d338fc1bceb261a4d18de0b3299fe5fe095333ef127504b9222804e54",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260906080500_auth_analytics_consent/migration.sql",
+      "bytes": 154,
+      "sha256": "a89fa4be81f88b3f78c5e634664ad22343c3fe42f6ebbe86522e5dee8d2161d4",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260906113000_allwain_partial_shopping_list_proposals/migration.sql",
+      "bytes": 13767,
+      "sha256": "667fc2028de12abd8c6f17cb2338d5fcafe90ba36285b8b0074dfff4275ac8dc",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260906130000_allwain_support_inbox/migration.sql",
+      "bytes": 5831,
+      "sha256": "07a137945c313ef1c645251e770f71c61ec470ae8a2bfacce32d768ba12cc510",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260906143000_allwain_chat_translation/migration.sql",
+      "bytes": 996,
+      "sha256": "94269d2e337f30a9c2c9910d0a5a230108dae5a7582fecc935220509d00a681c",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260906193000_promote_newmersive_admin/migration.sql",
+      "bytes": 563,
+      "sha256": "334c150db4e42db516a652daf21c8719e540ebf5a54c8bfae078fe44c1a1612c",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260906220500_add_allwain_agent_controls/migration.sql",
+      "bytes": 667,
+      "sha256": "92dd0dcbd823a7b7a74a596106fec20ee43586ab200f3ca47962f8b6ee379790",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260906233000_add_allwain_app_tester_progress/migration.sql",
+      "bytes": 1879,
+      "sha256": "def1137e17aa16d8771ef4fdcb1c94da007fd327266c09baf3f94e0c94e2c5d7",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260906234500_allow_scoped_tester_account_erasure/migration.sql",
+      "bytes": 2880,
+      "sha256": "ed6eae5771145a62cd9f1cd26c5ff07603e12dec8f8dec4510e8b6f0122207ea",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260907003000_expand_allwain_app_tester_routes/migration.sql",
+      "bytes": 416,
+      "sha256": "cbd48d75517e564d3d3fc8bc918d3d6ce4806030fe1009a1a3a8c16ab61bdfdd",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260907014500_add_allwain_app_tester_action_progress/migration.sql",
+      "bytes": 4606,
+      "sha256": "05603e0110f3625c0f8cf837b42474af5b49054ad350cdd87071de2f276d2e99",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260907120000_allwain_ocr_savings_proposals/migration.sql",
+      "bytes": 15947,
+      "sha256": "e9cac6a89dc27622b73e257f23a3233237f2061b2452533a0572a407bdbd9686",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260909090000_allwain_economic_policy/migration.sql",
+      "bytes": 2176,
+      "sha256": "3415875aef4090b5aea836767135a44493e80f5ec2693261e82297449c4317c9",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260909100000_allwain_transfer_execution/migration.sql",
+      "bytes": 1814,
+      "sha256": "aaee95ca04c36ebe87518e2b74d00cea6a1f451b05fe87c628690337165c8a13",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260909110000_allwain_refund_request_integrity/migration.sql",
+      "bytes": 1328,
+      "sha256": "07466db991b80fa770cf9bdbddcdbed7a59ada87df4a33fbf2938f572b8268c5",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260909120000_allwain_net_transfer_allocation/migration.sql",
+      "bytes": 1303,
+      "sha256": "b802a3f8bccf8582426d32a33a83e25dfa38e0b05c2699a1d3066d758cb7cb36",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260909122000_admin_mfa/migration.sql",
+      "bytes": 794,
+      "sha256": "5cba9c4aa71ba30591623c9a52a102ba264e24ef3616fa30a40c444afc1c55e3",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260909130000_allwain_checkout_presentation/migration.sql",
+      "bytes": 543,
+      "sha256": "2c6e3bf232dc4e13d23886950446becabe90b33e62e8fcf63e3519433f23a3bd",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260909140000_email_delivery_durability/migration.sql",
+      "bytes": 393,
+      "sha256": "96bef61a157bf3cf030364c8e2d0de857cef602d00f16d2a7707c70c9b4f11bc",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260909141000_email_legacy_attempts_review/migration.sql",
+      "bytes": 283,
+      "sha256": "4bf5e337dba4a2b50a0552867091bdee67e3be3c521bfdbedf40814ecac9d775",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260909170000_beneficiary_snapshot/migration.sql",
+      "bytes": 1331,
+      "sha256": "8e55338b73a6c66719d5f37b08b93ad993ed3864d0c83e79295dc792746cabfd",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260909190000_beneficiary_economic_guard/migration.sql",
+      "bytes": 1180,
+      "sha256": "3e0824a9c8d4f996fd514e89ec66a61e43e77e4142c81bffbe55fb660c935eca",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260909200000_versioned_referral_terms/migration.sql",
+      "bytes": 1854,
+      "sha256": "512e439ac978b16a2c4e7bc301ccf0ec046daebf09b4d9b8c02307702d344d6d",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260909210000_beneficiary_allocations/migration.sql",
+      "bytes": 5704,
+      "sha256": "8a0ad5bc743203b9188c2ec9ced44f41e2bdcdc9db9d2d98fe08ecd866d5bca6",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260909220000_beneficiary_execution_version/migration.sql",
+      "bytes": 11164,
+      "sha256": "61ffa612d899e0d469470450a46425ccc9d6b41440866498c83f2e07cdf3d893",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260909230000_beneficiary_restoration_tranches/migration.sql",
+      "bytes": 7300,
+      "sha256": "e503d20c0e396c3139a689c39cc1a3a7627054e2b50bb32b8a6da86964dbd8da",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260910000000_dispute_balance_movements/migration.sql",
+      "bytes": 7709,
+      "sha256": "77d58e2439752d6460f97de06a74c09dcb3d891f171491617c1c1527083ec833",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260910010000_recurring_charge_execution/migration.sql",
+      "bytes": 13245,
+      "sha256": "5b19095d3151c195903c32b3a9f16cb5e5277c2420bba05aa70eafed7aab2dcc",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260910020000_deferred_charge_execution/migration.sql",
+      "bytes": 21611,
+      "sha256": "4beb17b6c06b1a089e66b63027b996b81353b8bc44121626b78c6689257ccf2d",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260910030000_automatic_refund_execution/migration.sql",
+      "bytes": 19174,
+      "sha256": "d8086355809fd9e2aadeed6e62cdc172baa9b61af8eb567f125c74c28c5d4a4a",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260910200000_allwain_guide_execution/migration.sql",
+      "bytes": 979,
+      "sha256": "9f264458e76a58a6fb0e7a8047056050c79435e2ba13118c22f44df5c533c5fe",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260910210000_allwain_guide_history/migration.sql",
+      "bytes": 691,
+      "sha256": "667ecbef3b62ad93ab1a6fee6ac6e9fa8898f6648848116b9769d576c86ea485",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260910213000_allwain_guide_manual_review/migration.sql",
+      "bytes": 573,
+      "sha256": "9d27c417df8bf9816cc86de14667dd1b63b32139eaabd32919e8c8c3b41d2ea0",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260913133000_noa_product_survey/migration.sql",
+      "bytes": 1237,
+      "sha256": "c72190936e4ca06f8fe8489c07a01e58d962331c128f0153cb71d2c836ecbe1e",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260913170000_trueqia_human_skills/migration.sql",
+      "bytes": 577,
+      "sha256": "28a91bfedab6264292957666303a56d93d2424b501e0cd8fa05800e776df5ba9",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260913180000_trueqia_needs/migration.sql",
+      "bytes": 1269,
+      "sha256": "92eda542ebb23fe6128172ad0b452a0c2f18911b675a3fbf5656699789359434",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260913190000_noa_account_consent/migration.sql",
+      "bytes": 557,
+      "sha256": "28cf1648d42a2aeb1d8aab61d3a18c25e52d20ce2404c8573c94a1165eabb154",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260913200000_trueqia_tester_classroom/migration.sql",
+      "bytes": 1374,
+      "sha256": "9ec6c5e99732a358d9755fc4c85ec0a7e9f834bd99a2a806d82dfb9affb3c317",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/20260919130000_noa_japanese_locale/migration.sql",
+      "bytes": 436,
+      "sha256": "9276fe3a3b9627b26049b20afe783b862fd799f1546fd6d6731a9421ee3c7c53",
+      "kind": "migration"
+    },
+    {
+      "path": "backend-stripe-test/prisma/migrations/migration_lock.toml",
+      "bytes": 131,
+      "sha256": "bc487c02c71ad9cae8694647129e3ea7f32b1fe7007d0a6ced064e51022cd3fb",
+      "kind": "migration_metadata"
+    },
+    {
+      "path": "backend-stripe-test/prisma/schema.prisma",
+      "bytes": 85663,
+      "sha256": "5ffaf762f7f198f295b083c8d20a9b15f92a43237f41e4b4c213e1178950d3ef",
+      "kind": "schema_and_prisma"
+    },
+    {
+      "path": "backend-stripe-test/prisma/seed-allwain-production-catalog.ts",
+      "bytes": 26848,
+      "sha256": "ce984f25c9ba0b0be798593f17eb138490d5c71475958b047f88564eb1d7e079",
+      "kind": "schema_and_prisma"
+    },
+    {
+      "path": "backend-stripe-test/prisma/seed-products.ts",
+      "bytes": 1737,
+      "sha256": "59077cb4b16769ba1207a3f10c1c8f5260bbca659976f5ffeb4f035ebc37bbe9",
+      "kind": "schema_and_prisma"
+    },
+    {
+      "path": "backend-stripe-test/prisma/seed.ts",
+      "bytes": 6972,
+      "sha256": "be59b419ff46002ca83c5976d47ac85ccc813adfd5d200a509da1d2eb4e9c73e",
+      "kind": "schema_and_prisma"
+    },
+    {
+      "path": "backend-stripe-test/scripts/reset-admin-password.js",
+      "bytes": 1241,
+      "sha256": "64adfb87756aa151f05125725cbfa46001ac076bd676521ecd527b0b7c0a2f0f",
+      "kind": "configuration"
+    },
+    {
+      "path": "backend-stripe-test/src/config/env.ts",
+      "bytes": 17332,
+      "sha256": "659716086d26527d5a1dba8f6a8620f9af8cbebc04348f2ee12a6f50044e077b",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/src/content/allwain-public-guide.knowledge.ts",
+      "bytes": 26627,
+      "sha256": "deaa6c1a9beb5c1bcb3fda45ba959f608df76fb7fb04fb78f92a34cdda9fa5cd",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/src/controllers/auth.controller.ts",
+      "bytes": 3310,
+      "sha256": "220fd804cec133f6f2202c7bee6d044f5ef94fb9f41f93fb422ebd52406c3064",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/src/controllers/course-campus.controller.ts",
+      "bytes": 11945,
+      "sha256": "8e22ed20012b0d9a81533ac2849d95fa57d16e788b7d7596e83675c7359057a0",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/src/controllers/course-operations.controller.ts",
+      "bytes": 15635,
+      "sha256": "bbd1f03ab1c79dd7a71cd30fc8ce1f7702da2e1f1f9595b40a65bcff64fc211b",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/src/controllers/course.controller.ts",
+      "bytes": 13573,
+      "sha256": "03a16dd8462e1039db51a219a7241d57f94edee29d8773936d664e39b4ae091f",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/src/controllers/entitlements.controller.ts",
+      "bytes": 1364,
+      "sha256": "97944c51e455c73fefe372414269ef1a9032666caab28199422bb5de1b661432",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/src/db/prisma.ts",
+      "bytes": 823,
+      "sha256": "7d2b3689c7987f5c255756e0c99d8182831f547e82bae15dfdce4fb7b0602307",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/src/ia/ai.service.ts",
+      "bytes": 6068,
+      "sha256": "d717322e0b4c4d4c1d388d57076c6051df95b960b990f4ec8ce0706ef559f1bb",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/src/ia/contracts.service.ts",
+      "bytes": 285,
+      "sha256": "e5d6678e3bea97450dee52991c6ac711c6be009ae6d9fdb01e970755ab69ad6f",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/src/ia/moderation.service.ts",
+      "bytes": 326,
+      "sha256": "ecb9cdbcbfda49656e04edf4dc86254f99de996bf717c99f1be79b7168afdd6d",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/src/ia/trueqia.contracts.ts",
+      "bytes": 1107,
+      "sha256": "93e36bc011a16ed53cbe9ede3bc3c7654112c68b9d224d18e75f8b3acab864a0",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/src/jobs/course-health-monitor.ts",
+      "bytes": 2705,
+      "sha256": "190ae932d555129e195a22bea7e30241336fb3983c8de58685dd0e7ba0589ad3",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/src/jobs/course-reminders.ts",
+      "bytes": 1773,
+      "sha256": "659e1eb6965049574a0ab88513897f0a3677d7f64057fcfef4ca13508bac2334",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/src/middleware/auth.middleware.ts",
+      "bytes": 1441,
+      "sha256": "76665bbb3f7fce418ba985477d175c2b31642d05f5f09d2574480ea0e17f75b5",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/src/middleware/course-auth.middleware.ts",
+      "bytes": 1994,
+      "sha256": "c31cc4ed79336315e6bca8a36cce04a2eed1abd599eb1f8234348b6f0772343a",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/src/middleware/operation-rate-limit.middleware.ts",
+      "bytes": 3826,
+      "sha256": "da6fb078d63dd1a904a3079d4e254e8482e0dc18305690819462e7f4a19d49fa",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/src/middleware/service-auth.middleware.ts",
+      "bytes": 3923,
+      "sha256": "67f12949f28f3a96b4af0e4651b678a0a937edec4b9187732c167db4c1d64e94",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/src/routes/admin.routes.ts",
+      "bytes": 27486,
+      "sha256": "93283a389fd376e35439c65b9e6e65d1b3b171134434b7b2c9a35aee9022268a",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/src/routes/allwain-account.routes.ts",
+      "bytes": 1112,
+      "sha256": "e4585062dc981f52efa8e4fd7849cd46e0b95d12eeb9209b489ae58421dc90a5",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/src/routes/allwain-compliance.routes.ts",
+      "bytes": 8398,
+      "sha256": "5e498660875816de4425c7d2f2e8c241cdd1f04aff8ce716c4830b92411486eb",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/src/routes/allwain-guide.routes.ts",
+      "bytes": 4174,
+      "sha256": "600bf4dba07c487daa31d68b1cf0ff96db3183204a2d8a18093b6061fbe82386",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/src/routes/allwain-notifications.routes.ts",
+      "bytes": 1614,
+      "sha256": "81efa976af05775bc903cf0f31c2e92314d7a12d9e96f7c389642136632bd94d",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/src/routes/allwain-participation.routes.ts",
+      "bytes": 14003,
+      "sha256": "2c08956bed598a6f3a45f4fd3ed61b2fcee39bb3413c2f8c3ac5ed3640218122",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/src/routes/allwain-payments.routes.ts",
+      "bytes": 19800,
+      "sha256": "218f80a272174160dd4b771b1064e4eeac838d2f32c7ed7f8037f130c01afdd0",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/src/routes/allwain-public-guide.routes.ts",
+      "bytes": 3550,
+      "sha256": "48e1f979987b7dfff5b80cc9ebcb7095674cd5fde036da973a7df712f3c0e0d2",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/src/routes/allwain-reputation.routes.ts",
+      "bytes": 3737,
+      "sha256": "eaa5994c576a89447602f3a99517b062b99723eda8b26a90f8330239b650be66",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/src/routes/allwain-shipping.routes.ts",
+      "bytes": 4266,
+      "sha256": "f7630312fd9d5f932792ac5995685ee530659b3ba533a3c1327b5e112e484021",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/src/routes/allwain-shopping-lists.routes.ts",
+      "bytes": 9326,
+      "sha256": "78d4faac560d9a8e5d77f3b821ec8566ee78f9111db6c9c6db32a0093e7eef6c",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/src/routes/allwain-web-tester.routes.ts",
+      "bytes": 5294,
+      "sha256": "4f5b3601b986211e3e1a770a332b95477acbd9177f5bfd598646cbaf3a871e69",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/src/routes/allwain.routes.ts",
+      "bytes": 54307,
+      "sha256": "a086d45efc1a160b10b3f126b19ac001624c244b77c794d0dea2ff8c0cc72bf3",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/src/routes/auth.routes.ts",
+      "bytes": 13922,
+      "sha256": "e93f69e8d823e16241f3dce5c1573b51355866ec8f053e8778471cbe9c804c0a",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/src/routes/chat.routes.ts",
+      "bytes": 7886,
+      "sha256": "bb04b9e7f0065ce4f5ca3b70eb2d84e85a5977df7e309eb5999d3d16584f4e11",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/src/routes/course.routes.ts",
+      "bytes": 3513,
+      "sha256": "85c1e2e98ac68232673c949aa14cacac8f330b0741f5c9f105b264bbca1a4d15",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/src/routes/demo-agents.routes.ts",
+      "bytes": 1885,
+      "sha256": "748e73041e48623795c21907b7a2983f8790bf3e67cf63a5cfbc34730a1ffff5",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/src/routes/entitlements.routes.ts",
+      "bytes": 331,
+      "sha256": "491eba7c332b3ab11ab6f879b413e7ff51d11ca57606cf383287741d6f726990",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/src/routes/health.routes.ts",
+      "bytes": 703,
+      "sha256": "abd9f40488def02821ab5e594b5d669871b45489a1d7fa807aa664a8ab4b8a28",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/src/routes/index.ts",
+      "bytes": 3357,
+      "sha256": "b36a704040b68a240b8630959e4fc24825e7dae4e4ab2866c97cef98fe26fa45",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/src/routes/leads.routes.ts",
+      "bytes": 2242,
+      "sha256": "f073e614ab65c189063cfe44e0ca2b823f109b3ba80b3b6e09f60c13dfe86464",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/src/routes/noa-community.routes.ts",
+      "bytes": 9205,
+      "sha256": "02e7c2a250e821ebad64780c25a1859c0c2cfff5fa1f83dccef0281798514aa3",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/src/routes/trueqia-tester.routes.ts",
+      "bytes": 2738,
+      "sha256": "f87483fd12422a3b33cba563126ac4aa962cb7c19302520551b5d19b42cbd324",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/src/routes/trueqia.routes.ts",
+      "bytes": 21089,
+      "sha256": "57f02fe8a136d02512b403b1ec2a52015d843baf7cd8865b8189f5cc90b2080d",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/src/security/course-upload-security.ts",
+      "bytes": 11203,
+      "sha256": "6d59aa2ee081567ea52efbfabcf0f697e93c2e43eaa709a3e2d5a9eed27a083f",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/src/security/external-http.ts",
+      "bytes": 2810,
+      "sha256": "681c05514bb9d807388005a31e46d161d0b1c59130339673e9a74ac80a5ca7ff",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/src/security/image-data-url.ts",
+      "bytes": 4136,
+      "sha256": "d05a0c4fca9aa2bdb74bdae490e62730d4b9c261e1a68e6ead241296523eecc8",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/src/server.ts",
+      "bytes": 9228,
+      "sha256": "37a5e2ac2338e6e6357260b1fee781a542339b246d3eefc2b04b509e5612db32",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/src/services/admin-dashboard.service.ts",
+      "bytes": 1852,
+      "sha256": "9aeaaca59fcbe1e2c62792b83888f1100b3be0bac7b0e56b1797bf7405681ccf",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/src/services/ai/allwain-guide.ai.service.ts",
+      "bytes": 30058,
+      "sha256": "cf77dc13bf29c61b7eab082bce0f5dfadfec7e1598550570929174fb9587aab5",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/src/services/ai/allwain-public-guide.ai.service.ts",
+      "bytes": 46771,
+      "sha256": "5c3dfaa9c528e7ab68bfdb58a2f57b9e99d6edbc42e005aff949429ee2c23604",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/src/services/ai/allwain.scan.ai.service.ts",
+      "bytes": 6190,
+      "sha256": "66e50b4a04e3067aa8012cb6be591b05f1305dab53ddce78dd9856645865e767",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/src/services/ai/contracts.ai.service.ts",
+      "bytes": 10491,
+      "sha256": "faa784dc82cabfd239ef24d43ee6a1d9bd8e4dd11759ec1485607d8487bac383",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/src/services/ai/demo-agents.ai.service.ts",
+      "bytes": 8567,
+      "sha256": "cb29b0fd01328844347ae3be2fc74e933ee8244bd8673e8a5ee534d0a55d9d43",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/src/services/ai/trueqia.chat.ai.service.ts",
+      "bytes": 3476,
+      "sha256": "4d3e4bcd5e93eb37a4a895ee01bb55bdb5ac5a77b6265f837b79a4ab2f59e37a",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/src/services/allwain-account.service.ts",
+      "bytes": 7393,
+      "sha256": "e3b1d07899b3cfbc2386c16b5fa2f3cbbcf8129365524e45ed81ef7f63348acc",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/src/services/allwain-activity.service.ts",
+      "bytes": 4077,
+      "sha256": "2ed8fe2033bd8069ea4a07d3459f3c1eab0839147743b2c12b88be38e5e5c620",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/src/services/allwain-admin-users.service.ts",
+      "bytes": 17077,
+      "sha256": "3f2e70b47277dbf787abb3be36c9e54211c4d837c692a6eb8f5c4eeb7d728628",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/src/services/allwain-agent-control.service.ts",
+      "bytes": 13966,
+      "sha256": "cea107bb6a82a873f2f499de633a2e913e3fa6984c835d7be026767982635ffc",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/src/services/allwain-ai-usage.service.ts",
+      "bytes": 4641,
+      "sha256": "7e9e9f0e90ca43063be8182fd3f5b42ed886be9b6668ff63a5e6a9bbebd961ab",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/src/services/allwain-audit.ts",
+      "bytes": 7081,
+      "sha256": "3a626d4185504d137eddf29e6d9cca8f9ee6052b0a3a719ddfa802f371baa67a",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/src/services/allwain-card-images.service.ts",
+      "bytes": 17363,
+      "sha256": "e990e7c03f843407be33fbefd81800fca10eef653980fd77e0ba879cc30ddd07",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/src/services/allwain-compliance.service.ts",
+      "bytes": 135603,
+      "sha256": "fb2decfadc47e9ace9a2dcc53b1ab8b0895254609c8605fbe75a694dc6bc8432",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/src/services/allwain-connector-discovery.ts",
+      "bytes": 4671,
+      "sha256": "02158759555bce20ace7284a16b02b7ba7d79e01a3f56ba1a679d8bae3fa695b",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/src/services/allwain-delivery-checkpoints.service.ts",
+      "bytes": 14528,
+      "sha256": "0e53447a91c3b840228b506e607b96d8c222d5da9bb18e593c269e8a9b11d22a",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/src/services/allwain-delivery-intelligence.ts",
+      "bytes": 5179,
+      "sha256": "8fc5789b2fecd3b59ce5c26e7113b317a6bd245538da976d2f3ca68aab7fdc3b",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/src/services/allwain-demo.service.ts",
+      "bytes": 5729,
+      "sha256": "4322cd0cd4616b26ede6bfe88b4dca2d94121e7bb77b5b3ca6249c56e1035ca1",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/src/services/allwain-discovery.ts",
+      "bytes": 17897,
+      "sha256": "c69b776b564ecffa7162e0b0cc3756481a635db3b53b30cd56a41b2ee275f5f9",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/src/services/allwain-evidence.service.ts",
+      "bytes": 13312,
+      "sha256": "fda815e35680a54de6898f713f5013037abb5432a7978bfefe59c1587edf38bd",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/src/services/allwain-guide.service.ts",
+      "bytes": 9725,
+      "sha256": "fef7c84b0593207b97b4485f6432ed02ed45f9ff4bea300d46b4e1f84ad9c9b6",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/src/services/allwain-inventory.ts",
+      "bytes": 8351,
+      "sha256": "832df4870eb1e9bcfbc70a3e0b1dd59c585af323944ce866ac93ac9580da8f7c",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/src/services/allwain-mailer.service.ts",
+      "bytes": 17244,
+      "sha256": "b592df9c1478a89eb26debc34784789d015e39e99c0e9f72dc4df8b4736ea3de",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/src/services/allwain-money.ts",
+      "bytes": 19560,
+      "sha256": "f332cfa665335aae8915995e3494e2b2d837a4533a093c094c341a73103cf229",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/src/services/allwain-notifications.service.ts",
+      "bytes": 6314,
+      "sha256": "190315d65eb355556bc88c3ff78003f45b76d99d706d93a8a18ea3f6df64c43b",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/src/services/allwain-offer-lifecycle.ts",
+      "bytes": 5292,
+      "sha256": "e09f36c670bfe0728c407b5902409c15fa40b34c4dc50893f807c53ff85be6a0",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/src/services/allwain-participation.service.ts",
+      "bytes": 49661,
+      "sha256": "69d3131983f8a9098f999003495b7b296f0e240576a8c8e7d637e6acaa2402ab",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/src/services/allwain-payment-state.ts",
+      "bytes": 5995,
+      "sha256": "fc280f9ce3d7586f99e19a296cbec376a681b693e4bd20b2298df36f84127fe8",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/src/services/allwain-payments.service.ts",
+      "bytes": 246019,
+      "sha256": "327aab730c991eba6e238845ba5a36f855365157020c8b7a6ca275c6ff9068f0",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/src/services/allwain-preorders.ts",
+      "bytes": 2790,
+      "sha256": "b2c711308bb4414473fd403f05471e4d1cc5e24e4211117a92241f5ba14d97b3",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/src/services/allwain-product-intelligence.ts",
+      "bytes": 10975,
+      "sha256": "88fbd6a7363717c0c39a87f80b008899ed5c5e9f3f6bb2f8fc543f8788fd6658",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/src/services/allwain-proposals.ts",
+      "bytes": 2370,
+      "sha256": "7594fc0719d22392128174ea7f4b3d5446612fd904c99d971893dfaef82cf4d5",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/src/services/allwain-publication-policy.ts",
+      "bytes": 2740,
+      "sha256": "a17aca68f616cc9a8a853bfa28092b67141dc49eec8194e154503308d863729a",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/src/services/allwain-publication-quality.service.ts",
+      "bytes": 17444,
+      "sha256": "a3fedd2f7275aca0c9a111c1d3aeca5d64ce23bc5c5ed6ad96f46ac966b1ba4e",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/src/services/allwain-purchase-analytics.ts",
+      "bytes": 2982,
+      "sha256": "a576304fd2bdf78fd197653759cf0ec466df73354db4761bcedbe987e88acdf0",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/src/services/allwain-purchase-details.service.ts",
+      "bytes": 1200,
+      "sha256": "69ca0dbdedaa7482bc24aa2c62f5ca0f721064f401331377960ae380ed81ad15",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/src/services/allwain-purchase-details.ts",
+      "bytes": 5127,
+      "sha256": "c9353aa28938acb855e3b825e0fffe3a4e9b7e04a67327e22576502555d3f877",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/src/services/allwain-reconciliation.ts",
+      "bytes": 9171,
+      "sha256": "1a8f2cc084eeec9827f4f6549509d2b80cd06dedd61f8274ff79be1640dda076",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/src/services/allwain-recurring.service.ts",
+      "bytes": 47003,
+      "sha256": "29e53d711ad751027be492fd5eeef1db2e45cf3c96b4b46ee113185f9cc2f858",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/src/services/allwain-reputation.service.ts",
+      "bytes": 13255,
+      "sha256": "f01406c0e63ffbe593f02187e3f5ff7832ebcbd8ac65f17f897180b660030c1e",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/src/services/allwain-request-recovery.ts",
+      "bytes": 9452,
+      "sha256": "3fd655d5a4645e037158f0cdbb36a51855baa8ac14349485f81a22d6ac903495",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/src/services/allwain-request-work.ts",
+      "bytes": 4447,
+      "sha256": "5ffd34c1efbf11fdd89f8e29244c8ec06ec2405bf668e482323a8d6500420ddd",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/src/services/allwain-search.service.ts",
+      "bytes": 14297,
+      "sha256": "fe499ac1a0a24903b530d831282828e313a2480a9c755d14810b2269488d440f",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/src/services/allwain-shipping.service.ts",
+      "bytes": 38764,
+      "sha256": "1bd1eddcd0a2a7f76de7350a0bace4eedbc0762a3f6a2a6b0a94028e440cb837",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/src/services/allwain-shopping-list-awards.ts",
+      "bytes": 5132,
+      "sha256": "d45b5ead1df61e257910f96adfeaffab81374a214311291c75b3cf783d23b049",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/src/services/allwain-shopping-lists.service.ts",
+      "bytes": 65249,
+      "sha256": "d1565e5963a3878af95626b685753742435613e272ede11b2a94328b05ce4027",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/src/services/allwain-support.service.ts",
+      "bytes": 34578,
+      "sha256": "0aa1afede77c0425966575d137c46e69a01aefdfcf44fe19d103ab7513825e5f",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/src/services/allwain-video-call.service.ts",
+      "bytes": 5485,
+      "sha256": "efd44d8d68afe1981dc9bfae00d5c20913633f518f4218661ad081751f0c09f8",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/src/services/allwain-web-tester.service.ts",
+      "bytes": 37119,
+      "sha256": "ab6b4e39fb40b3179fe9bbe9576561874cc71948cbc0a20083dacd95f1f6e336",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/src/services/allwain.service.ts",
+      "bytes": 129544,
+      "sha256": "0a92fc2a25885e0ba95109956b1c1ae158b1e8bb7d56d4eb6a777f1758dfce13",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/src/services/apple-auth.service.ts",
+      "bytes": 6257,
+      "sha256": "e9d4707037cec43cde40b0dd4a338da43ac7e9b7654038621e6f6a09d4b3844e",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/src/services/auth-session.service.ts",
+      "bytes": 13921,
+      "sha256": "c24e4b2fa9b3babe42f278cb94deb24954e29efe8c3d2332954379af896a5530",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/src/services/auth.service.ts",
+      "bytes": 30157,
+      "sha256": "abdf8d8c249b06c036f6a1c003833eb82831b6a14a6d61fa3127734846e83799",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/src/services/chat-translation.service.ts",
+      "bytes": 5890,
+      "sha256": "ae4c56cab04813e7db33306796f8bb8ba63a4c49abc0a2fa2d313fe1fda02e7b",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/src/services/chat.service.ts",
+      "bytes": 45158,
+      "sha256": "a8d4a9f0d3e47fd1959d88d17d35d184364837458223ca511f1c84eb56f8073a",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/src/services/course-campus.service.ts",
+      "bytes": 13989,
+      "sha256": "e8a9f01698cdafc31b919f0a0ec0747416bb3fcd11b6632fbb88f8f1fd02dad8",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/src/services/course-entitlements.service.ts",
+      "bytes": 5224,
+      "sha256": "c8108e05df1c857e9284b71b02ff9df384b36d134825faaf81bc742989583b13",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/src/services/course-mailer.service.ts",
+      "bytes": 11272,
+      "sha256": "b0d7d65e2c0ef2b76707d6510b31b6ee6b2cd35ca8f306208fb5b14caab9747e",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/src/services/course-operations.service.ts",
+      "bytes": 15877,
+      "sha256": "5f8bd0d74ceb3e37493d8fb0e1b0427b6680413d687e509bd7c5a15201c8f16f",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/src/services/data.store.allwain.pg.ts",
+      "bytes": 83780,
+      "sha256": "c8101c8293f93d9501e5b9f4cd2a1a8d9f28d852e6ef520ab979c4e0339efd24",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/src/services/data.store.pg.ts",
+      "bytes": 22508,
+      "sha256": "07974f93af5592c7ca8b0173cd5f7a39587b0026fabafc28d43909d1ecdf2f23",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/src/services/data.store.ts",
+      "bytes": 12891,
+      "sha256": "94dd147931209e04ad24c699316bd84a91145c4b564681f10734a0dff1320d63",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/src/services/demo-ecosystem.service.ts",
+      "bytes": 16056,
+      "sha256": "4aef03b7e38fea097341542aa35b5ca1a788210966e4bb736b2b870b3c770638",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/src/services/leads.service.ts",
+      "bytes": 818,
+      "sha256": "c096839c4ebefd277ba8fe16c623855d25a9af6abe3e29d5584de5dca9a653a5",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/src/services/market.service.ts",
+      "bytes": 288,
+      "sha256": "1840a82ba50a47d749e3ece3a03b36d365648fd8cf29597c364a788086e04246",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/src/services/noa-auth-policy.ts",
+      "bytes": 1195,
+      "sha256": "678ac55949f360f4566d459ddfbfa0dff3c8174e9cd6ef916925327f008da9fb",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/src/services/noa-ideal-configuration.ts",
+      "bytes": 2821,
+      "sha256": "150dfd12f2d321db7b272a1b9e8fb13022fcaf6d3598a20cfd63581b96da37ff",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/src/services/noa-supporter-readiness.ts",
+      "bytes": 1170,
+      "sha256": "c2893519dbb975f50486e9b200bd3e0a19c47cb7a3aaf2459f97149227339808",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/src/services/pdf.service.ts",
+      "bytes": 4866,
+      "sha256": "fea8f1092c9951e569d217fa14e72fb1ec515d7e972c39f0727f286995ff074a",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/src/services/scan.service.ts",
+      "bytes": 35483,
+      "sha256": "1aaf70c049d10bad5d92b147eaf0b80b5a146a472b3a2bff13bb104f5c4d7ffa",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/src/services/trueqia-tester.service.ts",
+      "bytes": 9798,
+      "sha256": "f66c147af72ebb5ee5071ad3477305acd2d4736642e8f0076c4d886246aa5f38",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/src/services/trueqia.needs.service.ts",
+      "bytes": 7681,
+      "sha256": "4f2559e9b4cb26859f03bb5b0d4d8c3e31b6c9e8afa5ae20e7805ffde1203965",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/src/services/trueqia.service.ts",
+      "bytes": 27421,
+      "sha256": "82811c4b235686eac1116eb8c2f5e1329055d52547b5e0b65a3b2847cdc3ee59",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/src/services/trueqia.workspace.service.ts",
+      "bytes": 38210,
+      "sha256": "7fb027b1438ffcd49124108765c0e70e6db7139752ce05a6921196468d2c440c",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/src/shared/types.ts",
+      "bytes": 16214,
+      "sha256": "307241754864bb1ad8a233f10aba71ce34fb7a627d62030f287939af829e7292",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/src/types.d.ts",
+      "bytes": 24,
+      "sha256": "53d1f4f53761a22f9739594f8e47e57502db8f3295d7620823bb5af05ce207f0",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/src/types/trueqia.ts",
+      "bytes": 714,
+      "sha256": "26565d5313cc171ad897913608c711b698d17055950ee6dfc1415624af583b6a",
+      "kind": "source"
+    },
+    {
+      "path": "backend-stripe-test/tests/allwain-agent-control.spec.ts",
+      "bytes": 2402,
+      "sha256": "9006bb79304a487469602f9676d25cceec8a4fe7a9294c50762028651e784e15",
+      "kind": "test_code"
+    },
+    {
+      "path": "backend-stripe-test/tests/allwain-card-images.spec.ts",
+      "bytes": 6076,
+      "sha256": "3aa0803d74e829770121dcf3b36cfecb3bf37c5d407cd3aa9fdd25e800771c47",
+      "kind": "test_code"
+    },
+    {
+      "path": "backend-stripe-test/tests/allwain-checkout-review.spec.ts",
+      "bytes": 6964,
+      "sha256": "05b1fb84da91d810394bb3b6855a4249d763241229f293cf4af5b6313491acc4",
+      "kind": "test_code"
+    },
+    {
+      "path": "backend-stripe-test/tests/allwain-connector-discovery-pglite.spec.cjs",
+      "bytes": 13716,
+      "sha256": "f44e30e625d890a515f7013d3a9859910dca6252ac99eaa5a495373d7a4a285e",
+      "kind": "test_code"
+    },
+    {
+      "path": "backend-stripe-test/tests/allwain-connector-journey-postgres.spec.ts",
+      "bytes": 6000,
+      "sha256": "a74640360cf5cfd8357307715a198b657907fd5a9afb836da819a798bf5ea91f",
+      "kind": "test_code"
+    },
+    {
+      "path": "backend-stripe-test/tests/allwain-contracts.spec.ts",
+      "bytes": 11854,
+      "sha256": "be868c586338ea35290cc45601be3cfd2f9c5e109f9621bee723494570b47633",
+      "kind": "test_code"
+    },
+    {
+      "path": "backend-stripe-test/tests/allwain-direct-chat.spec.ts",
+      "bytes": 8917,
+      "sha256": "91d076af63f9cf09bc845b8ae18e1e68dcff0c29769207e5730e6b85ce9aa51a",
+      "kind": "test_code"
+    },
+    {
+      "path": "backend-stripe-test/tests/allwain-guide.spec.ts",
+      "bytes": 12423,
+      "sha256": "0dbf599add3b878030eeb0a1b9485298533ad3895e99663fb19b2a32b3e0a9a0",
+      "kind": "test_code"
+    },
+    {
+      "path": "backend-stripe-test/tests/allwain-inventory.spec.ts",
+      "bytes": 1380,
+      "sha256": "8f1106cc3db315846b719ef55a90cf9b23ed5b4cf550af55e0393e442fdfc317",
+      "kind": "test_code"
+    },
+    {
+      "path": "backend-stripe-test/tests/allwain-legal-settlement.spec.ts",
+      "bytes": 5462,
+      "sha256": "dbfdde196fbe90c5321a54f279695f2878061a61c636846b75c3389f5d098e40",
+      "kind": "test_code"
+    },
+    {
+      "path": "backend-stripe-test/tests/allwain-logistics.spec.ts",
+      "bytes": 2308,
+      "sha256": "7e727cac3b0801d5dcb37f122b8bb3511c8efd04fb2e41d6de6d2ad33ec686f9",
+      "kind": "test_code"
+    },
+    {
+      "path": "backend-stripe-test/tests/allwain-money.spec.ts",
+      "bytes": 23614,
+      "sha256": "0f324bca2f069c871ddd3d84f6b1bde725457db1b08bd2c9419a8ea8ea43011a",
+      "kind": "test_code"
+    },
+    {
+      "path": "backend-stripe-test/tests/allwain-notifications.spec.ts",
+      "bytes": 3335,
+      "sha256": "9a4421204948b99e6316c65187d63d7c4677c9c22e14890725c2593edc06878d",
+      "kind": "test_code"
+    },
+    {
+      "path": "backend-stripe-test/tests/allwain-offer-integrity-pglite.spec.cjs",
+      "bytes": 12908,
+      "sha256": "84ffefe08f16f24083272fa1f01e830af4ca6e80503c8e3cc630b72ebbfeb3c3",
+      "kind": "test_code"
+    },
+    {
+      "path": "backend-stripe-test/tests/allwain-offer-integrity.spec.cjs",
+      "bytes": 26395,
+      "sha256": "9a8134edef8d371a14cc4f13094f9bb2ae1b392dacabe0c585edef255f23d592",
+      "kind": "test_code"
+    },
+    {
+      "path": "backend-stripe-test/tests/allwain-participation.spec.ts",
+      "bytes": 7695,
+      "sha256": "af29383430038f26aef4cc3f76abb24bec7be7d3fb9cd66a521efee99a022dab",
+      "kind": "test_code"
+    },
+    {
+      "path": "backend-stripe-test/tests/allwain-pass2-lifecycle-http.spec.cjs",
+      "bytes": 11761,
+      "sha256": "13c01fb0369fea321c3aafd9550ba0eea22d96056665f34ece6ff0e7b971952c",
+      "kind": "test_code"
+    },
+    {
+      "path": "backend-stripe-test/tests/allwain-pass2-lifecycle-pglite.spec.cjs",
+      "bytes": 10770,
+      "sha256": "3cdd50d793d57db77c24b1ffd81e7d2b529e502d09eb19334e64e33fdcd23d8c",
+      "kind": "test_code"
+    },
+    {
+      "path": "backend-stripe-test/tests/allwain-pass2-lifecycle.spec.cjs",
+      "bytes": 11294,
+      "sha256": "2c07863cd09012e42d40e15a23f648504cb1f04585a1f071129671c89e84e64b",
+      "kind": "test_code"
+    },
+    {
+      "path": "backend-stripe-test/tests/allwain-pass3-discovery-pglite.spec.cjs",
+      "bytes": 16161,
+      "sha256": "71d0c4d352640ba0f9dc2676708b0c345e0e980cf5eb03c0b8f1024b5aee5228",
+      "kind": "test_code"
+    },
+    {
+      "path": "backend-stripe-test/tests/allwain-pass3-discovery.spec.cjs",
+      "bytes": 8603,
+      "sha256": "e0c46d6352ba12d84f57068287aca4688c488c479318b6af2c66d49809cb7b6e",
+      "kind": "test_code"
+    },
+    {
+      "path": "backend-stripe-test/tests/allwain-pass4-activity-http.spec.cjs",
+      "bytes": 4071,
+      "sha256": "4ab108c084c53cada4db4549d772bcaa7b51e8e8a217a7d2539ff4769688ab1a",
+      "kind": "test_code"
+    },
+    {
+      "path": "backend-stripe-test/tests/allwain-pass4-activity-pglite.spec.cjs",
+      "bytes": 7887,
+      "sha256": "66c42c17dd1c6dff48686b1036a1957cab93f1927bcba326efd368da1f92dc18",
+      "kind": "test_code"
+    },
+    {
+      "path": "backend-stripe-test/tests/allwain-pass4-request-work-pglite.spec.cjs",
+      "bytes": 6909,
+      "sha256": "5c052d1649a580a6803d3a23a8b620041f2b071d29b93ea4dee9a9ad9d3edf45",
+      "kind": "test_code"
+    },
+    {
+      "path": "backend-stripe-test/tests/allwain-pass4-request-work.spec.cjs",
+      "bytes": 7025,
+      "sha256": "6c83f4d758857f7066a71f93955fdb94341ecfab298d2382827ce7d280f08a2e",
+      "kind": "test_code"
+    },
+    {
+      "path": "backend-stripe-test/tests/allwain-pass5-creation.spec.cjs",
+      "bytes": 15090,
+      "sha256": "0bc1ec84d41649b87848e48e95bed7020402b3bf0573eccc5bf2de7c76132600",
+      "kind": "test_code"
+    },
+    {
+      "path": "backend-stripe-test/tests/allwain-pass5-request-recovery-pglite.spec.cjs",
+      "bytes": 20700,
+      "sha256": "3098966480dd199bd4a1a813fc5b73251160469c348524b4e697c0f811e36936",
+      "kind": "test_code"
+    },
+    {
+      "path": "backend-stripe-test/tests/allwain-pass5-request-recovery.spec.cjs",
+      "bytes": 4506,
+      "sha256": "72e27bd25924a059c8a15a63e21316e0aad185656b7ee69a34ada0279a18e003",
+      "kind": "test_code"
+    },
+    {
+      "path": "backend-stripe-test/tests/allwain-pass6-purchase-analytics.spec.cjs",
+      "bytes": 4214,
+      "sha256": "7786394196b27cfef562fa308a8922c278074636826c53419f30379e155ed41c",
+      "kind": "test_code"
+    },
+    {
+      "path": "backend-stripe-test/tests/allwain-payment-state.spec.ts",
+      "bytes": 5587,
+      "sha256": "e80d2f939846e5d6d88e6db6d47d106a0d6bc1f604e229a15ee860845f27fce3",
+      "kind": "test_code"
+    },
+    {
+      "path": "backend-stripe-test/tests/allwain-postgres-scale.spec.ts",
+      "bytes": 64656,
+      "sha256": "e7ee7addd3c354d567000f87790bfe4f739def81a83821df64022a04814131d7",
+      "kind": "test_code"
+    },
+    {
+      "path": "backend-stripe-test/tests/allwain-preorders.spec.ts",
+      "bytes": 3820,
+      "sha256": "62da1c0867bf5881d99253788658803f9bf89d8eea925a9cb05fc1d95ffeeb74",
+      "kind": "test_code"
+    },
+    {
+      "path": "backend-stripe-test/tests/allwain-product-intelligence.spec.ts",
+      "bytes": 4215,
+      "sha256": "8c62acf1c92e0b8c822342ed262a1c68a98ef7025cbca67fd391b9af0d50cdbc",
+      "kind": "test_code"
+    },
+    {
+      "path": "backend-stripe-test/tests/allwain-public-guide.spec.ts",
+      "bytes": 33825,
+      "sha256": "254b7260344c75e1386443d4eb81ef2048e970f39b8016fdbdfc2946692cf6fa",
+      "kind": "test_code"
+    },
+    {
+      "path": "backend-stripe-test/tests/allwain-publication-visibility.spec.ts",
+      "bytes": 19582,
+      "sha256": "1f1c2b7a43f59de644ff4eefddc041aca88726d12b109774e2c19b0d02400b5e",
+      "kind": "test_code"
+    },
+    {
+      "path": "backend-stripe-test/tests/allwain-purchase-details.spec.ts",
+      "bytes": 3976,
+      "sha256": "208a15a803bc8037a1e3fe1b8cdf002966acf7293290620111e1553ef0f07631",
+      "kind": "test_code"
+    },
+    {
+      "path": "backend-stripe-test/tests/allwain-reconciliation.spec.ts",
+      "bytes": 4723,
+      "sha256": "a7b737f3968285bf86c7dba86a4dfb825750f5dae5c00c076937a50300f0c940",
+      "kind": "test_code"
+    },
+    {
+      "path": "backend-stripe-test/tests/allwain-recurring.spec.ts",
+      "bytes": 3325,
+      "sha256": "5889e9e75df94a372b69a4d6ebd34466437a55d377db894b45d0232688430781",
+      "kind": "test_code"
+    },
+    {
+      "path": "backend-stripe-test/tests/allwain-request-media.spec.cjs",
+      "bytes": 9133,
+      "sha256": "7ed7ce0d59073b2561ff0ef41c94683d668f53dcceb0f134712fcdddd3cd0c7f",
+      "kind": "test_code"
+    },
+    {
+      "path": "backend-stripe-test/tests/allwain-scan.spec.ts",
+      "bytes": 24771,
+      "sha256": "1328598eb0a33f73741c2105c0a2a8333a0f8ccc1b9cf31526f04fca6b8e65cd",
+      "kind": "test_code"
+    },
+    {
+      "path": "backend-stripe-test/tests/allwain-shipping-execution.spec.ts",
+      "bytes": 5310,
+      "sha256": "7b51db02185574a92f29eb174360e7c1fbc5e7357616baf1d57384d430ffd9a0",
+      "kind": "test_code"
+    },
+    {
+      "path": "backend-stripe-test/tests/allwain-shipping.spec.ts",
+      "bytes": 5975,
+      "sha256": "c79c6c9bdf094811a01c83b916106bc48fd5ba692000211f90b2a6be9d94998a",
+      "kind": "test_code"
+    },
+    {
+      "path": "backend-stripe-test/tests/allwain-shopping-lists-postgres.spec.ts",
+      "bytes": 33342,
+      "sha256": "5f3fd2c7e2f2b7acacd83f205948ebeef214da0801e1a4a5d21ddccec514a0a9",
+      "kind": "test_code"
+    },
+    {
+      "path": "backend-stripe-test/tests/allwain-shopping-lists.spec.ts",
+      "bytes": 2758,
+      "sha256": "a36ae3b5468312835f294430d2aa6cc1f18ee4ef95a168c60fcee762b7d57d9b",
+      "kind": "test_code"
+    },
+    {
+      "path": "backend-stripe-test/tests/allwain-support.spec.ts",
+      "bytes": 1888,
+      "sha256": "3977ba8e3eb8ab85ccc76fd5d20088c880e106841c7541c3d29c531d65c2b808",
+      "kind": "test_code"
+    },
+    {
+      "path": "backend-stripe-test/tests/allwain-traceability.spec.ts",
+      "bytes": 974,
+      "sha256": "156cf78207deb7cd6aa06dcaea69f6a64bb1db573364c3b48fc595071da9cbe4",
+      "kind": "test_code"
+    },
+    {
+      "path": "backend-stripe-test/tests/allwain-web-tester-postgres.spec.ts",
+      "bytes": 22771,
+      "sha256": "f3a5597384c1df0cf91b2248dd75a76f9b3ee067f10d04a6ec877ff10a059a7d",
+      "kind": "test_code"
+    },
+    {
+      "path": "backend-stripe-test/tests/allwain-web-tester-routes.spec.ts",
+      "bytes": 31309,
+      "sha256": "f4db134424197f281aa6c29d29c04c45772f06565fc6948b16b87ea124aeec02",
+      "kind": "test_code"
+    },
+    {
+      "path": "backend-stripe-test/tests/allwain-web-tester.spec.ts",
+      "bytes": 9166,
+      "sha256": "9e2cc121e5fe28e0f7fb1e21b34903e057c8da2c130fcc17e12c5e5dab3d5e65",
+      "kind": "test_code"
+    },
+    {
+      "path": "backend-stripe-test/tests/auth.spec.ts",
+      "bytes": 18307,
+      "sha256": "6d345633d171af7406955e877bb852713b7286dade91a60704c0f575663d0bc2",
+      "kind": "test_code"
+    },
+    {
+      "path": "backend-stripe-test/tests/chat-translation.spec.ts",
+      "bytes": 1122,
+      "sha256": "ca2374acd6f8833f8d074fcc06c080643da314d849840dccfc04a8e515171d5c",
+      "kind": "test_code"
+    },
+    {
+      "path": "backend-stripe-test/tests/course-entitlements.spec.ts",
+      "bytes": 5003,
+      "sha256": "493f79755ab35be955732bda496843063436894f428b16a1ede74680aa1cb056",
+      "kind": "test_code"
+    },
+    {
+      "path": "backend-stripe-test/tests/course-routes.spec.ts",
+      "bytes": 10299,
+      "sha256": "08c495bed65548ba14fda09496af3d8c1e88ef49488378eada57f675fd6eb6c0",
+      "kind": "test_code"
+    },
+    {
+      "path": "backend-stripe-test/tests/course-upload-security.spec.ts",
+      "bytes": 5457,
+      "sha256": "f50190169411d5d12b9f2c25a7b0c517c1c49811dc65abb4b9c389925ef69550",
+      "kind": "test_code"
+    },
+    {
+      "path": "backend-stripe-test/tests/document-columns.spec.ts",
+      "bytes": 839,
+      "sha256": "ab80c2a141cd096a39a02a0a8ed855eb2eb7ec07893f0b1be4691a0b169b81b6",
+      "kind": "test_code"
+    },
+    {
+      "path": "backend-stripe-test/tests/external-http.spec.ts",
+      "bytes": 1956,
+      "sha256": "35f022a88b6dc9ab4598b177958b1985d575f8abd3ae25328e0e0f6f8472d305",
+      "kind": "test_code"
+    },
+    {
+      "path": "backend-stripe-test/tests/helpers/request-recovery-source.cjs",
+      "bytes": 2983,
+      "sha256": "ad4244bc63cffbf8d12c65bf27ad5720a943fee72f3866b2851cd429d170e98f",
+      "kind": "test_code"
+    },
+    {
+      "path": "backend-stripe-test/tests/helpers/synthetic-admin.ts",
+      "bytes": 1729,
+      "sha256": "abae54db288df94b675ee98582725c098745e10c592cc860b0a0b408b5a4fb52",
+      "kind": "test_code"
+    },
+    {
+      "path": "backend-stripe-test/tests/helpers/test-client.ts",
+      "bytes": 2865,
+      "sha256": "6d8f9c2d7a5e19e342cbb3f83ee3376ff7d9e557dc8a15de799a52dc0cd86a87",
+      "kind": "test_code"
+    },
+    {
+      "path": "backend-stripe-test/tests/image-data-url.spec.ts",
+      "bytes": 1714,
+      "sha256": "972f32ebba5274a6eb45082a136a4aeba2be7a49d5139b1c6b3d14c6baf10c6b",
+      "kind": "test_code"
+    },
+    {
+      "path": "backend-stripe-test/tests/live-buyer-validation.cjs",
+      "bytes": 3828,
+      "sha256": "e54809322f4e8aad4064a04150af91c4fe8697a9688f59a4d60aac9b38206961",
+      "kind": "test_code"
+    },
+    {
+      "path": "backend-stripe-test/tests/multiuser-demo.spec.ts",
+      "bytes": 12633,
+      "sha256": "943cdfcb57b159b9f5d6fc21b9e42fce676fab19a0100d90a2cf11b0ea1e8f9b",
+      "kind": "test_code"
+    },
+    {
+      "path": "backend-stripe-test/tests/newmersive-id.spec.ts",
+      "bytes": 2924,
+      "sha256": "536074a4a2c9cb0c59be8afeb1eda8006b40a9d548353121c54fc3cb801fae51",
+      "kind": "test_code"
+    },
+    {
+      "path": "backend-stripe-test/tests/offers.spec.ts",
+      "bytes": 12025,
+      "sha256": "6b9f31cf40b9440f4f5548f175fa4bb1fb046754213f00ddc6eb6f9b5a059778",
+      "kind": "test_code"
+    },
+    {
+      "path": "backend-stripe-test/tests/operation-rate-limit.spec.ts",
+      "bytes": 1521,
+      "sha256": "5abf1331e64867d1441cd735d7d5186521fbd0dd7fb650403d800e643b4b4d72",
+      "kind": "test_code"
+    },
+    {
+      "path": "backend-stripe-test/tests/pdf.spec.ts",
+      "bytes": 1054,
+      "sha256": "68a7f64fccf32876627838dfcab0996ba5e9ada40558dc6df30ec33ca708a97a",
+      "kind": "test_code"
+    },
+    {
+      "path": "backend-stripe-test/tests/run-live-buyer-isolated.cjs",
+      "bytes": 4373,
+      "sha256": "e958a186bb23ece8eaa6a4a0e0ee914a745dfdc4b5742c4747bf99a7fe1390d9",
+      "kind": "test_code"
+    },
+    {
+      "path": "backend-stripe-test/tests/run-postgres-isolated.cjs",
+      "bytes": 4257,
+      "sha256": "7021d2e2505c505a6223ceecf96b1c84a42c53bf2aad8df06c50dc52e58466cb",
+      "kind": "test_code"
+    },
+    {
+      "path": "backend-stripe-test/tests/run-postgres-tests.cjs",
+      "bytes": 957,
+      "sha256": "02cce32268085b2f001d02910eae7b191c4d6ca553dfe21348050e57d5e5be47",
+      "kind": "test_code"
+    },
+    {
+      "path": "backend-stripe-test/tests/run-tests.cjs",
+      "bytes": 4055,
+      "sha256": "cd3316c7ab02ea42abfc0df60ac345ca7c2de53a1fc1e1265bf8b0ee06f61043",
+      "kind": "test_code"
+    },
+    {
+      "path": "backend-stripe-test/tests/save-live-buyer-evidence.cjs",
+      "bytes": 1124,
+      "sha256": "4ac09d56c0151be44fdd9a771d6311d4bf1f3a6cc573a41bca0776cf5069e7d8",
+      "kind": "test_code"
+    },
+    {
+      "path": "backend-stripe-test/tests/trueqia-chat.spec.ts",
+      "bytes": 10340,
+      "sha256": "015ba528d8a6cfab4c4ee6fa80ed931cd0f8cfede9b870633d21a927a9c6d942",
+      "kind": "test_code"
+    },
+    {
+      "path": "backend-stripe-test/tests/trueqia-contracts.spec.ts",
+      "bytes": 10215,
+      "sha256": "06d2e36bcf75e1e401c4b19577f5e4385edca18da236ceeccb9ef150f0cde3e4",
+      "kind": "test_code"
+    },
+    {
+      "path": "backend-stripe-test/tests/trueqia-offer-token-filters.spec.ts",
+      "bytes": 4822,
+      "sha256": "c07a35eb127abc5c0929c86473ae01a8b75960d1c038da47e4cdc0da9bfa14a0",
+      "kind": "test_code"
+    },
+    {
+      "path": "backend-stripe-test/tests/trueqia-tester.spec.ts",
+      "bytes": 10451,
+      "sha256": "5d6cd26be7ea58b50b98e70ed29535580f1bf63e830ff533695065b34cda1d54",
+      "kind": "test_code"
+    },
+    {
+      "path": "backend-stripe-test/tests/trueqia-workspace.spec.ts",
+      "bytes": 18137,
+      "sha256": "081a635a98ed561162259cfeca4612bb383853722e326fe69bf1ef33619b95c7",
+      "kind": "test_code"
+    },
+    {
+      "path": "backend-stripe-test/tests/validate-buyer-flow-isolated.cjs",
+      "bytes": 4425,
+      "sha256": "1bb6dc08f7c14011355e965bea48f8a014c8c92c60dca3a44b34f4500359396c",
+      "kind": "test_code"
+    },
+    {
+      "path": "backend-stripe-test/tests/validate-connector-isolated.cjs",
+      "bytes": 4430,
+      "sha256": "9c82d4e77d230ffb7fb7b47af95846310651f467d9b4eb5f2ecb8c8393a3aa07",
+      "kind": "test_code"
+    },
+    {
+      "path": "backend-stripe-test/tests/validate-scan-isolated.cjs",
+      "bytes": 863,
+      "sha256": "a63bfb7acc3eae53b762f727186baa84935171d82763d90974b33af20280de8a",
+      "kind": "test_code"
+    },
+    {
+      "path": "backend-stripe-test/tsconfig.json",
+      "bytes": 430,
+      "sha256": "f540c31fc87af783933a83750a5c4759e646b1058df91b8ec82e19e42d9f57da",
+      "kind": "configuration"
+    },
+    {
+      "path": "backend-stripe-test/types.d.ts",
+      "bytes": 24,
+      "sha256": "53d1f4f53761a22f9739594f8e47e57502db8f3295d7620823bb5af05ce207f0",
+      "kind": "configuration"
+    },
+    {
+      "path": "frontend-stripe-test/.easignore",
+      "bytes": 167,
+      "sha256": "a9943f69fa8bc6a425c87c8d58a07ac930f3494dec2049bceae70824f9db39bc",
+      "kind": "configuration"
+    },
+    {
+      "path": "frontend-stripe-test/.gitignore",
+      "bytes": 270,
+      "sha256": "4f94fab93fed1a916dd194ec06df1aedf018dc3c0075a360c45af48dd85df94c",
+      "kind": "configuration"
+    },
+    {
+      "path": "frontend-stripe-test/app.json",
+      "bytes": 11316,
+      "sha256": "1ca12d5b7e3105e7308c5c26734aad7a1af954c8e51c07269ded492343c7e2b8",
+      "kind": "configuration"
+    },
+    {
+      "path": "frontend-stripe-test/App.tsx",
+      "bytes": 6943,
+      "sha256": "85dfbdb530c614f97c5851d192ddf49eb45f80dd55403cf9644ab04a94f93bd5",
+      "kind": "configuration"
+    },
+    {
+      "path": "frontend-stripe-test/babel.config.js",
+      "bytes": 180,
+      "sha256": "d1b37b2a6fac8b02d75d8eda39a655c9cd1f7edd4e35ed4619ad4996d8ec614f",
+      "kind": "configuration"
+    },
+    {
+      "path": "frontend-stripe-test/eas.json",
+      "bytes": 303,
+      "sha256": "2cea7d784617051de0d79155c5cb47a2a089442b98e2e3f1eb64ce0692c47609",
+      "kind": "configuration"
+    },
+    {
+      "path": "frontend-stripe-test/index.js",
+      "bytes": 101,
+      "sha256": "3c87f11c5dfcdcf20361d011834a570d10c3142549ad1eba90053f9c9430d65f",
+      "kind": "configuration"
+    },
+    {
+      "path": "frontend-stripe-test/metro.config.js",
+      "bytes": 2225,
+      "sha256": "e9915790590248f7932a2e9af47ebec1f1ec4ea991d46f3e44dd98a8d1dc4050",
+      "kind": "configuration"
+    },
+    {
+      "path": "frontend-stripe-test/package-lock.json",
+      "bytes": 551147,
+      "sha256": "c210ea46ce5079eb257e2d131904e5d51d52425273d64f843e33838a264fae71",
+      "kind": "dependency_manifest"
+    },
+    {
+      "path": "frontend-stripe-test/package.json",
+      "bytes": 2773,
+      "sha256": "2cabd9f69d9c07cf349a0dd549199444b58ea1c6c69a1abe54ebb0e5dd143ca5",
+      "kind": "dependency_manifest"
+    },
+    {
+      "path": "frontend-stripe-test/public/analytics-config.json",
+      "bytes": 113,
+      "sha256": "2f8176947cf0a227357bf4985a2cf35a02255106151df9242aec13a71411f516",
+      "kind": "configuration"
+    },
+    {
+      "path": "frontend-stripe-test/public/analytics-static.js",
+      "bytes": 12879,
+      "sha256": "3817b6a0e16fb37f1860bb2137bb6d2540c330f048e69f322753b8f5575be621",
+      "kind": "configuration"
+    },
+    {
+      "path": "frontend-stripe-test/scripts/build-legal-i18n-data.mjs",
+      "bytes": 11835,
+      "sha256": "da712f544244fba8bcefc1b4a6bcbe0f69569257f64722083e1575874d4145f3",
+      "kind": "configuration"
+    },
+    {
+      "path": "frontend-stripe-test/scripts/build-web-i18n-data.mjs",
+      "bytes": 23501,
+      "sha256": "744db194988cedc96a2d678a228aa0cf028547ac643164b079e02836315ee8cf",
+      "kind": "configuration"
+    },
+    {
+      "path": "frontend-stripe-test/scripts/check-legal-i18n.mjs",
+      "bytes": 3444,
+      "sha256": "68890976b932d8ab174dfc0312a48d7dc10ae329fa54956abdaec4d7bf9c969f",
+      "kind": "configuration"
+    },
+    {
+      "path": "frontend-stripe-test/scripts/check-web-i18n.mjs",
+      "bytes": 8547,
+      "sha256": "99ebcf2bca844d0e52145271c5280cfde84b4f47642e95fe7a835f741ed63c4b",
+      "kind": "configuration"
+    },
+    {
+      "path": "frontend-stripe-test/scripts/prepare-web-auth-callback.cjs",
+      "bytes": 651,
+      "sha256": "110372fa6d36c5bb94d10c6ef324d4985148f4a260ae5ee849310a000dce58d2",
+      "kind": "configuration"
+    },
+    {
+      "path": "frontend-stripe-test/src/analytics/analyticsConfig.ts",
+      "bytes": 2036,
+      "sha256": "dcc42b5553b7d6c8386dbf8ee032fce8824992825bcfa5b0ed0b621f819881d4",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/analytics/AnalyticsConsentProvider.tsx",
+      "bytes": 9478,
+      "sha256": "67f40a9c325da5f2b816e904dbbcaf8452b161ef2d8fe73e3d26c74989371a42",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/analytics/analyticsPolicy.ts",
+      "bytes": 6204,
+      "sha256": "25c41b3e0598e56129f7d831f722b223df3c4eb7c2f408383694234632d4dc2a",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/analytics/analyticsRuntime.native.ts",
+      "bytes": 5336,
+      "sha256": "dc1b30f88a3c8bf1ff5cee06e53a4c49368e5dac5c944a21cbba2574d56c8afe",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/analytics/analyticsRuntime.ts",
+      "bytes": 639,
+      "sha256": "2e4f2e1f43c9fd69b22af23201d903d7211828e764a5854819d14f972c700d45",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/analytics/analyticsRuntime.web.ts",
+      "bytes": 6924,
+      "sha256": "bef2e65a3f9aa5ad939d33bc505f43896c18a065ddc98fc840f6117f338307dc",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/analytics/consentDecision.ts",
+      "bytes": 1311,
+      "sha256": "adc5c112150fdc90a45f2b9898d1a0122e1911e6e15c4d23cc7c066e99229257",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/analytics/index.ts",
+      "bytes": 5103,
+      "sha256": "2b667d0db42db5a4950a4fd6571a761b6c7048846d0928a0b641c7d66148b61a",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/analytics/purchaseAnalytics.ts",
+      "bytes": 8040,
+      "sha256": "46190784ec6ab6bcf0ced30310f0212fb7307ef68a82d9edf26ef3dbf26ee673",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/assets/logos/allwain-logo.png",
+      "bytes": 16385,
+      "sha256": "32f945d1dac1ced48f637e7d815595dff5209000a1749e0056ee2c15bbe66fc9",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/assets/logos/Imagotipo_Allwain_01.png",
+      "bytes": 3469,
+      "sha256": "882ef7e80cc870296abed3a3ae095d0a6a6c5bd5a995d7cb2242d8704cbdb702",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/assets/logos/Imagotipo_Allwain_02.png",
+      "bytes": 3481,
+      "sha256": "a1b91e243c0fad64d9e397ca4f89be5da6e766ba559f9faf1a15dff4cd90b04f",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/assets/logos/Imagotipo_Allwain_03.png",
+      "bytes": 3329,
+      "sha256": "35650db89e77477254fe946f99c3083d5ed33c11adcf01a990a6fc5416f5fea9",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/assets/logos/logo2.png",
+      "bytes": 15376,
+      "sha256": "068946ca30efba27bf36d60852f1298c74d45bf8c1897dff458050f3c02a1832",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/assets/logos/Logotipo_Allwain_02.png",
+      "bytes": 16360,
+      "sha256": "69cb8eb849ad83a9d4d33c014d29e4fc04fb9303eb83e5933ba5666d094773e1",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/assets/logos/Logotipo_Allwain_04.png",
+      "bytes": 16165,
+      "sha256": "9844f3988a6561222b3fa120036b5670b4da766bd5daaa7b01c91b4b9c23571a",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/assets/logos/Logotipo_Allwain_05.png",
+      "bytes": 16153,
+      "sha256": "8045018279706ad7fe86d62d0068356a6846302c2fcb9ca7c112f7db2d0c00b3",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/assets/logos/Logotipo_Allwain.png",
+      "bytes": 16385,
+      "sha256": "32f945d1dac1ced48f637e7d815595dff5209000a1749e0056ee2c15bbe66fc9",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/camera/useLocalWebQRScanner.ts",
+      "bytes": 3455,
+      "sha256": "c9c20ec1a25b204d31df2fc292937be9f0a48ae3170882ddcebc472889ff18fe",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/components/AdminMfaBoundary.tsx",
+      "bytes": 10797,
+      "sha256": "6b41f64e694b5cb5cb18c8ecc7fb9dc4fdf9014eba46e025ad670c31990606c9",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/components/AllwainOnboarding.tsx",
+      "bytes": 1914,
+      "sha256": "5783058aa9919b37eb6e53ca8ef305658d83060c37aa22a4020fd8841b32f38d",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/components/AllwainRoleTour.tsx",
+      "bytes": 37888,
+      "sha256": "feedb295018d69a2ac6913870e47c22998505a21d8ef8bb80fc230612f59bc76",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/components/AppAlertHost.tsx",
+      "bytes": 3439,
+      "sha256": "d67c642294c9306469517c9e7f5bdf3e2bec6740ec0ab52ab29d066587c84cb6",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/components/AppErrorBoundary.tsx",
+      "bytes": 3554,
+      "sha256": "d559e5f7e616ce57537d46d6929790856bb21adc5b4ebe22566ed4ab6a8fd977",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/components/AppleAuthButton.tsx",
+      "bytes": 3188,
+      "sha256": "cc30d8db81a8cea1b5afa672f4bf04dd8042b6725614c12e024e71e252de073d",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/components/AppleAuthButton.web.tsx",
+      "bytes": 64,
+      "sha256": "bdf6bd42b2746a13659a054d0837c6ba7f868116c228c6081152afe560fbbcbb",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/components/AuthSessionsModal.tsx",
+      "bytes": 12021,
+      "sha256": "3fc27c8cb29498e80a81218f28831da615d684d2a02971bcb4a9b314bd72c26b",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/components/BrandSplash.tsx",
+      "bytes": 7576,
+      "sha256": "8b0b57b465c5d93202a757c2e03e7ab1acc30e7413e02c2438a680f57d7dff1f",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/components/BuyerBusinessProfilePanel.tsx",
+      "bytes": 15818,
+      "sha256": "982f7dd42a91032d2f61dc6d1b3099403f30fb9e162eedf6374789ce06ee1830",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/components/CarrierQuoteSelector.tsx",
+      "bytes": 5809,
+      "sha256": "59c9add03305f7e08f93b182205e5b4dccdc9347feccb2eb116e3037d48fd329",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/components/CatalogOfferEditor.tsx",
+      "bytes": 5560,
+      "sha256": "504f4a539c5fed3b87610acbba108188044b049b5a59de03ec87311e9fda73a5",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/components/CatalogOfferWizard.tsx",
+      "bytes": 35218,
+      "sha256": "cb7fc416032ed4fecc9abb2469dbb5a974fb3c783459dc95ee4481191b1650cc",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/components/CompanyModeSwitch.tsx",
+      "bytes": 2985,
+      "sha256": "cfb192f89fd75d2ab0efebc307fe3947c16b51a407ba7fa3aa297efc5d5d576f",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/components/DeliveryCheckpointPanel.tsx",
+      "bytes": 5502,
+      "sha256": "e4f4b3d4614ab44107a5eee545d18368c322ebc7a23881437e4c293eb0cda1d2",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/components/DemandFilterFields.tsx",
+      "bytes": 3159,
+      "sha256": "cd6b0d76f92f02ff2b88d9faf36d0fac7bcf89640271e53730390adc08ef3640",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/components/design-system/components.tsx",
+      "bytes": 22823,
+      "sha256": "d1b00aa772997d82f86dc17865ac23b108d0a47b8d096e65238fd3e0c0a6b898",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/components/design-system/foundations.ts",
+      "bytes": 1023,
+      "sha256": "72e3f63897c39b3e48b9e191f13369fe598d517173d85c4efc466c098ea4b7c7",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/components/design-system/index.ts",
+      "bytes": 159,
+      "sha256": "648201008ad4ef67b37ed83c495f9feae45c88039c12bb56525870d106ed1f90",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/components/design-system/PublicationImage.tsx",
+      "bytes": 3260,
+      "sha256": "59161de9491270e3e2f61fc3f5da5f87937b5e91e46dfe7145d4a1be7fc732a5",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/components/design-system/RoleSwitcher.tsx",
+      "bytes": 15135,
+      "sha256": "f4ef4109fd82617ef2f0abdeddd45ce4eedc29099be56c38f6031de61a6c30f6",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/components/DiscoveryFilters.tsx",
+      "bytes": 19702,
+      "sha256": "4a7e9df2b159b483670da5fed7a7197308d25a6fb784bec7d5c354ae75acdd94",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/components/GoogleAuthButton.tsx",
+      "bytes": 3915,
+      "sha256": "15c8c203ee50b75ad19ea4e40ec0819007b84be8c7d7d891eb024dea36d5e762",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/components/GoogleAuthButton.web.tsx",
+      "bytes": 3780,
+      "sha256": "4012f2717fc47dfff9281ff7108c4c0ab38d0738767a9364a4bf16ba70737aec",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/components/MarketRequestOfferWizard.tsx",
+      "bytes": 14518,
+      "sha256": "bb06f1d4399329d3367f83057fcb7354563250051e3f079ac5a2645122cc526a",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/components/OfferOrderForm.tsx",
+      "bytes": 41185,
+      "sha256": "8f0242abac040dc6dab68c1685cca18746d47969e85f2c135a87a5c2773caf8a",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/components/OfferPurchaseWizard.tsx",
+      "bytes": 64349,
+      "sha256": "a906efad482b6c46227f0924a46feeec5ac434ac5f32ddba1f77b37dfbd8c3f5",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/components/OrderCompliancePanel.tsx",
+      "bytes": 29709,
+      "sha256": "7b4a959ceac0f065fea3f6e334d8ea84ac953b423cdb88ebaef56fcc16a9e969",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/components/OrderReviewPanel.tsx",
+      "bytes": 6587,
+      "sha256": "4ea8816eaaf25f4ec52684d912cd96852c60dfde49ca04ceeaad29c8e444582e",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/components/ParticipationHeader.tsx",
+      "bytes": 57,
+      "sha256": "5f451630f2e1bc7817b6f1a60f7492a4f86ea78c9805b47be7e98f8edd2ed5ec",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/components/PayoutSetupPanel.tsx",
+      "bytes": 7824,
+      "sha256": "54cb508f4ec5268f72b4030858ed7c9896132e0abfdd3ae20403d62772c6dcb1",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/components/ProposalValidityControl.tsx",
+      "bytes": 5342,
+      "sha256": "ede07e3a05292e3f152e874f320eb4b66b2615c5bdbcc18baefc804dc120d0fc",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/components/ReputationModal.tsx",
+      "bytes": 15407,
+      "sha256": "b2b7510e798c38b85efce4b7409fd4f73e539f80cf3f881a4f5907d60a131b00",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/components/SellerFiscalProfilePanel.tsx",
+      "bytes": 19838,
+      "sha256": "1c857919e16d502c6357b6a32a1ac6c3756fe731fa80af0ef3f3a61372e22668",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/components/useRequestKeyboardLayout.ts",
+      "bytes": 1551,
+      "sha256": "2142f8178b15a9bf181e186b5631d946a5d6b873063f1f59a86f682f64b7437c",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/components/VirtualizedResults.tsx",
+      "bytes": 4475,
+      "sha256": "0e72ad8cdea024e9aa5a9e510558676b2501490cf7cc51d80ea28daf757a2aaa",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/components/WindowedRows.tsx",
+      "bytes": 3151,
+      "sha256": "c5d6626b6ef10a9877c6249aa3222a7f2b25ea24ef483fca947a5d0dcb1ebf79",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/config/adminDisputes.ts",
+      "bytes": 6505,
+      "sha256": "bd0b7dea2000f66fe41c9b068ddc8b61722aab56f5d73f48a73b97a1346cf136",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/config/api.ts",
+      "bytes": 57629,
+      "sha256": "c1efc4772a772342f5fce5381dc971ed8611a059e84a0d4fe2af1649ecd9aa4d",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/config/env.ts",
+      "bytes": 676,
+      "sha256": "42aeb520c0e373e5fa738db04bf7e68fd639e76c96bf2a3d5d86fe9699a1ad73",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/data/cardImages.ts",
+      "bytes": 3925,
+      "sha256": "80c7de463e2ea97075b64a4bd35eb4e43873b53070a35b8d33cb675d1311ca8e",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/data/demoOffers.ts",
+      "bytes": 1817,
+      "sha256": "74d2ed96ca1e83c2d790b6ac931af9d548f43b9b081f35ed7d196af7cdd2b183",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/i18n/buyerContinuityCopy.ts",
+      "bytes": 6506,
+      "sha256": "92799e04884ecb7f96aab0b9906ebac838f097ca0c186e9ad1e415229fff22ab",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/i18n/buyerRequestLifecycleCopy.ts",
+      "bytes": 11939,
+      "sha256": "d6f5ffbd6db3753242a4aeee0d2db9ef08ada8b35b93962e2592423cc97e68fa",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/i18n/connectorDiscoveryCopy.ts",
+      "bytes": 7868,
+      "sha256": "8f7f63d9f68a287daf65c5a0d70a7f708374161a0a33a0f6611a7f75bf4529a7",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/i18n/demandFilterCopy.ts",
+      "bytes": 4542,
+      "sha256": "d5832f74bfe040ec20f30a578054907651246bde4987b146d389f38996c0f3ee",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/i18n/discoveryFilterCopy.ts",
+      "bytes": 23019,
+      "sha256": "bc3a0d6518e7e7ec13ff967295c21560bcb2014a728fd975caa36110422c0910",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/i18n/featureResources.ts",
+      "bytes": 135428,
+      "sha256": "07f82939273330da6375bff9b4877cde260a456de62b61b60225ce02253e727d",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/i18n/index.ts",
+      "bytes": 108354,
+      "sha256": "375d785bad8e9b88dbbc1b8306b310407aa0c9ff9aefe8dffa51a92cc4c7bf2e",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/i18n/requestCopy.ts",
+      "bytes": 4047,
+      "sha256": "bbcd964b9c074f701f6106b1d1824849a2910aae01048177d5183608c27a2b3a",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/i18n/requestWorkCopy.ts",
+      "bytes": 3750,
+      "sha256": "c02e1e663453d5b2eb7da9b8e36447cfc00e99918a4bde9c504ded8f88f9bc17",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/i18n/sellerProposalDraftCopy.ts",
+      "bytes": 7757,
+      "sha256": "8abb6d2d17adf4da1d808b90f155b3925d3f6496f834de8017e8ecdc6f14d76c",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/i18n/uiIntegration.ts",
+      "bytes": 1534,
+      "sha256": "6f4503dae382cfe40e3e63b1ca6fd1823bf172053931feebe5f8076d5f1e71a2",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/i18n/useAppTranslation.ts",
+      "bytes": 442,
+      "sha256": "c8fd18d6777c5262d227a6e2883b21127348f0cdada035cfe995d5b37009264d",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/navigation/MainTabs.tsx",
+      "bytes": 10384,
+      "sha256": "cf8794ca499b2770a12c72d3ceb16f39bf165a3c78aaa3894617cfd5d52c51fa",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/navigation/RootNavigator.tsx",
+      "bytes": 7041,
+      "sha256": "1c11e4d016502feda1cef4c0aca4bfab7faa24ece82bf9ff0edb5ccde4c9ae89",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/navigation/types.ts",
+      "bytes": 1831,
+      "sha256": "35d2b0b178ff722e7217576e5a614620bdd3fce807fd20fe27d0f3f5c50556aa",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/screens/Admin/AdminDashboardScreen.tsx",
+      "bytes": 33790,
+      "sha256": "f0dcb1f2e4f3804db34e3938f24e6333946e2ee972a38342be9598c45e18ea32",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/screens/Admin/DisputeAccountingPanel.tsx",
+      "bytes": 18048,
+      "sha256": "96ae5676d2894b269b94426c69bf0e84c4894ac42decff385873c7de05c09200",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/screens/Admin/SupportPanel.tsx",
+      "bytes": 26614,
+      "sha256": "4c5e17aeea03dc98235fbdb804af80bcc73dd8e2d678930a98ac7c204d9cf4b9",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/screens/Assistant/DemoAssistantScreen.tsx",
+      "bytes": 24731,
+      "sha256": "78aba5e36393ae3e743e10a9a216b3e595a1a1585ae40f0b340c80d05f72b934",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/screens/Assistant/GuideActionCard.tsx",
+      "bytes": 20505,
+      "sha256": "596385602a6614f5cf8becb60a7caf3e5a6b51d77b67526bcfdca447b547f1d9",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/screens/Auth/AuthScreen.tsx",
+      "bytes": 25681,
+      "sha256": "eb552c419ef7f66c18b9284ded209f551c96917e4c01b992c0a3b697d582b052",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/screens/Auth/SplashScreen.tsx",
+      "bytes": 424,
+      "sha256": "4a82334bd59d104ff6672d7b23fe32e067fca0c2212df0b2b88cf9ed8b2a435d",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/screens/Chat/ChatListScreen.tsx",
+      "bytes": 8811,
+      "sha256": "38bc6f03c78c3443660d5b7f5c77d1aa494b3ab6c1a1d2ea4a6101d3569814e6",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/screens/Chat/ChatScreen.tsx",
+      "bytes": 35306,
+      "sha256": "a5ef3a08bdb4f8bbd0f11bb5d090dc51d2277f20575fa08b7b0366888ff15e47",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/screens/Chat/VideoCallScreen.native.tsx",
+      "bytes": 13188,
+      "sha256": "b896e886b92f738e2e208d1079537fba7c1bc8aa74f06883b48b5f6d6935e4b0",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/screens/Chat/VideoCallScreen.tsx",
+      "bytes": 1731,
+      "sha256": "fe492bf8c039037d9b2aa1edb882fbd874967b5d9ec8a20d3e72476fd33dcca7",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/screens/Chat/VideoCallScreen.web.tsx",
+      "bytes": 8062,
+      "sha256": "cfd8add2112c24f2227f5cec2bd038ebcb5a6bbf752bf4d20f093f77c4b66796",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/screens/Contracts/ContractsScreen.tsx",
+      "bytes": 7210,
+      "sha256": "c558133ddb4b27b13d2b81258c3c4dccde7553f248676489cab7332535586784",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/screens/Demo/DemoLandingScreen.tsx",
+      "bytes": 975,
+      "sha256": "235172cfcf6dc11be65f8b60a6685578168625bea20c16422f545625dbb5b99e",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/screens/Demo/DemoScanResultScreen.tsx",
+      "bytes": 638,
+      "sha256": "f56b4702701d24a1254c229cf927a5058e97f1c2024fce3ca54711f3eb6b5fef",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/screens/Guests/GuestsScreen.tsx",
+      "bytes": 7115,
+      "sha256": "6e3b72d8a0f3172045ddcc44204ba9c6a2971f80a3ff111cbb5f69c462bf8ae3",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/screens/Guide/HowAllwainWorksScreen.tsx",
+      "bytes": 1410,
+      "sha256": "56cd9da78c97fede46f8fd26ca6189010a5cbcb8fdc6a10015a0ba306280046c",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/screens/Notifications/NotificationsScreen.tsx",
+      "bytes": 13210,
+      "sha256": "d9deb7714eb60480ca2db8d9837b14324ea0cd6a7355ff931e8f177d69f3ec84",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/screens/Offers/offerManagementCopy.ts",
+      "bytes": 15488,
+      "sha256": "00f07900443316fe6685b2a32ea068aba83e0e0e6f907484cc7468914dbe5730",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/screens/Offers/OffersScreen.tsx",
+      "bytes": 231111,
+      "sha256": "d09056ca820b783106cbe4a2630fe2cb588750ef4938061077a4a8b5b8f61cd7",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/screens/Participation/ConnectorActivationScreen.tsx",
+      "bytes": 13613,
+      "sha256": "3c9dd960130411db589d968ab00731a3964e86a6af389e73d02e3d75fe883e77",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/screens/Participation/ConnectorOperationsScreen.tsx",
+      "bytes": 36646,
+      "sha256": "c2ec4ae6e30248c6ef65375acf29e80cc1be7587cb50c734f3c23273c4e6fd37",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/screens/Participation/SellerActivationScreen.tsx",
+      "bytes": 35242,
+      "sha256": "4007a1dfce00b28838a076a4107770aba9e08bdbfc52ab4b710fcde299ddd340",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/screens/Profile/LegalScreen.tsx",
+      "bytes": 11051,
+      "sha256": "86b7d20e0c5d40e4c082a09c1726878bf27a698967c3da9b1e207876a64212ae",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/screens/Profile/ProfileMainScreen.tsx",
+      "bytes": 36638,
+      "sha256": "989d123a21b991f245401deb9d30365c0333b59de6bce46cb950ab86ea5dd8f7",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/screens/Requests/MarketRequestsScreen.tsx",
+      "bytes": 27277,
+      "sha256": "864873f759cfdaa28ee10e72f7258763f565d7f4550f890ded680883746e0eb6",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/screens/Requests/MyRequestsScreen.tsx",
+      "bytes": 14108,
+      "sha256": "d9c34b1046dc3f7435155325d1df9e3ac661814bc0b1612defb4855fbfe9ab99",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/screens/Requests/ShoppingListsScreen.tsx",
+      "bytes": 122149,
+      "sha256": "b40bb271393b3cae8914c9cde25e249a70fa9d2db98e8dd22d94ad3c84b3d439",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/screens/Scan/HomeScreen.tsx",
+      "bytes": 43982,
+      "sha256": "eded615fcfe11918cfc60841109b88592d437b42573268ae992ea6cf159f65fc",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/screens/Scan/ManualRequestScreen.tsx",
+      "bytes": 12952,
+      "sha256": "03086597c1b0b9717ed712120f1f731d146b8a5c4e8acf605c13895ed07f2991",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/screens/Scan/ScanResultScreen.tsx",
+      "bytes": 92222,
+      "sha256": "e4262c651e4047b5fb998ff7d73067e44d2cfee78c8ab530273b021fa5c9a79f",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/screens/Scan/ScanScreen.tsx",
+      "bytes": 21495,
+      "sha256": "a64366a169b3d9bb28d11719017f154b4a612afed2be8caf61f77363f52f00cc",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/screens/Search/SearchScreen.tsx",
+      "bytes": 29088,
+      "sha256": "652086c04834a2d2345b9cb7e3282dd3d1d5ac4e4a2f718427e3fb1686384df6",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/screens/SplashScreen.tsx",
+      "bytes": 899,
+      "sha256": "f0dd375d26cd198d6bd390358da1f873e11c3a79b5e39dd21e39e75ff3b74093",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/screens/Sponsors/SponsorsScreen.tsx",
+      "bytes": 9202,
+      "sha256": "5d5df2d9d10c490474d18a9d0613a10ca9bd0457fcd090ffa1e8853effbae905",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/shims/queryStringCompat.js",
+      "bytes": 208,
+      "sha256": "a05a3394cdb725067588125664192ccbc7624fa690ece7ab1abfeca28a6dc7ba",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/store/adminMfaBridge.ts",
+      "bytes": 259,
+      "sha256": "54047ca0ca2b134cc687c5e58acb405ce9336aea157348590e0e84bf5e19737e",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/store/auth.store.ts",
+      "bytes": 19773,
+      "sha256": "95e5377881704b4d4763443534ca7f4c4cfe765408aec061944fea9dbb520d24",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/store/authSessionBridge.ts",
+      "bytes": 2489,
+      "sha256": "0e28c4047e418f0565d3bacefd5d2668c3bdac01e9659f57d8c0e0438af3b278",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/store/chat.store.ts",
+      "bytes": 12380,
+      "sha256": "138387868620bc52d0436cbff566e0c9a296dc003a35fe691760961e7eec2d11",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/store/notification.store.ts",
+      "bytes": 1131,
+      "sha256": "fc497ae2a557cf491fb37e2d11442da87428310aba1d14b7af0aaf7c23d14c3b",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/theme/colors.ts",
+      "bytes": 492,
+      "sha256": "6812f9d51e61c9ca27ccfe9922cdefd06b79e38e3d47e498c1e75f860b5e9712",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/theme/globalStyles.ts",
+      "bytes": 11,
+      "sha256": "8e609bb71c20b858c77f0e9f90bb1319db8477b13f9f965f1a1e18524bf50881",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/theme/globalStyles.web.ts",
+      "bytes": 896,
+      "sha256": "dde48b377006618a2a435c3dce635ffe4b0a0df829113f65d68a175422d54699",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/utils/adminDisputes.ts",
+      "bytes": 6854,
+      "sha256": "efd0e16c0d876d75dc9ca1388365220e747258d95c460accdbc4c42880d9f337",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/utils/adminMfaRequests.ts",
+      "bytes": 490,
+      "sha256": "740faef17ff3886c350c43196b9fbeb9e4d097f3137ae0bb17f7b93cee2d6522",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/utils/allwainParticipation.ts",
+      "bytes": 4107,
+      "sha256": "c8d8d68bea47b8894186c9ce6fc4446625513bb1d9f282f665b89fd07e434b24",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/utils/allwainPaymentEnvironment.ts",
+      "bytes": 1159,
+      "sha256": "004e84f6bb73bc61ed318ceb9741fe79cdaff8444a0efff4144a7010b6b5ac5e",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/utils/appAlert.ts",
+      "bytes": 1916,
+      "sha256": "8c7058d190cc93406d585dc978e22a1643fbf899d425cf27b8d39f5c4329f566",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/utils/buyerCheckout.ts",
+      "bytes": 4670,
+      "sha256": "8926b3cf8fa6fa7c1275ded18a64ab829f454e1ac524523754a76e11a3734905",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/utils/buyerJourney.ts",
+      "bytes": 1531,
+      "sha256": "654ab5d93a3b4866de19dccc9ed52ed8518ac899673f1710986dc83a0a2ad14b",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/utils/currentLocation.ts",
+      "bytes": 6148,
+      "sha256": "4c1a026856d7fbb0f9c736482d3f44267b117703d0441f041a23b7f3aadd8a12",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/utils/deliveryIntelligence.ts",
+      "bytes": 6717,
+      "sha256": "ede9d0ecae1a135cc9f7598052c588d7d3b3f9b882fd8108b5e38d5a0ca34d78",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/utils/deliveryPricing.ts",
+      "bytes": 2298,
+      "sha256": "f17205f11042cb721d1905048f3a91aebc9243ede73cfd33a911803b92b1c22b",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/utils/discoveryFilters.ts",
+      "bytes": 6730,
+      "sha256": "75e6e12f324f95962d709b01f7426b66815dcfb61c1695f33f4d72bfe51b2da7",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/utils/downloadAuthenticatedFile.ts",
+      "bytes": 4652,
+      "sha256": "d86035f37109149f82e72aa8dbe4710b362eef7d925757970fe5a9456df66de5",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/utils/format.ts",
+      "bytes": 954,
+      "sha256": "eb6aace43fa993b8be7f770c0663d4dce6e1077fc56049d585dd0336b87d5856",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/utils/journeyDrafts.ts",
+      "bytes": 4769,
+      "sha256": "07070f4a0b279242b5e057796eda35f26dfc0be16c7c940b09b529fc5a3419a1",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/utils/manualRequestContinuity.ts",
+      "bytes": 3707,
+      "sha256": "3d6f6e57e6f0de8a69633337ac5c83aec5e19a2c9fecab65d55495a13df133e3",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/utils/marketDiscovery.ts",
+      "bytes": 2175,
+      "sha256": "06aca5e2a0d88afd3afb3d2c6125f78b51b10a37ee4a359fee73acfd170e5455",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/utils/offerManagement.ts",
+      "bytes": 6363,
+      "sha256": "8de31a73d6bac5ec84ee90b1a035d3e5e21665c9612f543a9f2cb240596547ce",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/utils/openExternalUrl.ts",
+      "bytes": 333,
+      "sha256": "26386ec235048070198d9a2b26c511fa41df34d6c7a99767d0a3f58bb3a284c6",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/utils/pendingJourney.ts",
+      "bytes": 4920,
+      "sha256": "a0427540e09fba48c3d89118aad4deab126c66e8bf2ae45d1664ad1fb698265d",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/utils/productIntelligence.ts",
+      "bytes": 2386,
+      "sha256": "def51fa35346fd79f13541847c21d6b69fa8a44b6e369d79fc1fb8805a0360ca",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/utils/publicationImageSource.ts",
+      "bytes": 3077,
+      "sha256": "17b906c8d793410308feddad6aae79df3aaa5f6115e5a49babe0d1e5c0ed7268",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/utils/purchaseDelivery.ts",
+      "bytes": 2276,
+      "sha256": "3b708d8fde2ca707b3d5696eea0f22297917865b5be310985b02214303fb490f",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/utils/purchaseDraft.ts",
+      "bytes": 10835,
+      "sha256": "22cc5a49aff19717504bb67418393be700bb46abd6e4cf9b77950c7101bff0ac",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/utils/requestLifecycle.ts",
+      "bytes": 3683,
+      "sha256": "825369b9f534881842966c6949ff0afa1ef8886c27fc12db88815b780f23e256",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/utils/requestWork.ts",
+      "bytes": 3416,
+      "sha256": "1a3c3c584db9d3760abacac02ec779e2a07e661816a2e83ead58b74701b1d6f8",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/utils/scanCaptureMemory.ts",
+      "bytes": 1224,
+      "sha256": "f8d4572910f2a89116052b0d6d7b18cc941d10e4c4a252390dba0da4e2fa4b47",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/utils/scrollWindow.ts",
+      "bytes": 1558,
+      "sha256": "6d52f71c16acd0411e5dbc038af45c9a952c4e846d1f5be8d67328a66fa244d3",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/utils/sellerIncome.ts",
+      "bytes": 1325,
+      "sha256": "82ca01212264f60f2010f66d6a8fd80b193f97e50807462c18460f706f5f576f",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/utils/sellerJourney.ts",
+      "bytes": 1168,
+      "sha256": "1df5c5e3cd8e3ef5d2e083709fad5735e682030fadfb575dc839453203824bd1",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/utils/sellerProposalDraft.ts",
+      "bytes": 14799,
+      "sha256": "e456da78b5d24674f2a849f5e4027db000294400fe85c21b2b83117f7ad96e84",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/utils/sessionStorage.ts",
+      "bytes": 2961,
+      "sha256": "dd70cb9c6168672747a049856005a35a88fb15f2e693f512af50327ea094c56d",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/utils/sessionStorage.web.ts",
+      "bytes": 1764,
+      "sha256": "b7ee2c236588b1a00112f1d7bcff9f1ffd662b62d68a98fdd8c0dacfc5c6a7d5",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/utils/shoppingProposalCopy.ts",
+      "bytes": 10651,
+      "sha256": "626816050d2be27b2d857d7367545c5fa8686c5b707492f93e36ce7b0b95c707",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/utils/shoppingProposalLifecycle.ts",
+      "bytes": 4171,
+      "sha256": "f165d177e1cdab07749be85f2d543dd834b68f27f9ff8d87cb8f5971acecd7f9",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/utils/userInputIntelligence.ts",
+      "bytes": 721,
+      "sha256": "a9b538d49b831e431ad7ef0237a84a7b41a6fab89619e6af7cc0a355a9ea36b0",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/utils/useSellerProposalDraft.ts",
+      "bytes": 6887,
+      "sha256": "7a16d92bfb9d7c246e5573fe4e677fe4934263b48cb5ce191a0cbd9cb1e28929",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/utils/webAppUrl.ts",
+      "bytes": 535,
+      "sha256": "3fb8b149694e910d90d7e9d51430010373852cc43ed76520af66fe659753e1b3",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/utils/webAuthCoordination.ts",
+      "bytes": 5346,
+      "sha256": "a80825097da284a55c050931fe38dbe86c14d8d8e8492ae14f57b5d267bf42ef",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/video/livekitGlobals.native.ts",
+      "bytes": 80,
+      "sha256": "f05ef4837d53654c941ff7495bc8c6b895d415ed02319bffeb22016975bfaabe",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/video/livekitGlobals.ts",
+      "bytes": 90,
+      "sha256": "18784abd09bf08f9552ce2b183d8c10cc4b451d70b7abc4965d0b80044077af9",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/video/livekitGlobals.web.ts",
+      "bytes": 71,
+      "sha256": "f84759f3d9f24e7db9cc7cbb81e2316cfd1330ceade7fbd28a7fdd82c6f49ab0",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/src/video/videoCall.ts",
+      "bytes": 1151,
+      "sha256": "e2851690c01292eec02e8d3a2a04bed67a94c69df86bdc1edd0efc077c3392d8",
+      "kind": "source"
+    },
+    {
+      "path": "frontend-stripe-test/tests/admin-disputes.spec.cjs",
+      "bytes": 9507,
+      "sha256": "a4c985b024eaf8050efbcaa08edf3f7e9a8f966b97b2523a3b76042ebc9afe29",
+      "kind": "test_code"
+    },
+    {
+      "path": "frontend-stripe-test/tests/admin-mfa-requests.spec.cjs",
+      "bytes": 7837,
+      "sha256": "e28a4c1d875f911ebeb2c5fe00af2a74d90cdc64f07eea54903c2ca284458194",
+      "kind": "test_code"
+    },
+    {
+      "path": "frontend-stripe-test/tests/analytics-consent.spec.cjs",
+      "bytes": 5032,
+      "sha256": "3ca46775241b870bab7ac5f95e2b87b2e6f7497e9d44c2d702191526d7cdc50a",
+      "kind": "test_code"
+    },
+    {
+      "path": "frontend-stripe-test/tests/analytics-instrumentation-source.spec.cjs",
+      "bytes": 19185,
+      "sha256": "4483cf7fe5a18c4095363d55bb72759bdac626e58ac5338296b3d6febc5b7595",
+      "kind": "test_code"
+    },
+    {
+      "path": "frontend-stripe-test/tests/analytics-runtime-fixture.cjs",
+      "bytes": 4230,
+      "sha256": "4ac9ba6d8ae7edaaa027034659a6f9ba9f1c5ba17461e9b9d9b350ae4c4fe4c4",
+      "kind": "test_code"
+    },
+    {
+      "path": "frontend-stripe-test/tests/analytics-runtime-privacy.spec.cjs",
+      "bytes": 19445,
+      "sha256": "60a2527042e01fe76039c1397ed12b591685bcbae324df114a0814b5a2f57034",
+      "kind": "test_code"
+    },
+    {
+      "path": "frontend-stripe-test/tests/analytics-static-privacy.spec.cjs",
+      "bytes": 9220,
+      "sha256": "7c02a27b07c9ab14d4027705f2c3455d8a93b6ff520f59b245e19d0ff0da9e4a",
+      "kind": "test_code"
+    },
+    {
+      "path": "frontend-stripe-test/tests/app-alert.spec.cjs",
+      "bytes": 3178,
+      "sha256": "6c3e11178200b7b42aa9eb59e48ffd34bd99d38d02b83018adf3dcb3642f8983",
+      "kind": "test_code"
+    },
+    {
+      "path": "frontend-stripe-test/tests/auth-store-lifecycle.spec.cjs",
+      "bytes": 26079,
+      "sha256": "46fa6f112753cdfa933ac3dfa3bc29990deccfd86da022409520af23915b3610",
+      "kind": "test_code"
+    },
+    {
+      "path": "frontend-stripe-test/tests/auth-transport-lifecycle.spec.cjs",
+      "bytes": 25361,
+      "sha256": "6adca8a9f1553add3b935125ee5d9787717033e922481fd946a8635a81f8904d",
+      "kind": "test_code"
+    },
+    {
+      "path": "frontend-stripe-test/tests/authenticated-download-lifecycle.spec.cjs",
+      "bytes": 13144,
+      "sha256": "7ac39d10e453b39c9e6702ba8e4ba109df772adf57e3d7871b153c6e568d9b8b",
+      "kind": "test_code"
+    },
+    {
+      "path": "frontend-stripe-test/tests/brand-skin.spec.cjs",
+      "bytes": 2461,
+      "sha256": "51720c1a5b7278c5fb56a00ea1d90d6b658ed6307db88308861695706d9f0ffc",
+      "kind": "test_code"
+    },
+    {
+      "path": "frontend-stripe-test/tests/browser/discovery-filters.cjs",
+      "bytes": 9883,
+      "sha256": "2be3f29a8eac10b106eb68b52c8eb524d4e119991c313239b0678c90275bba6b",
+      "kind": "test_code"
+    },
+    {
+      "path": "frontend-stripe-test/tests/browser/payment-unavailable.cjs",
+      "bytes": 6395,
+      "sha256": "c839ced50d121bc6c181ad14801a426d7cda5fbfbccfeda5486aa505602e5372",
+      "kind": "test_code"
+    },
+    {
+      "path": "frontend-stripe-test/tests/browser/publication-management.cjs",
+      "bytes": 9365,
+      "sha256": "7234418a316c5f3c6b30532f47a16953708279bbad2eeb345290c6ee49d10735",
+      "kind": "test_code"
+    },
+    {
+      "path": "frontend-stripe-test/tests/browser/purchase-layout.cjs",
+      "bytes": 7310,
+      "sha256": "2e43e8afa3f3330a7010077c5ea4c5dc585f8687d6e63908c1ec9d569fd48bd4",
+      "kind": "test_code"
+    },
+    {
+      "path": "frontend-stripe-test/tests/buyer-checkout.spec.cjs",
+      "bytes": 11806,
+      "sha256": "7b98b74edb1bb622589865606427b07792d2225165f19cb5d106b67b48aac882",
+      "kind": "test_code"
+    },
+    {
+      "path": "frontend-stripe-test/tests/buyer-continuity-source.spec.cjs",
+      "bytes": 12346,
+      "sha256": "c420327aec2d49612240c4cd01b8fdf924bcb32aba27f03ddbc1f817a370216b",
+      "kind": "test_code"
+    },
+    {
+      "path": "frontend-stripe-test/tests/buyer-journey.spec.cjs",
+      "bytes": 1644,
+      "sha256": "d24afd956b04f1a1f91e5f2c54dbf89e5d89188124aa87c0271d5bb70f1769dd",
+      "kind": "test_code"
+    },
+    {
+      "path": "frontend-stripe-test/tests/buyer-request-lifecycle.spec.cjs",
+      "bytes": 22716,
+      "sha256": "ea143ae3b59da8560012937801eddecb387385e0af5ed6ea5f13bf7f1496701c",
+      "kind": "test_code"
+    },
+    {
+      "path": "frontend-stripe-test/tests/connector-discovery-source.spec.cjs",
+      "bytes": 15786,
+      "sha256": "253b7b148b42f7a09d4ccb85412d8efe630e141661c376be8048eac6b737096e",
+      "kind": "test_code"
+    },
+    {
+      "path": "frontend-stripe-test/tests/curated-card-images.spec.cjs",
+      "bytes": 2313,
+      "sha256": "5eb730a6037245bc4496765bc7604112e4555446c3a87b6bac399578c6c4eece",
+      "kind": "test_code"
+    },
+    {
+      "path": "frontend-stripe-test/tests/current-location.spec.cjs",
+      "bytes": 1979,
+      "sha256": "968578b36e67d1db6841f73fb98fb52c54c90ebf1f5d6d55712b11ea4aa5eb65",
+      "kind": "test_code"
+    },
+    {
+      "path": "frontend-stripe-test/tests/deleted-account-drafts.spec.cjs",
+      "bytes": 9704,
+      "sha256": "103bb0773d73ba4bb406a1ec7509d68e2a1f977ad3f73602670690564a5e2933",
+      "kind": "test_code"
+    },
+    {
+      "path": "frontend-stripe-test/tests/discovery-filters.spec.cjs",
+      "bytes": 20125,
+      "sha256": "9df214b4aa28f4e84001bde43b39ee37824b085151d0196d3947ae7ae47cda3e",
+      "kind": "test_code"
+    },
+    {
+      "path": "frontend-stripe-test/tests/google-production-config.spec.cjs",
+      "bytes": 1006,
+      "sha256": "0aef8f46688e6983af80c6014a4b63030de162d13ef604da10d834b51b274039",
+      "kind": "test_code"
+    },
+    {
+      "path": "frontend-stripe-test/tests/google-return-route.spec.cjs",
+      "bytes": 1108,
+      "sha256": "0e2ac810a74c46463a836d38cd02e213382c44d7d8034cb42bcf21fc9e456ba9",
+      "kind": "test_code"
+    },
+    {
+      "path": "frontend-stripe-test/tests/helpers/analytics-instrumentation-noop.cjs",
+      "bytes": 459,
+      "sha256": "9c4972cb7a5e71e42c7a19a4724940e2ec7723c2c81096f47f0ce5407f320e3f",
+      "kind": "test_code"
+    },
+    {
+      "path": "frontend-stripe-test/tests/helpers/load-typescript.cjs",
+      "bytes": 828,
+      "sha256": "5c74cfe7bdc86ff67b50ea2b373b67422c9b61ba77ed83cc65bfa2c746450881",
+      "kind": "test_code"
+    },
+    {
+      "path": "frontend-stripe-test/tests/journey-continuity.spec.cjs",
+      "bytes": 5537,
+      "sha256": "c62ea8f004d46a5e19ed1116b8b5f872829d53ee119d6ed6699ad4540fe8a3b5",
+      "kind": "test_code"
+    },
+    {
+      "path": "frontend-stripe-test/tests/market-list-discovery-source.spec.cjs",
+      "bytes": 21361,
+      "sha256": "218a9252d5f9ee961068068044e62a95bc9c935ed4973cb8dd1bff13dd74c211",
+      "kind": "test_code"
+    },
+    {
+      "path": "frontend-stripe-test/tests/offer-management-source.spec.cjs",
+      "bytes": 31671,
+      "sha256": "fd101c046fefff510b9528e6bf2b5e77a91650edb2472ea8af3ef66fe736b730",
+      "kind": "test_code"
+    },
+    {
+      "path": "frontend-stripe-test/tests/offer-management.spec.cjs",
+      "bytes": 5572,
+      "sha256": "9710f72ced8ca5f15dd40afe711b7043df5ca7a73b60c063a8c316cc8f66da47",
+      "kind": "test_code"
+    },
+    {
+      "path": "frontend-stripe-test/tests/oranges-pilot-offer.spec.cjs",
+      "bytes": 2456,
+      "sha256": "6c8f9551eac6f0a5a4994967ca630af6274a95b527d3f5ae6836f46ce3c84bc0",
+      "kind": "test_code"
+    },
+    {
+      "path": "frontend-stripe-test/tests/payment-environment.spec.cjs",
+      "bytes": 2355,
+      "sha256": "a7e30a8d752d67849ba929eee7b2738ac6c872c8bf409cd5f852fcfeb20f03e6",
+      "kind": "test_code"
+    },
+    {
+      "path": "frontend-stripe-test/tests/public-legal-assets.spec.cjs",
+      "bytes": 1023,
+      "sha256": "cb8e965528a06a6f265097329a48f848544f83543816f2f5e25523166b499d35",
+      "kind": "test_code"
+    },
+    {
+      "path": "frontend-stripe-test/tests/publication-image-source.spec.cjs",
+      "bytes": 8686,
+      "sha256": "24b20c24eba8a68f7b574c694b9f55e96e43a043bdcc41d6447c58c28e417928",
+      "kind": "test_code"
+    },
+    {
+      "path": "frontend-stripe-test/tests/purchase-draft.spec.cjs",
+      "bytes": 6244,
+      "sha256": "a3e90583e5380e889c8f60960952607628679fe8c2a971a99b43fe0178767bf3",
+      "kind": "test_code"
+    },
+    {
+      "path": "frontend-stripe-test/tests/purchase-recipient.spec.cjs",
+      "bytes": 2261,
+      "sha256": "c9e426613a9ddbe96cc3da62c66ff002fcb9179d0d90fd7bc8fb74c1dd7b2c05",
+      "kind": "test_code"
+    },
+    {
+      "path": "frontend-stripe-test/tests/request-work-source.spec.cjs",
+      "bytes": 14673,
+      "sha256": "43a96e6dc6a4bc4c337ca42cf997da33495ea0b4ec794edcff285cd6a4a2fc5e",
+      "kind": "test_code"
+    },
+    {
+      "path": "frontend-stripe-test/tests/scan-capture-memory.spec.cjs",
+      "bytes": 1614,
+      "sha256": "6c7261f3f72d1a9f945ec032b8f34cdef39dd7e2d949037e6a31907a1ac5cda1",
+      "kind": "test_code"
+    },
+    {
+      "path": "frontend-stripe-test/tests/scroll-window.spec.cjs",
+      "bytes": 1457,
+      "sha256": "df028fa4fe5f712b108a95cdc96545225c521493e5393b6b5184c8a64deef627",
+      "kind": "test_code"
+    },
+    {
+      "path": "frontend-stripe-test/tests/seller-income.spec.cjs",
+      "bytes": 3512,
+      "sha256": "b6778284f180411a04034cab003c26b7652c25a74dbe85a1bab85f38f514183b",
+      "kind": "test_code"
+    },
+    {
+      "path": "frontend-stripe-test/tests/seller-journey.spec.cjs",
+      "bytes": 834,
+      "sha256": "6ad4948d138e75ab19c0393d9d5dc26a3ce32d2d95b6b3c63ebecd776ac4e005",
+      "kind": "test_code"
+    },
+    {
+      "path": "frontend-stripe-test/tests/seller-proposal-draft-source.spec.cjs",
+      "bytes": 22948,
+      "sha256": "033a4ed4433909350cfdbb860d9a07cb9c88ec9652b4a9874c768ca78f6d7f9f",
+      "kind": "test_code"
+    },
+    {
+      "path": "frontend-stripe-test/tests/shopping-proposal-lifecycle.spec.cjs",
+      "bytes": 20248,
+      "sha256": "c9180c905e307886ae288f8695634ad93ec3534d50ffaad8a5f507c68a6f72ce",
+      "kind": "test_code"
+    },
+    {
+      "path": "frontend-stripe-test/tests/virtualized-results-source.spec.cjs",
+      "bytes": 5037,
+      "sha256": "458163839cb4ba39d402d4e3fd83da8d8e6aca82aaff89985ce1ca410a9d5a80",
+      "kind": "test_code"
+    },
+    {
+      "path": "frontend-stripe-test/tests/web-auth-tabs.spec.cjs",
+      "bytes": 21903,
+      "sha256": "973b2b61965e5adc62367692b5cd55adfa34975e75e2a71005cde59f584033af",
+      "kind": "test_code"
+    },
+    {
+      "path": "frontend-stripe-test/tests/web-qr.spec.cjs",
+      "bytes": 2315,
+      "sha256": "2fd68054d9873016fb707bf7b1aee02dcac5b343a0e681a2b8e11b9daaa86ca9",
+      "kind": "test_code"
+    },
+    {
+      "path": "frontend-stripe-test/tsconfig.json",
+      "bytes": 354,
+      "sha256": "5e79e51089de32df0316bf5ab37c286c116bd63dc261535b7e1951781a50b73d",
+      "kind": "configuration"
+    }
+  ],
+  "excluded": []
+}

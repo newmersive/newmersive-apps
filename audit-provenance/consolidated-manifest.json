@@ -1,0 +1,2664 @@
+{
+  "createdAt": "2026-10-04T16:19:15.240Z",
+  "canonicalRoot": "C:/Users/fraus/Documents/Codex/2026-09-10/haz-una-auditor-a-del-proyecto",
+  "purpose": "Verifiable local net delta from the first real audit baseline to the latest six-pass candidate. Reconcile against the active runtime before any release.",
+  "productionChanged": false,
+  "newBuild": false,
+  "newActiveRuntimeParity": false,
+  "counts": {
+    "passCount": 6,
+    "changeOccurrences": 206,
+    "distinctDeltaPaths": 129,
+    "added": 75,
+    "modified": 54,
+    "reverted": 0,
+    "backendDeltaPaths": 54,
+    "frontendDeltaPaths": 75,
+    "currentInventoryFiles": 528,
+    "currentInventoryBytes": 6671005,
+    "baselineFiles": 442,
+    "additionalPublicBaseFiles": 2,
+    "migrationSqlFiles": 82,
+    "migrationMetadataFiles": 1,
+    "additionalInventoryPaths": 9,
+    "issues": 0,
+    "historicalNativeArtifacts": 3
+  },
+  "passes": [
+    {
+      "pass": 1,
+      "createdAt": "2026-10-04T00:10:53.169Z",
+      "manifestSha256": "ee3b5684032c04641f933c178ec4a5c962ef3438600b16356b12b70d63a3212d",
+      "baselineManifestSha256": "5bc3535d612a331a3ab8c2e8380f013b8e474a1cb7eb3de1726599b53dbd7c38",
+      "baselineFiles": 442,
+      "baselineHashFailures": 0,
+      "changedFiles": 22
+    },
+    {
+      "pass": 2,
+      "createdAt": "2026-10-04T08:49:19.187Z",
+      "manifestSha256": "34e995842b455e6da3fef9a695a32075ec360ed419987c84cc3a742ddcd39884",
+      "baselineManifestSha256": "386f55def34cb205b88afb63c881c0a09aca082e0bf419c254589c6c0ed15f63",
+      "baselineFiles": 448,
+      "baselineHashFailures": 0,
+      "changedFiles": 29
+    },
+    {
+      "pass": 3,
+      "createdAt": "2026-10-04T09:40:04.883Z",
+      "manifestSha256": "10a76084954f0b7fa305db74d07ce5f12d046f6c2829e9bb5345e123e7932eee",
+      "baselineManifestSha256": "ab66a278de0d801a67b8813ae27188c74417995240cdaa7387d459b2cb9e9e8d",
+      "baselineFiles": 464,
+      "baselineHashFailures": 0,
+      "changedFiles": 32
+    },
+    {
+      "pass": 4,
+      "createdAt": "2026-10-04T10:25:49.805Z",
+      "manifestSha256": "9c805af2f17098fb514a88c9554f552723059835c0efe251794e17e194494d3d",
+      "baselineManifestSha256": "a89938e6da27409f8bf6bc630073e532b35018d31719eab8f3e8bb423cf515b3",
+      "baselineFiles": 476,
+      "baselineHashFailures": 0,
+      "changedFiles": 43
+    },
+    {
+      "pass": 5,
+      "createdAt": "2026-10-04T13:52:07.076Z",
+      "manifestSha256": "c87bf9f0036413d4c129083682b008f7e9e9b76db6b380ff7ec0a17951c21808",
+      "baselineManifestSha256": "fb25c63f484ed87fc323bcd8607a2ea903f3f9e0ef099c37fe32bdb76fcdb5d9",
+      "baselineFiles": 494,
+      "baselineHashFailures": 0,
+      "changedFiles": 33
+    },
+    {
+      "pass": 6,
+      "createdAt": "2026-10-04T15:24:57.858Z",
+      "manifestSha256": "a419bf776ef8df95d306244ca694b3a88c6c5c08bb4ce2e629cc4ec61e093826",
+      "baselineManifestSha256": "1314406c969964dc73a18fe6712efbe4ab8fdcd4894734a03bcf2f90d4901098",
+      "baselineFiles": 506,
+      "baselineHashFailures": 0,
+      "changedFiles": 47
+    }
+  ],
+  "changes": [
+    {
+      "path": "backend-stripe-test/package-lock.json",
+      "firstPass": 1,
+      "firstBaseSha256": "918ad3d31d1316e5a3443450b78f3c738cc418fc6e17157869f49ab7de0196d9",
+      "baseProvenance": "pass1_first_real_snapshot",
+      "history": [
+        {
+          "pass": 1,
+          "beforeSha256": "918ad3d31d1316e5a3443450b78f3c738cc418fc6e17157869f49ab7de0196d9",
+          "targetSha256": "20d65f659a7ac0c77eeb4366e01a3c2427a7924c308ae06c56786394d0978ce3"
+        }
+      ],
+      "latestPass": 1,
+      "latestSha256": "20d65f659a7ac0c77eeb4366e01a3c2427a7924c308ae06c56786394d0978ce3",
+      "currentSha256": "20d65f659a7ac0c77eeb4366e01a3c2427a7924c308ae06c56786394d0978ce3",
+      "operation": "modified"
+    },
+    {
+      "path": "backend-stripe-test/package.json",
+      "firstPass": 1,
+      "firstBaseSha256": "ee61a11095462c6a38425aa9a7eebdf9b5ddd7d70a7014143b03d82186d5fde0",
+      "baseProvenance": "pass1_first_real_snapshot",
+      "history": [
+        {
+          "pass": 1,
+          "beforeSha256": "ee61a11095462c6a38425aa9a7eebdf9b5ddd7d70a7014143b03d82186d5fde0",
+          "targetSha256": "52f0408a128beda4420ba0396b851e08ce5c133d0cca036d3b3fad599f6c0bad"
+        }
+      ],
+      "latestPass": 1,
+      "latestSha256": "52f0408a128beda4420ba0396b851e08ce5c133d0cca036d3b3fad599f6c0bad",
+      "currentSha256": "52f0408a128beda4420ba0396b851e08ce5c133d0cca036d3b3fad599f6c0bad",
+      "operation": "modified"
+    },
+    {
+      "path": "backend-stripe-test/src/routes/allwain-participation.routes.ts",
+      "firstPass": 4,
+      "firstBaseSha256": "d542b435897f78fba8c8308320eeb5c71427384554fd775010ad80e5eefd3969",
+      "baseProvenance": "pass1_first_real_snapshot",
+      "history": [
+        {
+          "pass": 4,
+          "beforeSha256": "d542b435897f78fba8c8308320eeb5c71427384554fd775010ad80e5eefd3969",
+          "targetSha256": "2c08956bed598a6f3a45f4fd3ed61b2fcee39bb3413c2f8c3ac5ed3640218122"
+        }
+      ],
+      "latestPass": 4,
+      "latestSha256": "2c08956bed598a6f3a45f4fd3ed61b2fcee39bb3413c2f8c3ac5ed3640218122",
+      "currentSha256": "2c08956bed598a6f3a45f4fd3ed61b2fcee39bb3413c2f8c3ac5ed3640218122",
+      "operation": "modified"
+    },
+    {
+      "path": "backend-stripe-test/src/routes/allwain-payments.routes.ts",
+      "firstPass": 3,
+      "firstBaseSha256": "6d35d261678459ceb76dff92cc8b1708104d9e8c1ad1e6823633fc95797d5045",
+      "baseProvenance": "pass1_first_real_snapshot",
+      "history": [
+        {
+          "pass": 3,
+          "beforeSha256": "6d35d261678459ceb76dff92cc8b1708104d9e8c1ad1e6823633fc95797d5045",
+          "targetSha256": "659bc50a88153d3e54b4306bb240136a77550f71f45a5932f7d739c23c453c92"
+        },
+        {
+          "pass": 4,
+          "beforeSha256": "659bc50a88153d3e54b4306bb240136a77550f71f45a5932f7d739c23c453c92",
+          "targetSha256": "218f80a272174160dd4b771b1064e4eeac838d2f32c7ed7f8037f130c01afdd0"
+        }
+      ],
+      "latestPass": 4,
+      "latestSha256": "218f80a272174160dd4b771b1064e4eeac838d2f32c7ed7f8037f130c01afdd0",
+      "currentSha256": "218f80a272174160dd4b771b1064e4eeac838d2f32c7ed7f8037f130c01afdd0",
+      "operation": "modified"
+    },
+    {
+      "path": "backend-stripe-test/src/routes/allwain-shopping-lists.routes.ts",
+      "firstPass": 3,
+      "firstBaseSha256": "89be5f46d1fcc42eb02640e7f3e79eb33ec1b350aeedaede0c87358af1650ff9",
+      "baseProvenance": "pass1_first_real_snapshot",
+      "history": [
+        {
+          "pass": 3,
+          "beforeSha256": "89be5f46d1fcc42eb02640e7f3e79eb33ec1b350aeedaede0c87358af1650ff9",
+          "targetSha256": "78d4faac560d9a8e5d77f3b821ec8566ee78f9111db6c9c6db32a0093e7eef6c"
+        }
+      ],
+      "latestPass": 3,
+      "latestSha256": "78d4faac560d9a8e5d77f3b821ec8566ee78f9111db6c9c6db32a0093e7eef6c",
+      "currentSha256": "78d4faac560d9a8e5d77f3b821ec8566ee78f9111db6c9c6db32a0093e7eef6c",
+      "operation": "modified"
+    },
+    {
+      "path": "backend-stripe-test/src/routes/allwain.routes.ts",
+      "firstPass": 1,
+      "firstBaseSha256": "bf408bbb8e6ca47c1f2f3a146436fc4dccdc43910b6a74ed4e9dbb936d0c1674",
+      "baseProvenance": "pass1_first_real_snapshot",
+      "history": [
+        {
+          "pass": 1,
+          "beforeSha256": "bf408bbb8e6ca47c1f2f3a146436fc4dccdc43910b6a74ed4e9dbb936d0c1674",
+          "targetSha256": "2c96a867ab4f177e2fdeb862c70bc1700c7778784850b8259a39bd4690cddadb"
+        },
+        {
+          "pass": 2,
+          "beforeSha256": "2c96a867ab4f177e2fdeb862c70bc1700c7778784850b8259a39bd4690cddadb",
+          "targetSha256": "0e4c76d97fe5afdc5d38f93fc8aac8f1bed7263c5e0031b2c17e1ce3b3e1bb8d"
+        },
+        {
+          "pass": 3,
+          "beforeSha256": "0e4c76d97fe5afdc5d38f93fc8aac8f1bed7263c5e0031b2c17e1ce3b3e1bb8d",
+          "targetSha256": "b4420a9a89592139e0f426855ae829a2ad0f37db015d0a3d7320baabb17764d0"
+        },
+        {
+          "pass": 4,
+          "beforeSha256": "b4420a9a89592139e0f426855ae829a2ad0f37db015d0a3d7320baabb17764d0",
+          "targetSha256": "51c7454c58d8c8053b93647900114c559bc15878ee0984701052b0d678bd52a4"
+        },
+        {
+          "pass": 5,
+          "beforeSha256": "51c7454c58d8c8053b93647900114c559bc15878ee0984701052b0d678bd52a4",
+          "targetSha256": "a086d45efc1a160b10b3f126b19ac001624c244b77c794d0dea2ff8c0cc72bf3"
+        }
+      ],
+      "latestPass": 5,
+      "latestSha256": "a086d45efc1a160b10b3f126b19ac001624c244b77c794d0dea2ff8c0cc72bf3",
+      "currentSha256": "a086d45efc1a160b10b3f126b19ac001624c244b77c794d0dea2ff8c0cc72bf3",
+      "operation": "modified"
+    },
+    {
+      "path": "backend-stripe-test/src/services/allwain-account.service.ts",
+      "firstPass": 1,
+      "firstBaseSha256": "674fa071683a84fd251e7c5831ac8e079eb73fe88d6c02dc318ee9eee0d52881",
+      "baseProvenance": "pass1_first_real_snapshot",
+      "history": [
+        {
+          "pass": 1,
+          "beforeSha256": "674fa071683a84fd251e7c5831ac8e079eb73fe88d6c02dc318ee9eee0d52881",
+          "targetSha256": "e3b1d07899b3cfbc2386c16b5fa2f3cbbcf8129365524e45ed81ef7f63348acc"
+        }
+      ],
+      "latestPass": 1,
+      "latestSha256": "e3b1d07899b3cfbc2386c16b5fa2f3cbbcf8129365524e45ed81ef7f63348acc",
+      "currentSha256": "e3b1d07899b3cfbc2386c16b5fa2f3cbbcf8129365524e45ed81ef7f63348acc",
+      "operation": "modified"
+    },
+    {
+      "path": "backend-stripe-test/src/services/allwain-activity.service.ts",
+      "firstPass": 4,
+      "firstBaseSha256": null,
+      "baseProvenance": "absent_in_first_real_snapshot",
+      "history": [
+        {
+          "pass": 4,
+          "beforeSha256": null,
+          "targetSha256": "2ed8fe2033bd8069ea4a07d3459f3c1eab0839147743b2c12b88be38e5e5c620"
+        }
+      ],
+      "latestPass": 4,
+      "latestSha256": "2ed8fe2033bd8069ea4a07d3459f3c1eab0839147743b2c12b88be38e5e5c620",
+      "currentSha256": "2ed8fe2033bd8069ea4a07d3459f3c1eab0839147743b2c12b88be38e5e5c620",
+      "operation": "added"
+    },
+    {
+      "path": "backend-stripe-test/src/services/allwain-card-images.service.ts",
+      "firstPass": 1,
+      "firstBaseSha256": "6f30f050d8312fafcf183c95946278ad54bfdda20bfd84415986191bdd82e769",
+      "baseProvenance": "pass1_first_real_snapshot",
+      "history": [
+        {
+          "pass": 1,
+          "beforeSha256": "6f30f050d8312fafcf183c95946278ad54bfdda20bfd84415986191bdd82e769",
+          "targetSha256": "e990e7c03f843407be33fbefd81800fca10eef653980fd77e0ba879cc30ddd07"
+        }
+      ],
+      "latestPass": 1,
+      "latestSha256": "e990e7c03f843407be33fbefd81800fca10eef653980fd77e0ba879cc30ddd07",
+      "currentSha256": "e990e7c03f843407be33fbefd81800fca10eef653980fd77e0ba879cc30ddd07",
+      "operation": "modified"
+    },
+    {
+      "path": "backend-stripe-test/src/services/allwain-connector-discovery.ts",
+      "firstPass": 4,
+      "firstBaseSha256": null,
+      "baseProvenance": "absent_in_first_real_snapshot",
+      "history": [
+        {
+          "pass": 4,
+          "beforeSha256": null,
+          "targetSha256": "02158759555bce20ace7284a16b02b7ba7d79e01a3f56ba1a679d8bae3fa695b"
+        }
+      ],
+      "latestPass": 4,
+      "latestSha256": "02158759555bce20ace7284a16b02b7ba7d79e01a3f56ba1a679d8bae3fa695b",
+      "currentSha256": "02158759555bce20ace7284a16b02b7ba7d79e01a3f56ba1a679d8bae3fa695b",
+      "operation": "added"
+    },
+    {
+      "path": "backend-stripe-test/src/services/allwain-discovery.ts",
+      "firstPass": 3,
+      "firstBaseSha256": null,
+      "baseProvenance": "absent_in_first_real_snapshot",
+      "history": [
+        {
+          "pass": 3,
+          "beforeSha256": null,
+          "targetSha256": "c69b776b564ecffa7162e0b0cc3756481a635db3b53b30cd56a41b2ee275f5f9"
+        }
+      ],
+      "latestPass": 3,
+      "latestSha256": "c69b776b564ecffa7162e0b0cc3756481a635db3b53b30cd56a41b2ee275f5f9",
+      "currentSha256": "c69b776b564ecffa7162e0b0cc3756481a635db3b53b30cd56a41b2ee275f5f9",
+      "operation": "added"
+    },
+    {
+      "path": "backend-stripe-test/src/services/allwain-mailer.service.ts",
+      "firstPass": 6,
+      "firstBaseSha256": "907ef33ea45ffac8ae49b73a37eeff9bd0af658b451883423dde665b221c9736",
+      "baseProvenance": "pass1_first_real_snapshot",
+      "history": [
+        {
+          "pass": 6,
+          "beforeSha256": "907ef33ea45ffac8ae49b73a37eeff9bd0af658b451883423dde665b221c9736",
+          "targetSha256": "b592df9c1478a89eb26debc34784789d015e39e99c0e9f72dc4df8b4736ea3de"
+        }
+      ],
+      "latestPass": 6,
+      "latestSha256": "b592df9c1478a89eb26debc34784789d015e39e99c0e9f72dc4df8b4736ea3de",
+      "currentSha256": "b592df9c1478a89eb26debc34784789d015e39e99c0e9f72dc4df8b4736ea3de",
+      "operation": "modified"
+    },
+    {
+      "path": "backend-stripe-test/src/services/allwain-offer-lifecycle.ts",
+      "firstPass": 2,
+      "firstBaseSha256": null,
+      "baseProvenance": "absent_in_first_real_snapshot",
+      "history": [
+        {
+          "pass": 2,
+          "beforeSha256": null,
+          "targetSha256": "e09f36c670bfe0728c407b5902409c15fa40b34c4dc50893f807c53ff85be6a0"
+        }
+      ],
+      "latestPass": 2,
+      "latestSha256": "e09f36c670bfe0728c407b5902409c15fa40b34c4dc50893f807c53ff85be6a0",
+      "currentSha256": "e09f36c670bfe0728c407b5902409c15fa40b34c4dc50893f807c53ff85be6a0",
+      "operation": "added"
+    },
+    {
+      "path": "backend-stripe-test/src/services/allwain-participation.service.ts",
+      "firstPass": 4,
+      "firstBaseSha256": "e5f25eee2c15e0b54a6b1d315b28fbe81b16cf9819f9a3a13f1e023f06fdcae1",
+      "baseProvenance": "pass1_first_real_snapshot",
+      "history": [
+        {
+          "pass": 4,
+          "beforeSha256": "e5f25eee2c15e0b54a6b1d315b28fbe81b16cf9819f9a3a13f1e023f06fdcae1",
+          "targetSha256": "69d3131983f8a9098f999003495b7b296f0e240576a8c8e7d637e6acaa2402ab"
+        }
+      ],
+      "latestPass": 4,
+      "latestSha256": "69d3131983f8a9098f999003495b7b296f0e240576a8c8e7d637e6acaa2402ab",
+      "currentSha256": "69d3131983f8a9098f999003495b7b296f0e240576a8c8e7d637e6acaa2402ab",
+      "operation": "modified"
+    },
+    {
+      "path": "backend-stripe-test/src/services/allwain-payments.service.ts",
+      "firstPass": 3,
+      "firstBaseSha256": "45ca986f92283c93aded0a515b5c7c9dc4e9897371b9ad8d083e785fbebf82c9",
+      "baseProvenance": "pass1_first_real_snapshot",
+      "history": [
+        {
+          "pass": 3,
+          "beforeSha256": "45ca986f92283c93aded0a515b5c7c9dc4e9897371b9ad8d083e785fbebf82c9",
+          "targetSha256": "9ce397fddc103e9d8171a371c91284b312588b9a274be7000096de907e1aa32c"
+        },
+        {
+          "pass": 4,
+          "beforeSha256": "9ce397fddc103e9d8171a371c91284b312588b9a274be7000096de907e1aa32c",
+          "targetSha256": "90de4c4019148d66b0753e255ce21da7694abc4c8199b1dc79ea07b0e3982792"
+        },
+        {
+          "pass": 5,
+          "beforeSha256": "90de4c4019148d66b0753e255ce21da7694abc4c8199b1dc79ea07b0e3982792",
+          "targetSha256": "8d86538a47ac0edbc544909ef01d58f133a1422d80e468deb18d839cc1a51aad"
+        },
+        {
+          "pass": 6,
+          "beforeSha256": "8d86538a47ac0edbc544909ef01d58f133a1422d80e468deb18d839cc1a51aad",
+          "targetSha256": "327aab730c991eba6e238845ba5a36f855365157020c8b7a6ca275c6ff9068f0"
+        }
+      ],
+      "latestPass": 6,
+      "latestSha256": "327aab730c991eba6e238845ba5a36f855365157020c8b7a6ca275c6ff9068f0",
+      "currentSha256": "327aab730c991eba6e238845ba5a36f855365157020c8b7a6ca275c6ff9068f0",
+      "operation": "modified"
+    },
+    {
+      "path": "backend-stripe-test/src/services/allwain-publication-policy.ts",
+      "firstPass": 1,
+      "firstBaseSha256": null,
+      "baseProvenance": "absent_in_first_real_snapshot",
+      "history": [
+        {
+          "pass": 1,
+          "beforeSha256": null,
+          "targetSha256": "a17aca68f616cc9a8a853bfa28092b67141dc49eec8194e154503308d863729a"
+        }
+      ],
+      "latestPass": 1,
+      "latestSha256": "a17aca68f616cc9a8a853bfa28092b67141dc49eec8194e154503308d863729a",
+      "currentSha256": "a17aca68f616cc9a8a853bfa28092b67141dc49eec8194e154503308d863729a",
+      "operation": "added"
+    },
+    {
+      "path": "backend-stripe-test/src/services/allwain-purchase-analytics.ts",
+      "firstPass": 6,
+      "firstBaseSha256": null,
+      "baseProvenance": "absent_in_first_real_snapshot",
+      "history": [
+        {
+          "pass": 6,
+          "beforeSha256": null,
+          "targetSha256": "a576304fd2bdf78fd197653759cf0ec466df73354db4761bcedbe987e88acdf0"
+        }
+      ],
+      "latestPass": 6,
+      "latestSha256": "a576304fd2bdf78fd197653759cf0ec466df73354db4761bcedbe987e88acdf0",
+      "currentSha256": "a576304fd2bdf78fd197653759cf0ec466df73354db4761bcedbe987e88acdf0",
+      "operation": "added"
+    },
+    {
+      "path": "backend-stripe-test/src/services/allwain-request-recovery.ts",
+      "firstPass": 5,
+      "firstBaseSha256": null,
+      "baseProvenance": "absent_in_first_real_snapshot",
+      "history": [
+        {
+          "pass": 5,
+          "beforeSha256": null,
+          "targetSha256": "3fd655d5a4645e037158f0cdbb36a51855baa8ac14349485f81a22d6ac903495"
+        }
+      ],
+      "latestPass": 5,
+      "latestSha256": "3fd655d5a4645e037158f0cdbb36a51855baa8ac14349485f81a22d6ac903495",
+      "currentSha256": "3fd655d5a4645e037158f0cdbb36a51855baa8ac14349485f81a22d6ac903495",
+      "operation": "added"
+    },
+    {
+      "path": "backend-stripe-test/src/services/allwain-request-work.ts",
+      "firstPass": 4,
+      "firstBaseSha256": null,
+      "baseProvenance": "absent_in_first_real_snapshot",
+      "history": [
+        {
+          "pass": 4,
+          "beforeSha256": null,
+          "targetSha256": "5ffd34c1efbf11fdd89f8e29244c8ec06ec2405bf668e482323a8d6500420ddd"
+        }
+      ],
+      "latestPass": 4,
+      "latestSha256": "5ffd34c1efbf11fdd89f8e29244c8ec06ec2405bf668e482323a8d6500420ddd",
+      "currentSha256": "5ffd34c1efbf11fdd89f8e29244c8ec06ec2405bf668e482323a8d6500420ddd",
+      "operation": "added"
+    },
+    {
+      "path": "backend-stripe-test/src/services/allwain-search.service.ts",
+      "firstPass": 1,
+      "firstBaseSha256": "225cf5533a472661eaa0ef225589c88297969501ae412f9b3de633c4dd183064",
+      "baseProvenance": "pass1_first_real_snapshot",
+      "history": [
+        {
+          "pass": 1,
+          "beforeSha256": "225cf5533a472661eaa0ef225589c88297969501ae412f9b3de633c4dd183064",
+          "targetSha256": "fe499ac1a0a24903b530d831282828e313a2480a9c755d14810b2269488d440f"
+        }
+      ],
+      "latestPass": 1,
+      "latestSha256": "fe499ac1a0a24903b530d831282828e313a2480a9c755d14810b2269488d440f",
+      "currentSha256": "fe499ac1a0a24903b530d831282828e313a2480a9c755d14810b2269488d440f",
+      "operation": "modified"
+    },
+    {
+      "path": "backend-stripe-test/src/services/allwain-shopping-lists.service.ts",
+      "firstPass": 2,
+      "firstBaseSha256": "359577bd6aa4792f2c07954e6ddf4a556694111a4ad1819e3c0b19c58fca90d2",
+      "baseProvenance": "pass1_first_real_snapshot",
+      "history": [
+        {
+          "pass": 2,
+          "beforeSha256": "359577bd6aa4792f2c07954e6ddf4a556694111a4ad1819e3c0b19c58fca90d2",
+          "targetSha256": "2f5037974a63cf7e707449773a798a05cc6d2b0981a8bbe9064685c52a5a76c3"
+        },
+        {
+          "pass": 3,
+          "beforeSha256": "2f5037974a63cf7e707449773a798a05cc6d2b0981a8bbe9064685c52a5a76c3",
+          "targetSha256": "d1565e5963a3878af95626b685753742435613e272ede11b2a94328b05ce4027"
+        }
+      ],
+      "latestPass": 3,
+      "latestSha256": "d1565e5963a3878af95626b685753742435613e272ede11b2a94328b05ce4027",
+      "currentSha256": "d1565e5963a3878af95626b685753742435613e272ede11b2a94328b05ce4027",
+      "operation": "modified"
+    },
+    {
+      "path": "backend-stripe-test/src/services/allwain.service.ts",
+      "firstPass": 1,
+      "firstBaseSha256": "2cc79d4cd502161de8fe9d4a00cdff9dcd01ce367b31a34124879ff7f51f8431",
+      "baseProvenance": "pass1_first_real_snapshot",
+      "history": [
+        {
+          "pass": 1,
+          "beforeSha256": "2cc79d4cd502161de8fe9d4a00cdff9dcd01ce367b31a34124879ff7f51f8431",
+          "targetSha256": "c1d84d18ed7147ab71dca906365c775b1caa382a3cc3c4cfc85d472726b5b003"
+        },
+        {
+          "pass": 2,
+          "beforeSha256": "c1d84d18ed7147ab71dca906365c775b1caa382a3cc3c4cfc85d472726b5b003",
+          "targetSha256": "33db8037f65af8c689bcb84d68b77099afc2cb427888939f20681ec0fb521d10"
+        },
+        {
+          "pass": 3,
+          "beforeSha256": "33db8037f65af8c689bcb84d68b77099afc2cb427888939f20681ec0fb521d10",
+          "targetSha256": "5bd3b468335db81457b638fa8a0b390e1f239ee12ece7377152c57f3160d3421"
+        },
+        {
+          "pass": 4,
+          "beforeSha256": "5bd3b468335db81457b638fa8a0b390e1f239ee12ece7377152c57f3160d3421",
+          "targetSha256": "c2f2221c4a9cc1b833b557e9e66486626380d66c6cf75ce342ecbe7c6385066b"
+        },
+        {
+          "pass": 5,
+          "beforeSha256": "c2f2221c4a9cc1b833b557e9e66486626380d66c6cf75ce342ecbe7c6385066b",
+          "targetSha256": "480f746e9e7159fa0089100fcacd338a558c4e046f167d36b593086843eb6f5a"
+        },
+        {
+          "pass": 6,
+          "beforeSha256": "480f746e9e7159fa0089100fcacd338a558c4e046f167d36b593086843eb6f5a",
+          "targetSha256": "0a92fc2a25885e0ba95109956b1c1ae158b1e8bb7d56d4eb6a777f1758dfce13"
+        }
+      ],
+      "latestPass": 6,
+      "latestSha256": "0a92fc2a25885e0ba95109956b1c1ae158b1e8bb7d56d4eb6a777f1758dfce13",
+      "currentSha256": "0a92fc2a25885e0ba95109956b1c1ae158b1e8bb7d56d4eb6a777f1758dfce13",
+      "operation": "modified"
+    },
+    {
+      "path": "backend-stripe-test/src/services/data.store.allwain.pg.ts",
+      "firstPass": 1,
+      "firstBaseSha256": "599b33a367c782ece2999e7424fa444e6ed35393452bedd57a38789a9e7e8bd0",
+      "baseProvenance": "pass1_first_real_snapshot",
+      "history": [
+        {
+          "pass": 1,
+          "beforeSha256": "599b33a367c782ece2999e7424fa444e6ed35393452bedd57a38789a9e7e8bd0",
+          "targetSha256": "1f5378c57ffc50e306415d2692dd19d7a8dac4f41e711f48c1bfc5bec70327f8"
+        },
+        {
+          "pass": 2,
+          "beforeSha256": "1f5378c57ffc50e306415d2692dd19d7a8dac4f41e711f48c1bfc5bec70327f8",
+          "targetSha256": "7699e3a0067d95439b3f274e24d53daf5626abc2f798569a8d8b9ec1ac224378"
+        },
+        {
+          "pass": 3,
+          "beforeSha256": "7699e3a0067d95439b3f274e24d53daf5626abc2f798569a8d8b9ec1ac224378",
+          "targetSha256": "26bc026931b87d579bccd2e7c5557f3a06bf095d2fcf84f3cfa32b9a00b537bb"
+        },
+        {
+          "pass": 4,
+          "beforeSha256": "26bc026931b87d579bccd2e7c5557f3a06bf095d2fcf84f3cfa32b9a00b537bb",
+          "targetSha256": "0d5889eaf7da2eb0a72072728e2aa67b10ce8550dc218dca85a86e1ec8baf6da"
+        },
+        {
+          "pass": 5,
+          "beforeSha256": "0d5889eaf7da2eb0a72072728e2aa67b10ce8550dc218dca85a86e1ec8baf6da",
+          "targetSha256": "c8101c8293f93d9501e5b9f4cd2a1a8d9f28d852e6ef520ab979c4e0339efd24"
+        }
+      ],
+      "latestPass": 5,
+      "latestSha256": "c8101c8293f93d9501e5b9f4cd2a1a8d9f28d852e6ef520ab979c4e0339efd24",
+      "currentSha256": "c8101c8293f93d9501e5b9f4cd2a1a8d9f28d852e6ef520ab979c4e0339efd24",
+      "operation": "modified"
+    },
+    {
+      "path": "backend-stripe-test/src/services/data.store.pg.ts",
+      "firstPass": 2,
+      "firstBaseSha256": "93ef873f0a3a34a6aab428c60de8f2ff0bad34abcecc8284a3d3b2189ad8cc09",
+      "baseProvenance": "pass1_first_real_snapshot",
+      "history": [
+        {
+          "pass": 2,
+          "beforeSha256": "93ef873f0a3a34a6aab428c60de8f2ff0bad34abcecc8284a3d3b2189ad8cc09",
+          "targetSha256": "42ae2a6c06f3419ebd1a374dd8b28cf3d7dd82f41ead510e29c0fb2b5df6f7e7"
+        },
+        {
+          "pass": 3,
+          "beforeSha256": "42ae2a6c06f3419ebd1a374dd8b28cf3d7dd82f41ead510e29c0fb2b5df6f7e7",
+          "targetSha256": "7521029f0bed2391abfea83a320ba8daff3607a981f349100e9783070d3cc8b7"
+        },
+        {
+          "pass": 4,
+          "beforeSha256": "7521029f0bed2391abfea83a320ba8daff3607a981f349100e9783070d3cc8b7",
+          "targetSha256": "07974f93af5592c7ca8b0173cd5f7a39587b0026fabafc28d43909d1ecdf2f23"
+        }
+      ],
+      "latestPass": 4,
+      "latestSha256": "07974f93af5592c7ca8b0173cd5f7a39587b0026fabafc28d43909d1ecdf2f23",
+      "currentSha256": "07974f93af5592c7ca8b0173cd5f7a39587b0026fabafc28d43909d1ecdf2f23",
+      "operation": "modified"
+    },
+    {
+      "path": "backend-stripe-test/src/shared/types.ts",
+      "firstPass": 4,
+      "firstBaseSha256": "04a9ea5ebd5431b50e7970a90bfb4995dadc12dba5b22578374772450fae5b97",
+      "baseProvenance": "pass1_first_real_snapshot",
+      "history": [
+        {
+          "pass": 4,
+          "beforeSha256": "04a9ea5ebd5431b50e7970a90bfb4995dadc12dba5b22578374772450fae5b97",
+          "targetSha256": "d74f9d766e806cbfacb85144cf29b1b2e17eee524fb8f11ee596e8f38700a468"
+        },
+        {
+          "pass": 5,
+          "beforeSha256": "d74f9d766e806cbfacb85144cf29b1b2e17eee524fb8f11ee596e8f38700a468",
+          "targetSha256": "307241754864bb1ad8a233f10aba71ce34fb7a627d62030f287939af829e7292"
+        }
+      ],
+      "latestPass": 5,
+      "latestSha256": "307241754864bb1ad8a233f10aba71ce34fb7a627d62030f287939af829e7292",
+      "currentSha256": "307241754864bb1ad8a233f10aba71ce34fb7a627d62030f287939af829e7292",
+      "operation": "modified"
+    },
+    {
+      "path": "backend-stripe-test/tests/allwain-connector-discovery-pglite.spec.cjs",
+      "firstPass": 4,
+      "firstBaseSha256": null,
+      "baseProvenance": "absent_in_first_real_snapshot",
+      "history": [
+        {
+          "pass": 4,
+          "beforeSha256": null,
+          "targetSha256": "f44e30e625d890a515f7013d3a9859910dca6252ac99eaa5a495373d7a4a285e"
+        }
+      ],
+      "latestPass": 4,
+      "latestSha256": "f44e30e625d890a515f7013d3a9859910dca6252ac99eaa5a495373d7a4a285e",
+      "currentSha256": "f44e30e625d890a515f7013d3a9859910dca6252ac99eaa5a495373d7a4a285e",
+      "operation": "added"
+    },
+    {
+      "path": "backend-stripe-test/tests/allwain-connector-journey-postgres.spec.ts",
+      "firstPass": 6,
+      "firstBaseSha256": "9415786cdbd7a74d069fd23f96d188b44a48b01d1b32b7006c37e1ccd49ad269",
+      "baseProvenance": "pass1_first_real_snapshot",
+      "history": [
+        {
+          "pass": 6,
+          "beforeSha256": "9415786cdbd7a74d069fd23f96d188b44a48b01d1b32b7006c37e1ccd49ad269",
+          "targetSha256": "a74640360cf5cfd8357307715a198b657907fd5a9afb836da819a798bf5ea91f"
+        }
+      ],
+      "latestPass": 6,
+      "latestSha256": "a74640360cf5cfd8357307715a198b657907fd5a9afb836da819a798bf5ea91f",
+      "currentSha256": "a74640360cf5cfd8357307715a198b657907fd5a9afb836da819a798bf5ea91f",
+      "operation": "modified"
+    },
+    {
+      "path": "backend-stripe-test/tests/allwain-offer-integrity-pglite.spec.cjs",
+      "firstPass": 1,
+      "firstBaseSha256": null,
+      "baseProvenance": "absent_in_first_real_snapshot",
+      "history": [
+        {
+          "pass": 1,
+          "beforeSha256": null,
+          "targetSha256": "3d7d35ed2503f36dd84506d1e20029b21d55068b8a3e00e1dc20b8eded7252fc"
+        },
+        {
+          "pass": 2,
+          "beforeSha256": "3d7d35ed2503f36dd84506d1e20029b21d55068b8a3e00e1dc20b8eded7252fc",
+          "targetSha256": "dc8919ddb3cf337d96362ed03d53ba9df8368439aa3d56faa8ea88011022bf77"
+        },
+        {
+          "pass": 3,
+          "beforeSha256": "dc8919ddb3cf337d96362ed03d53ba9df8368439aa3d56faa8ea88011022bf77",
+          "targetSha256": "cf0feb328f5b96475e3fd7bdf3cf4525ad2a7c79038e8156722c1cbc72c5e539"
+        },
+        {
+          "pass": 4,
+          "beforeSha256": "cf0feb328f5b96475e3fd7bdf3cf4525ad2a7c79038e8156722c1cbc72c5e539",
+          "targetSha256": "ff2bef5ea85825ed165e984305b8b6117598337b929fecef925088940ee854a1"
+        },
+        {
+          "pass": 5,
+          "beforeSha256": "ff2bef5ea85825ed165e984305b8b6117598337b929fecef925088940ee854a1",
+          "targetSha256": "5a661c8af785e66f8e51b75462e3c85e8240613cc80a2a2fa9d019801040db8c"
+        },
+        {
+          "pass": 6,
+          "beforeSha256": "5a661c8af785e66f8e51b75462e3c85e8240613cc80a2a2fa9d019801040db8c",
+          "targetSha256": "84ffefe08f16f24083272fa1f01e830af4ca6e80503c8e3cc630b72ebbfeb3c3"
+        }
+      ],
+      "latestPass": 6,
+      "latestSha256": "84ffefe08f16f24083272fa1f01e830af4ca6e80503c8e3cc630b72ebbfeb3c3",
+      "currentSha256": "84ffefe08f16f24083272fa1f01e830af4ca6e80503c8e3cc630b72ebbfeb3c3",
+      "operation": "added"
+    },
+    {
+      "path": "backend-stripe-test/tests/allwain-offer-integrity.spec.cjs",
+      "firstPass": 1,
+      "firstBaseSha256": null,
+      "baseProvenance": "absent_in_first_real_snapshot",
+      "history": [
+        {
+          "pass": 1,
+          "beforeSha256": null,
+          "targetSha256": "d217df8caca7200ea6985934e584f74d0f1eaee5762d131abf0b8f5e9c11679b"
+        },
+        {
+          "pass": 2,
+          "beforeSha256": "d217df8caca7200ea6985934e584f74d0f1eaee5762d131abf0b8f5e9c11679b",
+          "targetSha256": "125b615cf7c0302c8556af7bc2887928ee91b00c4c89894a9113e6ee3378bbf9"
+        },
+        {
+          "pass": 3,
+          "beforeSha256": "125b615cf7c0302c8556af7bc2887928ee91b00c4c89894a9113e6ee3378bbf9",
+          "targetSha256": "20e362c0f9719418f60172f3c6dd33fc47a100136e713fd37d23fe755dc591fa"
+        },
+        {
+          "pass": 4,
+          "beforeSha256": "20e362c0f9719418f60172f3c6dd33fc47a100136e713fd37d23fe755dc591fa",
+          "targetSha256": "0029975e0e1330c00979d091b8d53ff6fa22fdfaf8a68c0d5bebb9cb936fc36e"
+        },
+        {
+          "pass": 5,
+          "beforeSha256": "0029975e0e1330c00979d091b8d53ff6fa22fdfaf8a68c0d5bebb9cb936fc36e",
+          "targetSha256": "0fa857ea4597b6f76fe4bd4e9c301d6a54f3928d6f45182d2762dbd25879c186"
+        },
+        {
+          "pass": 6,
+          "beforeSha256": "0fa857ea4597b6f76fe4bd4e9c301d6a54f3928d6f45182d2762dbd25879c186",
+          "targetSha256": "9a8134edef8d371a14cc4f13094f9bb2ae1b392dacabe0c585edef255f23d592"
+        }
+      ],
+      "latestPass": 6,
+      "latestSha256": "9a8134edef8d371a14cc4f13094f9bb2ae1b392dacabe0c585edef255f23d592",
+      "currentSha256": "9a8134edef8d371a14cc4f13094f9bb2ae1b392dacabe0c585edef255f23d592",
+      "operation": "added"
+    },
+    {
+      "path": "backend-stripe-test/tests/allwain-pass2-lifecycle-http.spec.cjs",
+      "firstPass": 2,
+      "firstBaseSha256": null,
+      "baseProvenance": "absent_in_first_real_snapshot",
+      "history": [
+        {
+          "pass": 2,
+          "beforeSha256": null,
+          "targetSha256": "cdf1c27466bf4bbf0d22d4998ac3e60b49f1336774aa99c6e53b834bfd79cc81"
+        },
+        {
+          "pass": 3,
+          "beforeSha256": "cdf1c27466bf4bbf0d22d4998ac3e60b49f1336774aa99c6e53b834bfd79cc81",
+          "targetSha256": "13c01fb0369fea321c3aafd9550ba0eea22d96056665f34ece6ff0e7b971952c"
+        }
+      ],
+      "latestPass": 3,
+      "latestSha256": "13c01fb0369fea321c3aafd9550ba0eea22d96056665f34ece6ff0e7b971952c",
+      "currentSha256": "13c01fb0369fea321c3aafd9550ba0eea22d96056665f34ece6ff0e7b971952c",
+      "operation": "added"
+    },
+    {
+      "path": "backend-stripe-test/tests/allwain-pass2-lifecycle-pglite.spec.cjs",
+      "firstPass": 2,
+      "firstBaseSha256": null,
+      "baseProvenance": "absent_in_first_real_snapshot",
+      "history": [
+        {
+          "pass": 2,
+          "beforeSha256": null,
+          "targetSha256": "3cdd50d793d57db77c24b1ffd81e7d2b529e502d09eb19334e64e33fdcd23d8c"
+        }
+      ],
+      "latestPass": 2,
+      "latestSha256": "3cdd50d793d57db77c24b1ffd81e7d2b529e502d09eb19334e64e33fdcd23d8c",
+      "currentSha256": "3cdd50d793d57db77c24b1ffd81e7d2b529e502d09eb19334e64e33fdcd23d8c",
+      "operation": "added"
+    },
+    {
+      "path": "backend-stripe-test/tests/allwain-pass2-lifecycle.spec.cjs",
+      "firstPass": 2,
+      "firstBaseSha256": null,
+      "baseProvenance": "absent_in_first_real_snapshot",
+      "history": [
+        {
+          "pass": 2,
+          "beforeSha256": null,
+          "targetSha256": "2c07863cd09012e42d40e15a23f648504cb1f04585a1f071129671c89e84e64b"
+        }
+      ],
+      "latestPass": 2,
+      "latestSha256": "2c07863cd09012e42d40e15a23f648504cb1f04585a1f071129671c89e84e64b",
+      "currentSha256": "2c07863cd09012e42d40e15a23f648504cb1f04585a1f071129671c89e84e64b",
+      "operation": "added"
+    },
+    {
+      "path": "backend-stripe-test/tests/allwain-pass3-discovery-pglite.spec.cjs",
+      "firstPass": 3,
+      "firstBaseSha256": null,
+      "baseProvenance": "absent_in_first_real_snapshot",
+      "history": [
+        {
+          "pass": 3,
+          "beforeSha256": null,
+          "targetSha256": "71d0c4d352640ba0f9dc2676708b0c345e0e980cf5eb03c0b8f1024b5aee5228"
+        }
+      ],
+      "latestPass": 3,
+      "latestSha256": "71d0c4d352640ba0f9dc2676708b0c345e0e980cf5eb03c0b8f1024b5aee5228",
+      "currentSha256": "71d0c4d352640ba0f9dc2676708b0c345e0e980cf5eb03c0b8f1024b5aee5228",
+      "operation": "added"
+    },
+    {
+      "path": "backend-stripe-test/tests/allwain-pass3-discovery.spec.cjs",
+      "firstPass": 3,
+      "firstBaseSha256": null,
+      "baseProvenance": "absent_in_first_real_snapshot",
+      "history": [
+        {
+          "pass": 3,
+          "beforeSha256": null,
+          "targetSha256": "e0c46d6352ba12d84f57068287aca4688c488c479318b6af2c66d49809cb7b6e"
+        }
+      ],
+      "latestPass": 3,
+      "latestSha256": "e0c46d6352ba12d84f57068287aca4688c488c479318b6af2c66d49809cb7b6e",
+      "currentSha256": "e0c46d6352ba12d84f57068287aca4688c488c479318b6af2c66d49809cb7b6e",
+      "operation": "added"
+    },
+    {
+      "path": "backend-stripe-test/tests/allwain-pass4-activity-http.spec.cjs",
+      "firstPass": 4,
+      "firstBaseSha256": null,
+      "baseProvenance": "absent_in_first_real_snapshot",
+      "history": [
+        {
+          "pass": 4,
+          "beforeSha256": null,
+          "targetSha256": "4ab108c084c53cada4db4549d772bcaa7b51e8e8a217a7d2539ff4769688ab1a"
+        }
+      ],
+      "latestPass": 4,
+      "latestSha256": "4ab108c084c53cada4db4549d772bcaa7b51e8e8a217a7d2539ff4769688ab1a",
+      "currentSha256": "4ab108c084c53cada4db4549d772bcaa7b51e8e8a217a7d2539ff4769688ab1a",
+      "operation": "added"
+    },
+    {
+      "path": "backend-stripe-test/tests/allwain-pass4-activity-pglite.spec.cjs",
+      "firstPass": 4,
+      "firstBaseSha256": null,
+      "baseProvenance": "absent_in_first_real_snapshot",
+      "history": [
+        {
+          "pass": 4,
+          "beforeSha256": null,
+          "targetSha256": "66c42c17dd1c6dff48686b1036a1957cab93f1927bcba326efd368da1f92dc18"
+        }
+      ],
+      "latestPass": 4,
+      "latestSha256": "66c42c17dd1c6dff48686b1036a1957cab93f1927bcba326efd368da1f92dc18",
+      "currentSha256": "66c42c17dd1c6dff48686b1036a1957cab93f1927bcba326efd368da1f92dc18",
+      "operation": "added"
+    },
+    {
+      "path": "backend-stripe-test/tests/allwain-pass4-request-work-pglite.spec.cjs",
+      "firstPass": 4,
+      "firstBaseSha256": null,
+      "baseProvenance": "absent_in_first_real_snapshot",
+      "history": [
+        {
+          "pass": 4,
+          "beforeSha256": null,
+          "targetSha256": "5c052d1649a580a6803d3a23a8b620041f2b071d29b93ea4dee9a9ad9d3edf45"
+        }
+      ],
+      "latestPass": 4,
+      "latestSha256": "5c052d1649a580a6803d3a23a8b620041f2b071d29b93ea4dee9a9ad9d3edf45",
+      "currentSha256": "5c052d1649a580a6803d3a23a8b620041f2b071d29b93ea4dee9a9ad9d3edf45",
+      "operation": "added"
+    },
+    {
+      "path": "backend-stripe-test/tests/allwain-pass4-request-work.spec.cjs",
+      "firstPass": 4,
+      "firstBaseSha256": null,
+      "baseProvenance": "absent_in_first_real_snapshot",
+      "history": [
+        {
+          "pass": 4,
+          "beforeSha256": null,
+          "targetSha256": "6c83f4d758857f7066a71f93955fdb94341ecfab298d2382827ce7d280f08a2e"
+        }
+      ],
+      "latestPass": 4,
+      "latestSha256": "6c83f4d758857f7066a71f93955fdb94341ecfab298d2382827ce7d280f08a2e",
+      "currentSha256": "6c83f4d758857f7066a71f93955fdb94341ecfab298d2382827ce7d280f08a2e",
+      "operation": "added"
+    },
+    {
+      "path": "backend-stripe-test/tests/allwain-pass5-creation.spec.cjs",
+      "firstPass": 5,
+      "firstBaseSha256": null,
+      "baseProvenance": "absent_in_first_real_snapshot",
+      "history": [
+        {
+          "pass": 5,
+          "beforeSha256": null,
+          "targetSha256": "0bc1ec84d41649b87848e48e95bed7020402b3bf0573eccc5bf2de7c76132600"
+        }
+      ],
+      "latestPass": 5,
+      "latestSha256": "0bc1ec84d41649b87848e48e95bed7020402b3bf0573eccc5bf2de7c76132600",
+      "currentSha256": "0bc1ec84d41649b87848e48e95bed7020402b3bf0573eccc5bf2de7c76132600",
+      "operation": "added"
+    },
+    {
+      "path": "backend-stripe-test/tests/allwain-pass5-request-recovery-pglite.spec.cjs",
+      "firstPass": 5,
+      "firstBaseSha256": null,
+      "baseProvenance": "absent_in_first_real_snapshot",
+      "history": [
+        {
+          "pass": 5,
+          "beforeSha256": null,
+          "targetSha256": "3098966480dd199bd4a1a813fc5b73251160469c348524b4e697c0f811e36936"
+        }
+      ],
+      "latestPass": 5,
+      "latestSha256": "3098966480dd199bd4a1a813fc5b73251160469c348524b4e697c0f811e36936",
+      "currentSha256": "3098966480dd199bd4a1a813fc5b73251160469c348524b4e697c0f811e36936",
+      "operation": "added"
+    },
+    {
+      "path": "backend-stripe-test/tests/allwain-pass5-request-recovery.spec.cjs",
+      "firstPass": 5,
+      "firstBaseSha256": null,
+      "baseProvenance": "absent_in_first_real_snapshot",
+      "history": [
+        {
+          "pass": 5,
+          "beforeSha256": null,
+          "targetSha256": "72e27bd25924a059c8a15a63e21316e0aad185656b7ee69a34ada0279a18e003"
+        }
+      ],
+      "latestPass": 5,
+      "latestSha256": "72e27bd25924a059c8a15a63e21316e0aad185656b7ee69a34ada0279a18e003",
+      "currentSha256": "72e27bd25924a059c8a15a63e21316e0aad185656b7ee69a34ada0279a18e003",
+      "operation": "added"
+    },
+    {
+      "path": "backend-stripe-test/tests/allwain-pass6-purchase-analytics.spec.cjs",
+      "firstPass": 6,
+      "firstBaseSha256": null,
+      "baseProvenance": "absent_in_first_real_snapshot",
+      "history": [
+        {
+          "pass": 6,
+          "beforeSha256": null,
+          "targetSha256": "7786394196b27cfef562fa308a8922c278074636826c53419f30379e155ed41c"
+        }
+      ],
+      "latestPass": 6,
+      "latestSha256": "7786394196b27cfef562fa308a8922c278074636826c53419f30379e155ed41c",
+      "currentSha256": "7786394196b27cfef562fa308a8922c278074636826c53419f30379e155ed41c",
+      "operation": "added"
+    },
+    {
+      "path": "backend-stripe-test/tests/allwain-postgres-scale.spec.ts",
+      "firstPass": 6,
+      "firstBaseSha256": "9714bbd4cfeba4b47626b34453867abfda7d8059224abfe2da8050958d4dcf6e",
+      "baseProvenance": "pass1_first_real_snapshot",
+      "history": [
+        {
+          "pass": 6,
+          "beforeSha256": "9714bbd4cfeba4b47626b34453867abfda7d8059224abfe2da8050958d4dcf6e",
+          "targetSha256": "e7ee7addd3c354d567000f87790bfe4f739def81a83821df64022a04814131d7"
+        }
+      ],
+      "latestPass": 6,
+      "latestSha256": "e7ee7addd3c354d567000f87790bfe4f739def81a83821df64022a04814131d7",
+      "currentSha256": "e7ee7addd3c354d567000f87790bfe4f739def81a83821df64022a04814131d7",
+      "operation": "modified"
+    },
+    {
+      "path": "backend-stripe-test/tests/allwain-publication-visibility.spec.ts",
+      "firstPass": 1,
+      "firstBaseSha256": null,
+      "baseProvenance": "absent_in_first_real_snapshot",
+      "history": [
+        {
+          "pass": 1,
+          "beforeSha256": null,
+          "targetSha256": "1f1c2b7a43f59de644ff4eefddc041aca88726d12b109774e2c19b0d02400b5e"
+        }
+      ],
+      "latestPass": 1,
+      "latestSha256": "1f1c2b7a43f59de644ff4eefddc041aca88726d12b109774e2c19b0d02400b5e",
+      "currentSha256": "1f1c2b7a43f59de644ff4eefddc041aca88726d12b109774e2c19b0d02400b5e",
+      "operation": "added"
+    },
+    {
+      "path": "backend-stripe-test/tests/allwain-request-media.spec.cjs",
+      "firstPass": 1,
+      "firstBaseSha256": null,
+      "baseProvenance": "absent_in_first_real_snapshot",
+      "history": [
+        {
+          "pass": 1,
+          "beforeSha256": null,
+          "targetSha256": "7ed7ce0d59073b2561ff0ef41c94683d668f53dcceb0f134712fcdddd3cd0c7f"
+        }
+      ],
+      "latestPass": 1,
+      "latestSha256": "7ed7ce0d59073b2561ff0ef41c94683d668f53dcceb0f134712fcdddd3cd0c7f",
+      "currentSha256": "7ed7ce0d59073b2561ff0ef41c94683d668f53dcceb0f134712fcdddd3cd0c7f",
+      "operation": "added"
+    },
+    {
+      "path": "backend-stripe-test/tests/allwain-web-tester-routes.spec.ts",
+      "firstPass": 1,
+      "firstBaseSha256": "c618ebd2fee4c47410621724779a32a7ca5726ad2ad92d15accdc18e3d75625b",
+      "baseProvenance": "pass1_first_real_snapshot",
+      "history": [
+        {
+          "pass": 1,
+          "beforeSha256": "c618ebd2fee4c47410621724779a32a7ca5726ad2ad92d15accdc18e3d75625b",
+          "targetSha256": "f4db134424197f281aa6c29d29c04c45772f06565fc6948b16b87ea124aeec02"
+        }
+      ],
+      "latestPass": 1,
+      "latestSha256": "f4db134424197f281aa6c29d29c04c45772f06565fc6948b16b87ea124aeec02",
+      "currentSha256": "f4db134424197f281aa6c29d29c04c45772f06565fc6948b16b87ea124aeec02",
+      "operation": "modified"
+    },
+    {
+      "path": "backend-stripe-test/tests/auth.spec.ts",
+      "firstPass": 6,
+      "firstBaseSha256": "f7d12b290edd4673f25721628d5838a683e7be5758d946a645998f3f61054eeb",
+      "baseProvenance": "pass1_first_real_snapshot",
+      "history": [
+        {
+          "pass": 6,
+          "beforeSha256": "f7d12b290edd4673f25721628d5838a683e7be5758d946a645998f3f61054eeb",
+          "targetSha256": "6d345633d171af7406955e877bb852713b7286dade91a60704c0f575663d0bc2"
+        }
+      ],
+      "latestPass": 6,
+      "latestSha256": "6d345633d171af7406955e877bb852713b7286dade91a60704c0f575663d0bc2",
+      "currentSha256": "6d345633d171af7406955e877bb852713b7286dade91a60704c0f575663d0bc2",
+      "operation": "modified"
+    },
+    {
+      "path": "backend-stripe-test/tests/helpers/request-recovery-source.cjs",
+      "firstPass": 5,
+      "firstBaseSha256": null,
+      "baseProvenance": "absent_in_first_real_snapshot",
+      "history": [
+        {
+          "pass": 5,
+          "beforeSha256": null,
+          "targetSha256": "1963d16dea3069f4ba0dc299586a9c620b0034bc967c9c14668fb44356b9e8b7"
+        },
+        {
+          "pass": 6,
+          "beforeSha256": "1963d16dea3069f4ba0dc299586a9c620b0034bc967c9c14668fb44356b9e8b7",
+          "targetSha256": "ad4244bc63cffbf8d12c65bf27ad5720a943fee72f3866b2851cd429d170e98f"
+        }
+      ],
+      "latestPass": 6,
+      "latestSha256": "ad4244bc63cffbf8d12c65bf27ad5720a943fee72f3866b2851cd429d170e98f",
+      "currentSha256": "ad4244bc63cffbf8d12c65bf27ad5720a943fee72f3866b2851cd429d170e98f",
+      "operation": "added"
+    },
+    {
+      "path": "backend-stripe-test/tests/helpers/synthetic-admin.ts",
+      "firstPass": 6,
+      "firstBaseSha256": null,
+      "baseProvenance": "absent_in_first_real_snapshot",
+      "history": [
+        {
+          "pass": 6,
+          "beforeSha256": null,
+          "targetSha256": "abae54db288df94b675ee98582725c098745e10c592cc860b0a0b408b5a4fb52"
+        }
+      ],
+      "latestPass": 6,
+      "latestSha256": "abae54db288df94b675ee98582725c098745e10c592cc860b0a0b408b5a4fb52",
+      "currentSha256": "abae54db288df94b675ee98582725c098745e10c592cc860b0a0b408b5a4fb52",
+      "operation": "added"
+    },
+    {
+      "path": "backend-stripe-test/tests/multiuser-demo.spec.ts",
+      "firstPass": 6,
+      "firstBaseSha256": "9ec513b878432a4f8178f1cbaf3dbbef5ec8d4c625a7a7301c7bc9a228d4af5f",
+      "baseProvenance": "pass1_first_real_snapshot",
+      "history": [
+        {
+          "pass": 6,
+          "beforeSha256": "9ec513b878432a4f8178f1cbaf3dbbef5ec8d4c625a7a7301c7bc9a228d4af5f",
+          "targetSha256": "943cdfcb57b159b9f5d6fc21b9e42fce676fab19a0100d90a2cf11b0ea1e8f9b"
+        }
+      ],
+      "latestPass": 6,
+      "latestSha256": "943cdfcb57b159b9f5d6fc21b9e42fce676fab19a0100d90a2cf11b0ea1e8f9b",
+      "currentSha256": "943cdfcb57b159b9f5d6fc21b9e42fce676fab19a0100d90a2cf11b0ea1e8f9b",
+      "operation": "modified"
+    },
+    {
+      "path": "backend-stripe-test/tests/offers.spec.ts",
+      "firstPass": 6,
+      "firstBaseSha256": "2f66ca5ea899c6b796d7ec23ba678c454d5d11f15d5be2947e6c51de1a8f3b2b",
+      "baseProvenance": "pass1_first_real_snapshot",
+      "history": [
+        {
+          "pass": 6,
+          "beforeSha256": "2f66ca5ea899c6b796d7ec23ba678c454d5d11f15d5be2947e6c51de1a8f3b2b",
+          "targetSha256": "6b9f31cf40b9440f4f5548f175fa4bb1fb046754213f00ddc6eb6f9b5a059778"
+        }
+      ],
+      "latestPass": 6,
+      "latestSha256": "6b9f31cf40b9440f4f5548f175fa4bb1fb046754213f00ddc6eb6f9b5a059778",
+      "currentSha256": "6b9f31cf40b9440f4f5548f175fa4bb1fb046754213f00ddc6eb6f9b5a059778",
+      "operation": "modified"
+    },
+    {
+      "path": "backend-stripe-test/tests/run-tests.cjs",
+      "firstPass": 1,
+      "firstBaseSha256": "65de7c8927cdf0fc9197d5614c04c0a0a71251bc3bac8cf55717695ba74c4714",
+      "baseProvenance": "pass1_first_real_snapshot",
+      "history": [
+        {
+          "pass": 1,
+          "beforeSha256": "65de7c8927cdf0fc9197d5614c04c0a0a71251bc3bac8cf55717695ba74c4714",
+          "targetSha256": "01ba14a73bf568bb639157f1027a249cb72cf33c7e2b8524affc1dafc36fad4d"
+        },
+        {
+          "pass": 2,
+          "beforeSha256": "01ba14a73bf568bb639157f1027a249cb72cf33c7e2b8524affc1dafc36fad4d",
+          "targetSha256": "2d5950827fe8493981b5b0d423245e53c9a6368b30e11df96176dac0cf8a74bc"
+        },
+        {
+          "pass": 3,
+          "beforeSha256": "2d5950827fe8493981b5b0d423245e53c9a6368b30e11df96176dac0cf8a74bc",
+          "targetSha256": "5aeff898f312451ba3fb83170992a6dfd62405204956ee27aa03a4f56d2a14c7"
+        },
+        {
+          "pass": 4,
+          "beforeSha256": "5aeff898f312451ba3fb83170992a6dfd62405204956ee27aa03a4f56d2a14c7",
+          "targetSha256": "5d3c724caf3642c01a4b30f191184e6fbe23d8a740fe4f75b3b1df6cdf8bd510"
+        },
+        {
+          "pass": 5,
+          "beforeSha256": "5d3c724caf3642c01a4b30f191184e6fbe23d8a740fe4f75b3b1df6cdf8bd510",
+          "targetSha256": "ac6ea394117bccab75ba1f4f9b28082184a01f95881a31f1819aa8b838958868"
+        },
+        {
+          "pass": 6,
+          "beforeSha256": "ac6ea394117bccab75ba1f4f9b28082184a01f95881a31f1819aa8b838958868",
+          "targetSha256": "cd3316c7ab02ea42abfc0df60ac345ca7c2de53a1fc1e1265bf8b0ee06f61043"
+        }
+      ],
+      "latestPass": 6,
+      "latestSha256": "cd3316c7ab02ea42abfc0df60ac345ca7c2de53a1fc1e1265bf8b0ee06f61043",
+      "currentSha256": "cd3316c7ab02ea42abfc0df60ac345ca7c2de53a1fc1e1265bf8b0ee06f61043",
+      "operation": "modified"
+    },
+    {
+      "path": "backend-stripe-test/tests/trueqia-chat.spec.ts",
+      "firstPass": 6,
+      "firstBaseSha256": "ba473f5ce8e75b8d05b915ddb309a813bb8d7140f54a03ec566390c304745cea",
+      "baseProvenance": "pass1_first_real_snapshot",
+      "history": [
+        {
+          "pass": 6,
+          "beforeSha256": "ba473f5ce8e75b8d05b915ddb309a813bb8d7140f54a03ec566390c304745cea",
+          "targetSha256": "015ba528d8a6cfab4c4ee6fa80ed931cd0f8cfede9b870633d21a927a9c6d942"
+        }
+      ],
+      "latestPass": 6,
+      "latestSha256": "015ba528d8a6cfab4c4ee6fa80ed931cd0f8cfede9b870633d21a927a9c6d942",
+      "currentSha256": "015ba528d8a6cfab4c4ee6fa80ed931cd0f8cfede9b870633d21a927a9c6d942",
+      "operation": "modified"
+    },
+    {
+      "path": "backend-stripe-test/tests/trueqia-contracts.spec.ts",
+      "firstPass": 6,
+      "firstBaseSha256": "1a64cf85984423318c7fa2090bf04045212dc638e873611523fb5246d425f4da",
+      "baseProvenance": "pass1_first_real_snapshot",
+      "history": [
+        {
+          "pass": 6,
+          "beforeSha256": "1a64cf85984423318c7fa2090bf04045212dc638e873611523fb5246d425f4da",
+          "targetSha256": "06d2e36bcf75e1e401c4b19577f5e4385edca18da236ceeccb9ef150f0cde3e4"
+        }
+      ],
+      "latestPass": 6,
+      "latestSha256": "06d2e36bcf75e1e401c4b19577f5e4385edca18da236ceeccb9ef150f0cde3e4",
+      "currentSha256": "06d2e36bcf75e1e401c4b19577f5e4385edca18da236ceeccb9ef150f0cde3e4",
+      "operation": "modified"
+    },
+    {
+      "path": "frontend-stripe-test/public/analytics-config.json",
+      "firstPass": 6,
+      "firstBaseSha256": "96369e32ef3561c8e49820885a8a2a5de4c225d77933d6810656f293e64058b9",
+      "baseProvenance": "pass6_verified_public_prechange_snapshot",
+      "history": [
+        {
+          "pass": 6,
+          "beforeSha256": "96369e32ef3561c8e49820885a8a2a5de4c225d77933d6810656f293e64058b9",
+          "targetSha256": "2f8176947cf0a227357bf4985a2cf35a02255106151df9242aec13a71411f516"
+        }
+      ],
+      "latestPass": 6,
+      "latestSha256": "2f8176947cf0a227357bf4985a2cf35a02255106151df9242aec13a71411f516",
+      "currentSha256": "2f8176947cf0a227357bf4985a2cf35a02255106151df9242aec13a71411f516",
+      "operation": "modified"
+    },
+    {
+      "path": "frontend-stripe-test/public/analytics-static.js",
+      "firstPass": 6,
+      "firstBaseSha256": "bc1ab0d7c9422083f3d41a38e1aa819b89d9c097035675ec4d25c7fecb795522",
+      "baseProvenance": "pass6_verified_public_prechange_snapshot",
+      "history": [
+        {
+          "pass": 6,
+          "beforeSha256": "bc1ab0d7c9422083f3d41a38e1aa819b89d9c097035675ec4d25c7fecb795522",
+          "targetSha256": "3817b6a0e16fb37f1860bb2137bb6d2540c330f048e69f322753b8f5575be621"
+        }
+      ],
+      "latestPass": 6,
+      "latestSha256": "3817b6a0e16fb37f1860bb2137bb6d2540c330f048e69f322753b8f5575be621",
+      "currentSha256": "3817b6a0e16fb37f1860bb2137bb6d2540c330f048e69f322753b8f5575be621",
+      "operation": "modified"
+    },
+    {
+      "path": "frontend-stripe-test/src/analytics/analyticsConfig.ts",
+      "firstPass": 6,
+      "firstBaseSha256": null,
+      "baseProvenance": "absent_in_first_real_snapshot",
+      "history": [
+        {
+          "pass": 6,
+          "beforeSha256": null,
+          "targetSha256": "dcc42b5553b7d6c8386dbf8ee032fce8824992825bcfa5b0ed0b621f819881d4"
+        }
+      ],
+      "latestPass": 6,
+      "latestSha256": "dcc42b5553b7d6c8386dbf8ee032fce8824992825bcfa5b0ed0b621f819881d4",
+      "currentSha256": "dcc42b5553b7d6c8386dbf8ee032fce8824992825bcfa5b0ed0b621f819881d4",
+      "operation": "added"
+    },
+    {
+      "path": "frontend-stripe-test/src/analytics/AnalyticsConsentProvider.tsx",
+      "firstPass": 6,
+      "firstBaseSha256": "0801dcd782b082860267dffbbaf2b2de4548869496f0b0e69c4f87af31171de2",
+      "baseProvenance": "pass1_first_real_snapshot",
+      "history": [
+        {
+          "pass": 6,
+          "beforeSha256": "0801dcd782b082860267dffbbaf2b2de4548869496f0b0e69c4f87af31171de2",
+          "targetSha256": "67f40a9c325da5f2b816e904dbbcaf8452b161ef2d8fe73e3d26c74989371a42"
+        }
+      ],
+      "latestPass": 6,
+      "latestSha256": "67f40a9c325da5f2b816e904dbbcaf8452b161ef2d8fe73e3d26c74989371a42",
+      "currentSha256": "67f40a9c325da5f2b816e904dbbcaf8452b161ef2d8fe73e3d26c74989371a42",
+      "operation": "modified"
+    },
+    {
+      "path": "frontend-stripe-test/src/analytics/analyticsPolicy.ts",
+      "firstPass": 6,
+      "firstBaseSha256": null,
+      "baseProvenance": "absent_in_first_real_snapshot",
+      "history": [
+        {
+          "pass": 6,
+          "beforeSha256": null,
+          "targetSha256": "25c41b3e0598e56129f7d831f722b223df3c4eb7c2f408383694234632d4dc2a"
+        }
+      ],
+      "latestPass": 6,
+      "latestSha256": "25c41b3e0598e56129f7d831f722b223df3c4eb7c2f408383694234632d4dc2a",
+      "currentSha256": "25c41b3e0598e56129f7d831f722b223df3c4eb7c2f408383694234632d4dc2a",
+      "operation": "added"
+    },
+    {
+      "path": "frontend-stripe-test/src/analytics/analyticsRuntime.native.ts",
+      "firstPass": 6,
+      "firstBaseSha256": "fee5afb4aebbd36bfa86547bc845fc94be45845cf33184495f793c69a90c78f4",
+      "baseProvenance": "pass1_first_real_snapshot",
+      "history": [
+        {
+          "pass": 6,
+          "beforeSha256": "fee5afb4aebbd36bfa86547bc845fc94be45845cf33184495f793c69a90c78f4",
+          "targetSha256": "dc1b30f88a3c8bf1ff5cee06e53a4c49368e5dac5c944a21cbba2574d56c8afe"
+        }
+      ],
+      "latestPass": 6,
+      "latestSha256": "dc1b30f88a3c8bf1ff5cee06e53a4c49368e5dac5c944a21cbba2574d56c8afe",
+      "currentSha256": "dc1b30f88a3c8bf1ff5cee06e53a4c49368e5dac5c944a21cbba2574d56c8afe",
+      "operation": "modified"
+    },
+    {
+      "path": "frontend-stripe-test/src/analytics/analyticsRuntime.ts",
+      "firstPass": 6,
+      "firstBaseSha256": "d1b91a9f7d86505eae76a15bc2756ebfaf1939b739ad5cddecd7dfcf81869d14",
+      "baseProvenance": "pass1_first_real_snapshot",
+      "history": [
+        {
+          "pass": 6,
+          "beforeSha256": "d1b91a9f7d86505eae76a15bc2756ebfaf1939b739ad5cddecd7dfcf81869d14",
+          "targetSha256": "2e4f2e1f43c9fd69b22af23201d903d7211828e764a5854819d14f972c700d45"
+        }
+      ],
+      "latestPass": 6,
+      "latestSha256": "2e4f2e1f43c9fd69b22af23201d903d7211828e764a5854819d14f972c700d45",
+      "currentSha256": "2e4f2e1f43c9fd69b22af23201d903d7211828e764a5854819d14f972c700d45",
+      "operation": "modified"
+    },
+    {
+      "path": "frontend-stripe-test/src/analytics/analyticsRuntime.web.ts",
+      "firstPass": 6,
+      "firstBaseSha256": "c71d9302d96893ec3e29727a7b0e631d56d3e84bfa66626a0d84c38cb2f0a68c",
+      "baseProvenance": "pass1_first_real_snapshot",
+      "history": [
+        {
+          "pass": 6,
+          "beforeSha256": "c71d9302d96893ec3e29727a7b0e631d56d3e84bfa66626a0d84c38cb2f0a68c",
+          "targetSha256": "bef2e65a3f9aa5ad939d33bc505f43896c18a065ddc98fc840f6117f338307dc"
+        }
+      ],
+      "latestPass": 6,
+      "latestSha256": "bef2e65a3f9aa5ad939d33bc505f43896c18a065ddc98fc840f6117f338307dc",
+      "currentSha256": "bef2e65a3f9aa5ad939d33bc505f43896c18a065ddc98fc840f6117f338307dc",
+      "operation": "modified"
+    },
+    {
+      "path": "frontend-stripe-test/src/analytics/consentDecision.ts",
+      "firstPass": 6,
+      "firstBaseSha256": "0e59854a2490f29a095ed4d680a86c06998754309dbb4fa07e923681e84cfd9b",
+      "baseProvenance": "pass1_first_real_snapshot",
+      "history": [
+        {
+          "pass": 6,
+          "beforeSha256": "0e59854a2490f29a095ed4d680a86c06998754309dbb4fa07e923681e84cfd9b",
+          "targetSha256": "adc5c112150fdc90a45f2b9898d1a0122e1911e6e15c4d23cc7c066e99229257"
+        }
+      ],
+      "latestPass": 6,
+      "latestSha256": "adc5c112150fdc90a45f2b9898d1a0122e1911e6e15c4d23cc7c066e99229257",
+      "currentSha256": "adc5c112150fdc90a45f2b9898d1a0122e1911e6e15c4d23cc7c066e99229257",
+      "operation": "modified"
+    },
+    {
+      "path": "frontend-stripe-test/src/analytics/index.ts",
+      "firstPass": 6,
+      "firstBaseSha256": "a7127131314138f3d3bc8096efcc0fe911b828112a71fcd8472431f5617188be",
+      "baseProvenance": "pass1_first_real_snapshot",
+      "history": [
+        {
+          "pass": 6,
+          "beforeSha256": "a7127131314138f3d3bc8096efcc0fe911b828112a71fcd8472431f5617188be",
+          "targetSha256": "2b667d0db42db5a4950a4fd6571a761b6c7048846d0928a0b641c7d66148b61a"
+        }
+      ],
+      "latestPass": 6,
+      "latestSha256": "2b667d0db42db5a4950a4fd6571a761b6c7048846d0928a0b641c7d66148b61a",
+      "currentSha256": "2b667d0db42db5a4950a4fd6571a761b6c7048846d0928a0b641c7d66148b61a",
+      "operation": "modified"
+    },
+    {
+      "path": "frontend-stripe-test/src/analytics/purchaseAnalytics.ts",
+      "firstPass": 6,
+      "firstBaseSha256": null,
+      "baseProvenance": "absent_in_first_real_snapshot",
+      "history": [
+        {
+          "pass": 6,
+          "beforeSha256": null,
+          "targetSha256": "46190784ec6ab6bcf0ced30310f0212fb7307ef68a82d9edf26ef3dbf26ee673"
+        }
+      ],
+      "latestPass": 6,
+      "latestSha256": "46190784ec6ab6bcf0ced30310f0212fb7307ef68a82d9edf26ef3dbf26ee673",
+      "currentSha256": "46190784ec6ab6bcf0ced30310f0212fb7307ef68a82d9edf26ef3dbf26ee673",
+      "operation": "added"
+    },
+    {
+      "path": "frontend-stripe-test/src/components/CatalogOfferEditor.tsx",
+      "firstPass": 2,
+      "firstBaseSha256": null,
+      "baseProvenance": "absent_in_first_real_snapshot",
+      "history": [
+        {
+          "pass": 2,
+          "beforeSha256": null,
+          "targetSha256": "504f4a539c5fed3b87610acbba108188044b049b5a59de03ec87311e9fda73a5"
+        }
+      ],
+      "latestPass": 2,
+      "latestSha256": "504f4a539c5fed3b87610acbba108188044b049b5a59de03ec87311e9fda73a5",
+      "currentSha256": "504f4a539c5fed3b87610acbba108188044b049b5a59de03ec87311e9fda73a5",
+      "operation": "added"
+    },
+    {
+      "path": "frontend-stripe-test/src/components/DemandFilterFields.tsx",
+      "firstPass": 3,
+      "firstBaseSha256": null,
+      "baseProvenance": "absent_in_first_real_snapshot",
+      "history": [
+        {
+          "pass": 3,
+          "beforeSha256": null,
+          "targetSha256": "cd6b0d76f92f02ff2b88d9faf36d0fac7bcf89640271e53730390adc08ef3640"
+        }
+      ],
+      "latestPass": 3,
+      "latestSha256": "cd6b0d76f92f02ff2b88d9faf36d0fac7bcf89640271e53730390adc08ef3640",
+      "currentSha256": "cd6b0d76f92f02ff2b88d9faf36d0fac7bcf89640271e53730390adc08ef3640",
+      "operation": "added"
+    },
+    {
+      "path": "frontend-stripe-test/src/components/DiscoveryFilters.tsx",
+      "firstPass": 3,
+      "firstBaseSha256": null,
+      "baseProvenance": "absent_in_first_real_snapshot",
+      "history": [
+        {
+          "pass": 3,
+          "beforeSha256": null,
+          "targetSha256": "4a7e9df2b159b483670da5fed7a7197308d25a6fb784bec7d5c354ae75acdd94"
+        }
+      ],
+      "latestPass": 3,
+      "latestSha256": "4a7e9df2b159b483670da5fed7a7197308d25a6fb784bec7d5c354ae75acdd94",
+      "currentSha256": "4a7e9df2b159b483670da5fed7a7197308d25a6fb784bec7d5c354ae75acdd94",
+      "operation": "added"
+    },
+    {
+      "path": "frontend-stripe-test/src/components/VirtualizedResults.tsx",
+      "firstPass": 4,
+      "firstBaseSha256": null,
+      "baseProvenance": "absent_in_first_real_snapshot",
+      "history": [
+        {
+          "pass": 4,
+          "beforeSha256": null,
+          "targetSha256": "0e72ad8cdea024e9aa5a9e510558676b2501490cf7cc51d80ea28daf757a2aaa"
+        }
+      ],
+      "latestPass": 4,
+      "latestSha256": "0e72ad8cdea024e9aa5a9e510558676b2501490cf7cc51d80ea28daf757a2aaa",
+      "currentSha256": "0e72ad8cdea024e9aa5a9e510558676b2501490cf7cc51d80ea28daf757a2aaa",
+      "operation": "added"
+    },
+    {
+      "path": "frontend-stripe-test/src/components/WindowedRows.tsx",
+      "firstPass": 4,
+      "firstBaseSha256": null,
+      "baseProvenance": "absent_in_first_real_snapshot",
+      "history": [
+        {
+          "pass": 4,
+          "beforeSha256": null,
+          "targetSha256": "c5d6626b6ef10a9877c6249aa3222a7f2b25ea24ef483fca947a5d0dcb1ebf79"
+        }
+      ],
+      "latestPass": 4,
+      "latestSha256": "c5d6626b6ef10a9877c6249aa3222a7f2b25ea24ef483fca947a5d0dcb1ebf79",
+      "currentSha256": "c5d6626b6ef10a9877c6249aa3222a7f2b25ea24ef483fca947a5d0dcb1ebf79",
+      "operation": "added"
+    },
+    {
+      "path": "frontend-stripe-test/src/config/api.ts",
+      "firstPass": 2,
+      "firstBaseSha256": "158413554152bc512f5225665f7434215b915db718404cf15b3a6174396963b9",
+      "baseProvenance": "pass1_first_real_snapshot",
+      "history": [
+        {
+          "pass": 2,
+          "beforeSha256": "158413554152bc512f5225665f7434215b915db718404cf15b3a6174396963b9",
+          "targetSha256": "5749084da302c3818cb680b5f8123cdc80d3c7926e5f1742b4e867658ce777dc"
+        },
+        {
+          "pass": 4,
+          "beforeSha256": "5749084da302c3818cb680b5f8123cdc80d3c7926e5f1742b4e867658ce777dc",
+          "targetSha256": "a0015e4b497a95344a4a5e52ed7f95a83c563a84fb3a57f40f65cce880be5541"
+        },
+        {
+          "pass": 5,
+          "beforeSha256": "a0015e4b497a95344a4a5e52ed7f95a83c563a84fb3a57f40f65cce880be5541",
+          "targetSha256": "eb8773406308d679e869df5d4a38b30b04162145187ecc4a24de3fbddfe3c500"
+        },
+        {
+          "pass": 6,
+          "beforeSha256": "eb8773406308d679e869df5d4a38b30b04162145187ecc4a24de3fbddfe3c500",
+          "targetSha256": "c1efc4772a772342f5fce5381dc971ed8611a059e84a0d4fe2af1649ecd9aa4d"
+        }
+      ],
+      "latestPass": 6,
+      "latestSha256": "c1efc4772a772342f5fce5381dc971ed8611a059e84a0d4fe2af1649ecd9aa4d",
+      "currentSha256": "c1efc4772a772342f5fce5381dc971ed8611a059e84a0d4fe2af1649ecd9aa4d",
+      "operation": "modified"
+    },
+    {
+      "path": "frontend-stripe-test/src/i18n/buyerContinuityCopy.ts",
+      "firstPass": 5,
+      "firstBaseSha256": null,
+      "baseProvenance": "absent_in_first_real_snapshot",
+      "history": [
+        {
+          "pass": 5,
+          "beforeSha256": null,
+          "targetSha256": "92799e04884ecb7f96aab0b9906ebac838f097ca0c186e9ad1e415229fff22ab"
+        }
+      ],
+      "latestPass": 5,
+      "latestSha256": "92799e04884ecb7f96aab0b9906ebac838f097ca0c186e9ad1e415229fff22ab",
+      "currentSha256": "92799e04884ecb7f96aab0b9906ebac838f097ca0c186e9ad1e415229fff22ab",
+      "operation": "added"
+    },
+    {
+      "path": "frontend-stripe-test/src/i18n/buyerRequestLifecycleCopy.ts",
+      "firstPass": 2,
+      "firstBaseSha256": null,
+      "baseProvenance": "absent_in_first_real_snapshot",
+      "history": [
+        {
+          "pass": 2,
+          "beforeSha256": null,
+          "targetSha256": "d6f5ffbd6db3753242a4aeee0d2db9ef08ada8b35b93962e2592423cc97e68fa"
+        }
+      ],
+      "latestPass": 2,
+      "latestSha256": "d6f5ffbd6db3753242a4aeee0d2db9ef08ada8b35b93962e2592423cc97e68fa",
+      "currentSha256": "d6f5ffbd6db3753242a4aeee0d2db9ef08ada8b35b93962e2592423cc97e68fa",
+      "operation": "added"
+    },
+    {
+      "path": "frontend-stripe-test/src/i18n/connectorDiscoveryCopy.ts",
+      "firstPass": 4,
+      "firstBaseSha256": null,
+      "baseProvenance": "absent_in_first_real_snapshot",
+      "history": [
+        {
+          "pass": 4,
+          "beforeSha256": null,
+          "targetSha256": "8f7f63d9f68a287daf65c5a0d70a7f708374161a0a33a0f6611a7f75bf4529a7"
+        }
+      ],
+      "latestPass": 4,
+      "latestSha256": "8f7f63d9f68a287daf65c5a0d70a7f708374161a0a33a0f6611a7f75bf4529a7",
+      "currentSha256": "8f7f63d9f68a287daf65c5a0d70a7f708374161a0a33a0f6611a7f75bf4529a7",
+      "operation": "added"
+    },
+    {
+      "path": "frontend-stripe-test/src/i18n/demandFilterCopy.ts",
+      "firstPass": 3,
+      "firstBaseSha256": null,
+      "baseProvenance": "absent_in_first_real_snapshot",
+      "history": [
+        {
+          "pass": 3,
+          "beforeSha256": null,
+          "targetSha256": "d5832f74bfe040ec20f30a578054907651246bde4987b146d389f38996c0f3ee"
+        }
+      ],
+      "latestPass": 3,
+      "latestSha256": "d5832f74bfe040ec20f30a578054907651246bde4987b146d389f38996c0f3ee",
+      "currentSha256": "d5832f74bfe040ec20f30a578054907651246bde4987b146d389f38996c0f3ee",
+      "operation": "added"
+    },
+    {
+      "path": "frontend-stripe-test/src/i18n/discoveryFilterCopy.ts",
+      "firstPass": 3,
+      "firstBaseSha256": null,
+      "baseProvenance": "absent_in_first_real_snapshot",
+      "history": [
+        {
+          "pass": 3,
+          "beforeSha256": null,
+          "targetSha256": "bc3a0d6518e7e7ec13ff967295c21560bcb2014a728fd975caa36110422c0910"
+        }
+      ],
+      "latestPass": 3,
+      "latestSha256": "bc3a0d6518e7e7ec13ff967295c21560bcb2014a728fd975caa36110422c0910",
+      "currentSha256": "bc3a0d6518e7e7ec13ff967295c21560bcb2014a728fd975caa36110422c0910",
+      "operation": "added"
+    },
+    {
+      "path": "frontend-stripe-test/src/i18n/featureResources.ts",
+      "firstPass": 1,
+      "firstBaseSha256": "329e83ef32c888116b3a47762b4c43e835c8f9835c71ecdc8b56284ded061029",
+      "baseProvenance": "pass1_first_real_snapshot",
+      "history": [
+        {
+          "pass": 1,
+          "beforeSha256": "329e83ef32c888116b3a47762b4c43e835c8f9835c71ecdc8b56284ded061029",
+          "targetSha256": "07f82939273330da6375bff9b4877cde260a456de62b61b60225ce02253e727d"
+        }
+      ],
+      "latestPass": 1,
+      "latestSha256": "07f82939273330da6375bff9b4877cde260a456de62b61b60225ce02253e727d",
+      "currentSha256": "07f82939273330da6375bff9b4877cde260a456de62b61b60225ce02253e727d",
+      "operation": "modified"
+    },
+    {
+      "path": "frontend-stripe-test/src/i18n/index.ts",
+      "firstPass": 1,
+      "firstBaseSha256": "0e00332ca11dd21a60eadc7730d59ec2817d5b152f5489fb1b4d79a37d6718eb",
+      "baseProvenance": "pass1_first_real_snapshot",
+      "history": [
+        {
+          "pass": 1,
+          "beforeSha256": "0e00332ca11dd21a60eadc7730d59ec2817d5b152f5489fb1b4d79a37d6718eb",
+          "targetSha256": "375d785bad8e9b88dbbc1b8306b310407aa0c9ff9aefe8dffa51a92cc4c7bf2e"
+        }
+      ],
+      "latestPass": 1,
+      "latestSha256": "375d785bad8e9b88dbbc1b8306b310407aa0c9ff9aefe8dffa51a92cc4c7bf2e",
+      "currentSha256": "375d785bad8e9b88dbbc1b8306b310407aa0c9ff9aefe8dffa51a92cc4c7bf2e",
+      "operation": "modified"
+    },
+    {
+      "path": "frontend-stripe-test/src/i18n/requestWorkCopy.ts",
+      "firstPass": 4,
+      "firstBaseSha256": null,
+      "baseProvenance": "absent_in_first_real_snapshot",
+      "history": [
+        {
+          "pass": 4,
+          "beforeSha256": null,
+          "targetSha256": "c02e1e663453d5b2eb7da9b8e36447cfc00e99918a4bde9c504ded8f88f9bc17"
+        }
+      ],
+      "latestPass": 4,
+      "latestSha256": "c02e1e663453d5b2eb7da9b8e36447cfc00e99918a4bde9c504ded8f88f9bc17",
+      "currentSha256": "c02e1e663453d5b2eb7da9b8e36447cfc00e99918a4bde9c504ded8f88f9bc17",
+      "operation": "added"
+    },
+    {
+      "path": "frontend-stripe-test/src/i18n/sellerProposalDraftCopy.ts",
+      "firstPass": 5,
+      "firstBaseSha256": null,
+      "baseProvenance": "absent_in_first_real_snapshot",
+      "history": [
+        {
+          "pass": 5,
+          "beforeSha256": null,
+          "targetSha256": "8abb6d2d17adf4da1d808b90f155b3925d3f6496f834de8017e8ecdc6f14d76c"
+        }
+      ],
+      "latestPass": 5,
+      "latestSha256": "8abb6d2d17adf4da1d808b90f155b3925d3f6496f834de8017e8ecdc6f14d76c",
+      "currentSha256": "8abb6d2d17adf4da1d808b90f155b3925d3f6496f834de8017e8ecdc6f14d76c",
+      "operation": "added"
+    },
+    {
+      "path": "frontend-stripe-test/src/screens/Offers/offerManagementCopy.ts",
+      "firstPass": 2,
+      "firstBaseSha256": null,
+      "baseProvenance": "absent_in_first_real_snapshot",
+      "history": [
+        {
+          "pass": 2,
+          "beforeSha256": null,
+          "targetSha256": "00f07900443316fe6685b2a32ea068aba83e0e0e6f907484cc7468914dbe5730"
+        }
+      ],
+      "latestPass": 2,
+      "latestSha256": "00f07900443316fe6685b2a32ea068aba83e0e0e6f907484cc7468914dbe5730",
+      "currentSha256": "00f07900443316fe6685b2a32ea068aba83e0e0e6f907484cc7468914dbe5730",
+      "operation": "added"
+    },
+    {
+      "path": "frontend-stripe-test/src/screens/Offers/OffersScreen.tsx",
+      "firstPass": 2,
+      "firstBaseSha256": "6085ab018ef32f2999a0fed0710e0a1993499d9207f01b22a976fe0378ee8fd8",
+      "baseProvenance": "pass1_first_real_snapshot",
+      "history": [
+        {
+          "pass": 2,
+          "beforeSha256": "6085ab018ef32f2999a0fed0710e0a1993499d9207f01b22a976fe0378ee8fd8",
+          "targetSha256": "94b1e505b974905857eb82a5f61cfd07b333cef2a27dc4ed1fd3915aedb2ecd8"
+        },
+        {
+          "pass": 3,
+          "beforeSha256": "94b1e505b974905857eb82a5f61cfd07b333cef2a27dc4ed1fd3915aedb2ecd8",
+          "targetSha256": "8041b2f9c8f74883f8aed0bae5eb1415674b2d98c25085c4b7664d76a759526e"
+        },
+        {
+          "pass": 4,
+          "beforeSha256": "8041b2f9c8f74883f8aed0bae5eb1415674b2d98c25085c4b7664d76a759526e",
+          "targetSha256": "a35cf5d42a64d6f5733ad63146228751d77dac5ae46281ed8e917c51ecbb6844"
+        },
+        {
+          "pass": 5,
+          "beforeSha256": "a35cf5d42a64d6f5733ad63146228751d77dac5ae46281ed8e917c51ecbb6844",
+          "targetSha256": "427f2c8333027fe28d9934f4f3d0f8749db95c624ad9d86fcef78c775de941f7"
+        },
+        {
+          "pass": 6,
+          "beforeSha256": "427f2c8333027fe28d9934f4f3d0f8749db95c624ad9d86fcef78c775de941f7",
+          "targetSha256": "d09056ca820b783106cbe4a2630fe2cb588750ef4938061077a4a8b5b8f61cd7"
+        }
+      ],
+      "latestPass": 6,
+      "latestSha256": "d09056ca820b783106cbe4a2630fe2cb588750ef4938061077a4a8b5b8f61cd7",
+      "currentSha256": "d09056ca820b783106cbe4a2630fe2cb588750ef4938061077a4a8b5b8f61cd7",
+      "operation": "modified"
+    },
+    {
+      "path": "frontend-stripe-test/src/screens/Participation/ConnectorActivationScreen.tsx",
+      "firstPass": 4,
+      "firstBaseSha256": "4c0308026f96cd942bd0ee672a794a24135e9e985d4625bb5c2a5436635b470c",
+      "baseProvenance": "pass1_first_real_snapshot",
+      "history": [
+        {
+          "pass": 4,
+          "beforeSha256": "4c0308026f96cd942bd0ee672a794a24135e9e985d4625bb5c2a5436635b470c",
+          "targetSha256": "3c9dd960130411db589d968ab00731a3964e86a6af389e73d02e3d75fe883e77"
+        }
+      ],
+      "latestPass": 4,
+      "latestSha256": "3c9dd960130411db589d968ab00731a3964e86a6af389e73d02e3d75fe883e77",
+      "currentSha256": "3c9dd960130411db589d968ab00731a3964e86a6af389e73d02e3d75fe883e77",
+      "operation": "modified"
+    },
+    {
+      "path": "frontend-stripe-test/src/screens/Participation/ConnectorOperationsScreen.tsx",
+      "firstPass": 4,
+      "firstBaseSha256": "96f2a650b8418a6b88dc8e36d47a9fd57040b415a6688bd91fb60c3cb8bf3c42",
+      "baseProvenance": "pass1_first_real_snapshot",
+      "history": [
+        {
+          "pass": 4,
+          "beforeSha256": "96f2a650b8418a6b88dc8e36d47a9fd57040b415a6688bd91fb60c3cb8bf3c42",
+          "targetSha256": "c2ec4ae6e30248c6ef65375acf29e80cc1be7587cb50c734f3c23273c4e6fd37"
+        }
+      ],
+      "latestPass": 4,
+      "latestSha256": "c2ec4ae6e30248c6ef65375acf29e80cc1be7587cb50c734f3c23273c4e6fd37",
+      "currentSha256": "c2ec4ae6e30248c6ef65375acf29e80cc1be7587cb50c734f3c23273c4e6fd37",
+      "operation": "modified"
+    },
+    {
+      "path": "frontend-stripe-test/src/screens/Profile/ProfileMainScreen.tsx",
+      "firstPass": 1,
+      "firstBaseSha256": "3dcd0bff3378e901e919fb1ebbb4e1e9a46e6ecc4ef37b40e82291b49c1d9e94",
+      "baseProvenance": "pass1_first_real_snapshot",
+      "history": [
+        {
+          "pass": 1,
+          "beforeSha256": "3dcd0bff3378e901e919fb1ebbb4e1e9a46e6ecc4ef37b40e82291b49c1d9e94",
+          "targetSha256": "989d123a21b991f245401deb9d30365c0333b59de6bce46cb950ab86ea5dd8f7"
+        }
+      ],
+      "latestPass": 1,
+      "latestSha256": "989d123a21b991f245401deb9d30365c0333b59de6bce46cb950ab86ea5dd8f7",
+      "currentSha256": "989d123a21b991f245401deb9d30365c0333b59de6bce46cb950ab86ea5dd8f7",
+      "operation": "modified"
+    },
+    {
+      "path": "frontend-stripe-test/src/screens/Requests/MarketRequestsScreen.tsx",
+      "firstPass": 3,
+      "firstBaseSha256": "96f4c13e6e9a3ab00930fe13c6c43e961d5e96df33d73a292a975e2bc8a63771",
+      "baseProvenance": "pass1_first_real_snapshot",
+      "history": [
+        {
+          "pass": 3,
+          "beforeSha256": "96f4c13e6e9a3ab00930fe13c6c43e961d5e96df33d73a292a975e2bc8a63771",
+          "targetSha256": "5aded433acb4d63dd03eec7a8548d26f7a4dc4b8d355fb6d943f40b0b4a3a4aa"
+        },
+        {
+          "pass": 4,
+          "beforeSha256": "5aded433acb4d63dd03eec7a8548d26f7a4dc4b8d355fb6d943f40b0b4a3a4aa",
+          "targetSha256": "a8160cf98d0df42f85b24f4d98b03db531bef01b9d736d3f9a9b1b0cdf0664d8"
+        },
+        {
+          "pass": 6,
+          "beforeSha256": "a8160cf98d0df42f85b24f4d98b03db531bef01b9d736d3f9a9b1b0cdf0664d8",
+          "targetSha256": "864873f759cfdaa28ee10e72f7258763f565d7f4550f890ded680883746e0eb6"
+        }
+      ],
+      "latestPass": 6,
+      "latestSha256": "864873f759cfdaa28ee10e72f7258763f565d7f4550f890ded680883746e0eb6",
+      "currentSha256": "864873f759cfdaa28ee10e72f7258763f565d7f4550f890ded680883746e0eb6",
+      "operation": "modified"
+    },
+    {
+      "path": "frontend-stripe-test/src/screens/Requests/MyRequestsScreen.tsx",
+      "firstPass": 2,
+      "firstBaseSha256": "2f5b916e98b8e84b5c97697c03bb3537fb5cd7d9d8c9f459903a2d3c14f04d2c",
+      "baseProvenance": "pass1_first_real_snapshot",
+      "history": [
+        {
+          "pass": 2,
+          "beforeSha256": "2f5b916e98b8e84b5c97697c03bb3537fb5cd7d9d8c9f459903a2d3c14f04d2c",
+          "targetSha256": "0582cf0fc70bfb314103cd87bdbdb0a8a4098a2cd1d88635d9cfcd61bfb19232"
+        },
+        {
+          "pass": 3,
+          "beforeSha256": "0582cf0fc70bfb314103cd87bdbdb0a8a4098a2cd1d88635d9cfcd61bfb19232",
+          "targetSha256": "d9c34b1046dc3f7435155325d1df9e3ac661814bc0b1612defb4855fbfe9ab99"
+        }
+      ],
+      "latestPass": 3,
+      "latestSha256": "d9c34b1046dc3f7435155325d1df9e3ac661814bc0b1612defb4855fbfe9ab99",
+      "currentSha256": "d9c34b1046dc3f7435155325d1df9e3ac661814bc0b1612defb4855fbfe9ab99",
+      "operation": "modified"
+    },
+    {
+      "path": "frontend-stripe-test/src/screens/Requests/ShoppingListsScreen.tsx",
+      "firstPass": 2,
+      "firstBaseSha256": "2daa44f7c171db4f2e28a6e72e2764275e0f0baf6954a47201c454be4d68e3da",
+      "baseProvenance": "pass1_first_real_snapshot",
+      "history": [
+        {
+          "pass": 2,
+          "beforeSha256": "2daa44f7c171db4f2e28a6e72e2764275e0f0baf6954a47201c454be4d68e3da",
+          "targetSha256": "a36223a160bd50b3a701118bef6122e02ab8001d1e5f05e38f16cf311dea2d6f"
+        },
+        {
+          "pass": 3,
+          "beforeSha256": "a36223a160bd50b3a701118bef6122e02ab8001d1e5f05e38f16cf311dea2d6f",
+          "targetSha256": "e94413726ba97828ddc3f3d51e5a0e9413e40e95122bb452693e04288f2b5d15"
+        },
+        {
+          "pass": 4,
+          "beforeSha256": "e94413726ba97828ddc3f3d51e5a0e9413e40e95122bb452693e04288f2b5d15",
+          "targetSha256": "5c803ce3c597936ff1734de4cbfc10ad0564a4c0a0519236826d300c0d0f5e6d"
+        },
+        {
+          "pass": 5,
+          "beforeSha256": "5c803ce3c597936ff1734de4cbfc10ad0564a4c0a0519236826d300c0d0f5e6d",
+          "targetSha256": "c0b5023bd79940f94af2ec5b8450d6f5879c4177b9138c91ce24b49fb4cd67a7"
+        },
+        {
+          "pass": 6,
+          "beforeSha256": "c0b5023bd79940f94af2ec5b8450d6f5879c4177b9138c91ce24b49fb4cd67a7",
+          "targetSha256": "b40bb271393b3cae8914c9cde25e249a70fa9d2db98e8dd22d94ad3c84b3d439"
+        }
+      ],
+      "latestPass": 6,
+      "latestSha256": "b40bb271393b3cae8914c9cde25e249a70fa9d2db98e8dd22d94ad3c84b3d439",
+      "currentSha256": "b40bb271393b3cae8914c9cde25e249a70fa9d2db98e8dd22d94ad3c84b3d439",
+      "operation": "modified"
+    },
+    {
+      "path": "frontend-stripe-test/src/screens/Scan/HomeScreen.tsx",
+      "firstPass": 4,
+      "firstBaseSha256": "487dde12717b127eafa59091d9d830879d71d480fd4f5656a94bcc1c5a42c360",
+      "baseProvenance": "pass1_first_real_snapshot",
+      "history": [
+        {
+          "pass": 4,
+          "beforeSha256": "487dde12717b127eafa59091d9d830879d71d480fd4f5656a94bcc1c5a42c360",
+          "targetSha256": "ca62ff6e25a94550c785243af2ce4eafd81cd2a883f863347dc9fd251ead399a"
+        },
+        {
+          "pass": 5,
+          "beforeSha256": "ca62ff6e25a94550c785243af2ce4eafd81cd2a883f863347dc9fd251ead399a",
+          "targetSha256": "eded615fcfe11918cfc60841109b88592d437b42573268ae992ea6cf159f65fc"
+        }
+      ],
+      "latestPass": 5,
+      "latestSha256": "eded615fcfe11918cfc60841109b88592d437b42573268ae992ea6cf159f65fc",
+      "currentSha256": "eded615fcfe11918cfc60841109b88592d437b42573268ae992ea6cf159f65fc",
+      "operation": "modified"
+    },
+    {
+      "path": "frontend-stripe-test/src/screens/Scan/ManualRequestScreen.tsx",
+      "firstPass": 5,
+      "firstBaseSha256": "280518879d32722bf03fa14c32d1cb2ae7f6222e263fb83126bb810424c24ad9",
+      "baseProvenance": "pass1_first_real_snapshot",
+      "history": [
+        {
+          "pass": 5,
+          "beforeSha256": "280518879d32722bf03fa14c32d1cb2ae7f6222e263fb83126bb810424c24ad9",
+          "targetSha256": "03086597c1b0b9717ed712120f1f731d146b8a5c4e8acf605c13895ed07f2991"
+        }
+      ],
+      "latestPass": 5,
+      "latestSha256": "03086597c1b0b9717ed712120f1f731d146b8a5c4e8acf605c13895ed07f2991",
+      "currentSha256": "03086597c1b0b9717ed712120f1f731d146b8a5c4e8acf605c13895ed07f2991",
+      "operation": "modified"
+    },
+    {
+      "path": "frontend-stripe-test/src/screens/Scan/ScanResultScreen.tsx",
+      "firstPass": 2,
+      "firstBaseSha256": "c31db35b5a420df0ff10b7f9e6ca4c1dc1f229881118aec44e49ec58185bce08",
+      "baseProvenance": "pass1_first_real_snapshot",
+      "history": [
+        {
+          "pass": 2,
+          "beforeSha256": "c31db35b5a420df0ff10b7f9e6ca4c1dc1f229881118aec44e49ec58185bce08",
+          "targetSha256": "e6a5554eedf0b9ae806f9b372ae9d7a2801cbaa74f052d8962df74dec97816b2"
+        },
+        {
+          "pass": 4,
+          "beforeSha256": "e6a5554eedf0b9ae806f9b372ae9d7a2801cbaa74f052d8962df74dec97816b2",
+          "targetSha256": "142aa05242d684ff6a88fcbc1b82f59f1e5629827472040bd3347488d2d5e04a"
+        },
+        {
+          "pass": 5,
+          "beforeSha256": "142aa05242d684ff6a88fcbc1b82f59f1e5629827472040bd3347488d2d5e04a",
+          "targetSha256": "6d0be27c880e164d9136e91960dd2a360c36f0c00ece787f5b0bd707bf1cd3e7"
+        },
+        {
+          "pass": 6,
+          "beforeSha256": "6d0be27c880e164d9136e91960dd2a360c36f0c00ece787f5b0bd707bf1cd3e7",
+          "targetSha256": "e4262c651e4047b5fb998ff7d73067e44d2cfee78c8ab530273b021fa5c9a79f"
+        }
+      ],
+      "latestPass": 6,
+      "latestSha256": "e4262c651e4047b5fb998ff7d73067e44d2cfee78c8ab530273b021fa5c9a79f",
+      "currentSha256": "e4262c651e4047b5fb998ff7d73067e44d2cfee78c8ab530273b021fa5c9a79f",
+      "operation": "modified"
+    },
+    {
+      "path": "frontend-stripe-test/src/screens/Search/SearchScreen.tsx",
+      "firstPass": 3,
+      "firstBaseSha256": "240451527fa6f9f98b6d0b5a7207824e13e52865470243866f63492b2256d73d",
+      "baseProvenance": "pass1_first_real_snapshot",
+      "history": [
+        {
+          "pass": 3,
+          "beforeSha256": "240451527fa6f9f98b6d0b5a7207824e13e52865470243866f63492b2256d73d",
+          "targetSha256": "d8db5937c198071988d6467b5aead78dc025708841533730a128ee8fb48e073f"
+        },
+        {
+          "pass": 6,
+          "beforeSha256": "d8db5937c198071988d6467b5aead78dc025708841533730a128ee8fb48e073f",
+          "targetSha256": "652086c04834a2d2345b9cb7e3282dd3d1d5ac4e4a2f718427e3fb1686384df6"
+        }
+      ],
+      "latestPass": 6,
+      "latestSha256": "652086c04834a2d2345b9cb7e3282dd3d1d5ac4e4a2f718427e3fb1686384df6",
+      "currentSha256": "652086c04834a2d2345b9cb7e3282dd3d1d5ac4e4a2f718427e3fb1686384df6",
+      "operation": "modified"
+    },
+    {
+      "path": "frontend-stripe-test/src/utils/discoveryFilters.ts",
+      "firstPass": 3,
+      "firstBaseSha256": null,
+      "baseProvenance": "absent_in_first_real_snapshot",
+      "history": [
+        {
+          "pass": 3,
+          "beforeSha256": null,
+          "targetSha256": "75e6e12f324f95962d709b01f7426b66815dcfb61c1695f33f4d72bfe51b2da7"
+        }
+      ],
+      "latestPass": 3,
+      "latestSha256": "75e6e12f324f95962d709b01f7426b66815dcfb61c1695f33f4d72bfe51b2da7",
+      "currentSha256": "75e6e12f324f95962d709b01f7426b66815dcfb61c1695f33f4d72bfe51b2da7",
+      "operation": "added"
+    },
+    {
+      "path": "frontend-stripe-test/src/utils/journeyDrafts.ts",
+      "firstPass": 1,
+      "firstBaseSha256": "cc82f5f4d01512a740ba04adad26506cf4a66277a7c8f94f8d09e6d48a7ff981",
+      "baseProvenance": "pass1_first_real_snapshot",
+      "history": [
+        {
+          "pass": 1,
+          "beforeSha256": "cc82f5f4d01512a740ba04adad26506cf4a66277a7c8f94f8d09e6d48a7ff981",
+          "targetSha256": "e88a722c5c0a335a297ab2c96179c7384366eebc53536d829a0f2ff5ff22ed1b"
+        },
+        {
+          "pass": 5,
+          "beforeSha256": "e88a722c5c0a335a297ab2c96179c7384366eebc53536d829a0f2ff5ff22ed1b",
+          "targetSha256": "07070f4a0b279242b5e057796eda35f26dfc0be16c7c940b09b529fc5a3419a1"
+        }
+      ],
+      "latestPass": 5,
+      "latestSha256": "07070f4a0b279242b5e057796eda35f26dfc0be16c7c940b09b529fc5a3419a1",
+      "currentSha256": "07070f4a0b279242b5e057796eda35f26dfc0be16c7c940b09b529fc5a3419a1",
+      "operation": "modified"
+    },
+    {
+      "path": "frontend-stripe-test/src/utils/manualRequestContinuity.ts",
+      "firstPass": 5,
+      "firstBaseSha256": null,
+      "baseProvenance": "absent_in_first_real_snapshot",
+      "history": [
+        {
+          "pass": 5,
+          "beforeSha256": null,
+          "targetSha256": "3d6f6e57e6f0de8a69633337ac5c83aec5e19a2c9fecab65d55495a13df133e3"
+        }
+      ],
+      "latestPass": 5,
+      "latestSha256": "3d6f6e57e6f0de8a69633337ac5c83aec5e19a2c9fecab65d55495a13df133e3",
+      "currentSha256": "3d6f6e57e6f0de8a69633337ac5c83aec5e19a2c9fecab65d55495a13df133e3",
+      "operation": "added"
+    },
+    {
+      "path": "frontend-stripe-test/src/utils/marketDiscovery.ts",
+      "firstPass": 3,
+      "firstBaseSha256": null,
+      "baseProvenance": "absent_in_first_real_snapshot",
+      "history": [
+        {
+          "pass": 3,
+          "beforeSha256": null,
+          "targetSha256": "06aca5e2a0d88afd3afb3d2c6125f78b51b10a37ee4a359fee73acfd170e5455"
+        }
+      ],
+      "latestPass": 3,
+      "latestSha256": "06aca5e2a0d88afd3afb3d2c6125f78b51b10a37ee4a359fee73acfd170e5455",
+      "currentSha256": "06aca5e2a0d88afd3afb3d2c6125f78b51b10a37ee4a359fee73acfd170e5455",
+      "operation": "added"
+    },
+    {
+      "path": "frontend-stripe-test/src/utils/offerManagement.ts",
+      "firstPass": 2,
+      "firstBaseSha256": null,
+      "baseProvenance": "absent_in_first_real_snapshot",
+      "history": [
+        {
+          "pass": 2,
+          "beforeSha256": null,
+          "targetSha256": "8de31a73d6bac5ec84ee90b1a035d3e5e21665c9612f543a9f2cb240596547ce"
+        }
+      ],
+      "latestPass": 2,
+      "latestSha256": "8de31a73d6bac5ec84ee90b1a035d3e5e21665c9612f543a9f2cb240596547ce",
+      "currentSha256": "8de31a73d6bac5ec84ee90b1a035d3e5e21665c9612f543a9f2cb240596547ce",
+      "operation": "added"
+    },
+    {
+      "path": "frontend-stripe-test/src/utils/purchaseDraft.ts",
+      "firstPass": 1,
+      "firstBaseSha256": "9e80923aa76498abd82b00039a0ae66afa7f0f24d0150dfe4ceb00dcfdc2e747",
+      "baseProvenance": "pass1_first_real_snapshot",
+      "history": [
+        {
+          "pass": 1,
+          "beforeSha256": "9e80923aa76498abd82b00039a0ae66afa7f0f24d0150dfe4ceb00dcfdc2e747",
+          "targetSha256": "22cc5a49aff19717504bb67418393be700bb46abd6e4cf9b77950c7101bff0ac"
+        }
+      ],
+      "latestPass": 1,
+      "latestSha256": "22cc5a49aff19717504bb67418393be700bb46abd6e4cf9b77950c7101bff0ac",
+      "currentSha256": "22cc5a49aff19717504bb67418393be700bb46abd6e4cf9b77950c7101bff0ac",
+      "operation": "modified"
+    },
+    {
+      "path": "frontend-stripe-test/src/utils/requestLifecycle.ts",
+      "firstPass": 2,
+      "firstBaseSha256": null,
+      "baseProvenance": "absent_in_first_real_snapshot",
+      "history": [
+        {
+          "pass": 2,
+          "beforeSha256": null,
+          "targetSha256": "825369b9f534881842966c6949ff0afa1ef8886c27fc12db88815b780f23e256"
+        }
+      ],
+      "latestPass": 2,
+      "latestSha256": "825369b9f534881842966c6949ff0afa1ef8886c27fc12db88815b780f23e256",
+      "currentSha256": "825369b9f534881842966c6949ff0afa1ef8886c27fc12db88815b780f23e256",
+      "operation": "added"
+    },
+    {
+      "path": "frontend-stripe-test/src/utils/requestWork.ts",
+      "firstPass": 4,
+      "firstBaseSha256": null,
+      "baseProvenance": "absent_in_first_real_snapshot",
+      "history": [
+        {
+          "pass": 4,
+          "beforeSha256": null,
+          "targetSha256": "1a3c3c584db9d3760abacac02ec779e2a07e661816a2e83ead58b74701b1d6f8"
+        }
+      ],
+      "latestPass": 4,
+      "latestSha256": "1a3c3c584db9d3760abacac02ec779e2a07e661816a2e83ead58b74701b1d6f8",
+      "currentSha256": "1a3c3c584db9d3760abacac02ec779e2a07e661816a2e83ead58b74701b1d6f8",
+      "operation": "added"
+    },
+    {
+      "path": "frontend-stripe-test/src/utils/scrollWindow.ts",
+      "firstPass": 4,
+      "firstBaseSha256": null,
+      "baseProvenance": "absent_in_first_real_snapshot",
+      "history": [
+        {
+          "pass": 4,
+          "beforeSha256": null,
+          "targetSha256": "6d52f71c16acd0411e5dbc038af45c9a952c4e846d1f5be8d67328a66fa244d3"
+        }
+      ],
+      "latestPass": 4,
+      "latestSha256": "6d52f71c16acd0411e5dbc038af45c9a952c4e846d1f5be8d67328a66fa244d3",
+      "currentSha256": "6d52f71c16acd0411e5dbc038af45c9a952c4e846d1f5be8d67328a66fa244d3",
+      "operation": "added"
+    },
+    {
+      "path": "frontend-stripe-test/src/utils/sellerJourney.ts",
+      "firstPass": 4,
+      "firstBaseSha256": "299fbc7d519648f7dd2f8dc5c2c8443062d559a2bbe99b27e22953198649c6be",
+      "baseProvenance": "pass1_first_real_snapshot",
+      "history": [
+        {
+          "pass": 4,
+          "beforeSha256": "299fbc7d519648f7dd2f8dc5c2c8443062d559a2bbe99b27e22953198649c6be",
+          "targetSha256": "1df5c5e3cd8e3ef5d2e083709fad5735e682030fadfb575dc839453203824bd1"
+        }
+      ],
+      "latestPass": 4,
+      "latestSha256": "1df5c5e3cd8e3ef5d2e083709fad5735e682030fadfb575dc839453203824bd1",
+      "currentSha256": "1df5c5e3cd8e3ef5d2e083709fad5735e682030fadfb575dc839453203824bd1",
+      "operation": "modified"
+    },
+    {
+      "path": "frontend-stripe-test/src/utils/sellerProposalDraft.ts",
+      "firstPass": 5,
+      "firstBaseSha256": null,
+      "baseProvenance": "absent_in_first_real_snapshot",
+      "history": [
+        {
+          "pass": 5,
+          "beforeSha256": null,
+          "targetSha256": "e456da78b5d24674f2a849f5e4027db000294400fe85c21b2b83117f7ad96e84"
+        }
+      ],
+      "latestPass": 5,
+      "latestSha256": "e456da78b5d24674f2a849f5e4027db000294400fe85c21b2b83117f7ad96e84",
+      "currentSha256": "e456da78b5d24674f2a849f5e4027db000294400fe85c21b2b83117f7ad96e84",
+      "operation": "added"
+    },
+    {
+      "path": "frontend-stripe-test/src/utils/shoppingProposalCopy.ts",
+      "firstPass": 2,
+      "firstBaseSha256": null,
+      "baseProvenance": "absent_in_first_real_snapshot",
+      "history": [
+        {
+          "pass": 2,
+          "beforeSha256": null,
+          "targetSha256": "626816050d2be27b2d857d7367545c5fa8686c5b707492f93e36ce7b0b95c707"
+        }
+      ],
+      "latestPass": 2,
+      "latestSha256": "626816050d2be27b2d857d7367545c5fa8686c5b707492f93e36ce7b0b95c707",
+      "currentSha256": "626816050d2be27b2d857d7367545c5fa8686c5b707492f93e36ce7b0b95c707",
+      "operation": "added"
+    },
+    {
+      "path": "frontend-stripe-test/src/utils/shoppingProposalLifecycle.ts",
+      "firstPass": 2,
+      "firstBaseSha256": null,
+      "baseProvenance": "absent_in_first_real_snapshot",
+      "history": [
+        {
+          "pass": 2,
+          "beforeSha256": null,
+          "targetSha256": "f165d177e1cdab07749be85f2d543dd834b68f27f9ff8d87cb8f5971acecd7f9"
+        }
+      ],
+      "latestPass": 2,
+      "latestSha256": "f165d177e1cdab07749be85f2d543dd834b68f27f9ff8d87cb8f5971acecd7f9",
+      "currentSha256": "f165d177e1cdab07749be85f2d543dd834b68f27f9ff8d87cb8f5971acecd7f9",
+      "operation": "added"
+    },
+    {
+      "path": "frontend-stripe-test/src/utils/useSellerProposalDraft.ts",
+      "firstPass": 5,
+      "firstBaseSha256": null,
+      "baseProvenance": "absent_in_first_real_snapshot",
+      "history": [
+        {
+          "pass": 5,
+          "beforeSha256": null,
+          "targetSha256": "7a16d92bfb9d7c246e5573fe4e677fe4934263b48cb5ce191a0cbd9cb1e28929"
+        }
+      ],
+      "latestPass": 5,
+      "latestSha256": "7a16d92bfb9d7c246e5573fe4e677fe4934263b48cb5ce191a0cbd9cb1e28929",
+      "currentSha256": "7a16d92bfb9d7c246e5573fe4e677fe4934263b48cb5ce191a0cbd9cb1e28929",
+      "operation": "added"
+    },
+    {
+      "path": "frontend-stripe-test/tests/analytics-consent.spec.cjs",
+      "firstPass": 6,
+      "firstBaseSha256": "722e7404c2f7c4754e2a276a68a3e6938d43a70e80cba9ef0346c60f17191511",
+      "baseProvenance": "pass1_first_real_snapshot",
+      "history": [
+        {
+          "pass": 6,
+          "beforeSha256": "722e7404c2f7c4754e2a276a68a3e6938d43a70e80cba9ef0346c60f17191511",
+          "targetSha256": "3ca46775241b870bab7ac5f95e2b87b2e6f7497e9d44c2d702191526d7cdc50a"
+        }
+      ],
+      "latestPass": 6,
+      "latestSha256": "3ca46775241b870bab7ac5f95e2b87b2e6f7497e9d44c2d702191526d7cdc50a",
+      "currentSha256": "3ca46775241b870bab7ac5f95e2b87b2e6f7497e9d44c2d702191526d7cdc50a",
+      "operation": "modified"
+    },
+    {
+      "path": "frontend-stripe-test/tests/analytics-instrumentation-source.spec.cjs",
+      "firstPass": 6,
+      "firstBaseSha256": null,
+      "baseProvenance": "absent_in_first_real_snapshot",
+      "history": [
+        {
+          "pass": 6,
+          "beforeSha256": null,
+          "targetSha256": "4483cf7fe5a18c4095363d55bb72759bdac626e58ac5338296b3d6febc5b7595"
+        }
+      ],
+      "latestPass": 6,
+      "latestSha256": "4483cf7fe5a18c4095363d55bb72759bdac626e58ac5338296b3d6febc5b7595",
+      "currentSha256": "4483cf7fe5a18c4095363d55bb72759bdac626e58ac5338296b3d6febc5b7595",
+      "operation": "added"
+    },
+    {
+      "path": "frontend-stripe-test/tests/analytics-runtime-fixture.cjs",
+      "firstPass": 6,
+      "firstBaseSha256": null,
+      "baseProvenance": "absent_in_first_real_snapshot",
+      "history": [
+        {
+          "pass": 6,
+          "beforeSha256": null,
+          "targetSha256": "4ac9ba6d8ae7edaaa027034659a6f9ba9f1c5ba17461e9b9d9b350ae4c4fe4c4"
+        }
+      ],
+      "latestPass": 6,
+      "latestSha256": "4ac9ba6d8ae7edaaa027034659a6f9ba9f1c5ba17461e9b9d9b350ae4c4fe4c4",
+      "currentSha256": "4ac9ba6d8ae7edaaa027034659a6f9ba9f1c5ba17461e9b9d9b350ae4c4fe4c4",
+      "operation": "added"
+    },
+    {
+      "path": "frontend-stripe-test/tests/analytics-runtime-privacy.spec.cjs",
+      "firstPass": 6,
+      "firstBaseSha256": null,
+      "baseProvenance": "absent_in_first_real_snapshot",
+      "history": [
+        {
+          "pass": 6,
+          "beforeSha256": null,
+          "targetSha256": "60a2527042e01fe76039c1397ed12b591685bcbae324df114a0814b5a2f57034"
+        }
+      ],
+      "latestPass": 6,
+      "latestSha256": "60a2527042e01fe76039c1397ed12b591685bcbae324df114a0814b5a2f57034",
+      "currentSha256": "60a2527042e01fe76039c1397ed12b591685bcbae324df114a0814b5a2f57034",
+      "operation": "added"
+    },
+    {
+      "path": "frontend-stripe-test/tests/analytics-static-privacy.spec.cjs",
+      "firstPass": 6,
+      "firstBaseSha256": null,
+      "baseProvenance": "absent_in_first_real_snapshot",
+      "history": [
+        {
+          "pass": 6,
+          "beforeSha256": null,
+          "targetSha256": "7c02a27b07c9ab14d4027705f2c3455d8a93b6ff520f59b245e19d0ff0da9e4a"
+        }
+      ],
+      "latestPass": 6,
+      "latestSha256": "7c02a27b07c9ab14d4027705f2c3455d8a93b6ff520f59b245e19d0ff0da9e4a",
+      "currentSha256": "7c02a27b07c9ab14d4027705f2c3455d8a93b6ff520f59b245e19d0ff0da9e4a",
+      "operation": "added"
+    },
+    {
+      "path": "frontend-stripe-test/tests/browser/discovery-filters.cjs",
+      "firstPass": 3,
+      "firstBaseSha256": null,
+      "baseProvenance": "absent_in_first_real_snapshot",
+      "history": [
+        {
+          "pass": 3,
+          "beforeSha256": null,
+          "targetSha256": "2be3f29a8eac10b106eb68b52c8eb524d4e119991c313239b0678c90275bba6b"
+        }
+      ],
+      "latestPass": 3,
+      "latestSha256": "2be3f29a8eac10b106eb68b52c8eb524d4e119991c313239b0678c90275bba6b",
+      "currentSha256": "2be3f29a8eac10b106eb68b52c8eb524d4e119991c313239b0678c90275bba6b",
+      "operation": "added"
+    },
+    {
+      "path": "frontend-stripe-test/tests/browser/publication-management.cjs",
+      "firstPass": 2,
+      "firstBaseSha256": null,
+      "baseProvenance": "absent_in_first_real_snapshot",
+      "history": [
+        {
+          "pass": 2,
+          "beforeSha256": null,
+          "targetSha256": "7234418a316c5f3c6b30532f47a16953708279bbad2eeb345290c6ee49d10735"
+        }
+      ],
+      "latestPass": 2,
+      "latestSha256": "7234418a316c5f3c6b30532f47a16953708279bbad2eeb345290c6ee49d10735",
+      "currentSha256": "7234418a316c5f3c6b30532f47a16953708279bbad2eeb345290c6ee49d10735",
+      "operation": "added"
+    },
+    {
+      "path": "frontend-stripe-test/tests/buyer-continuity-source.spec.cjs",
+      "firstPass": 5,
+      "firstBaseSha256": null,
+      "baseProvenance": "absent_in_first_real_snapshot",
+      "history": [
+        {
+          "pass": 5,
+          "beforeSha256": null,
+          "targetSha256": "c420327aec2d49612240c4cd01b8fdf924bcb32aba27f03ddbc1f817a370216b"
+        }
+      ],
+      "latestPass": 5,
+      "latestSha256": "c420327aec2d49612240c4cd01b8fdf924bcb32aba27f03ddbc1f817a370216b",
+      "currentSha256": "c420327aec2d49612240c4cd01b8fdf924bcb32aba27f03ddbc1f817a370216b",
+      "operation": "added"
+    },
+    {
+      "path": "frontend-stripe-test/tests/buyer-request-lifecycle.spec.cjs",
+      "firstPass": 2,
+      "firstBaseSha256": null,
+      "baseProvenance": "absent_in_first_real_snapshot",
+      "history": [
+        {
+          "pass": 2,
+          "beforeSha256": null,
+          "targetSha256": "fe108a7ac3e1d3220ac36a068160717a0c7e7794e37de366cbbe3db1714711d5"
+        },
+        {
+          "pass": 3,
+          "beforeSha256": "fe108a7ac3e1d3220ac36a068160717a0c7e7794e37de366cbbe3db1714711d5",
+          "targetSha256": "ff50e3bbff2ac18491b10f4bc8a8610cba06b9bb8babfcb5607a704df0957e50"
+        },
+        {
+          "pass": 4,
+          "beforeSha256": "ff50e3bbff2ac18491b10f4bc8a8610cba06b9bb8babfcb5607a704df0957e50",
+          "targetSha256": "a3274f147812f179aead9dfb069e11d412fb8bae1372395dff6200723c535723"
+        },
+        {
+          "pass": 5,
+          "beforeSha256": "a3274f147812f179aead9dfb069e11d412fb8bae1372395dff6200723c535723",
+          "targetSha256": "0dd0c5a7c486bfa108e1c4b42734273ce6dbca26af06380fb6c341e52b034b9c"
+        },
+        {
+          "pass": 6,
+          "beforeSha256": "0dd0c5a7c486bfa108e1c4b42734273ce6dbca26af06380fb6c341e52b034b9c",
+          "targetSha256": "ea143ae3b59da8560012937801eddecb387385e0af5ed6ea5f13bf7f1496701c"
+        }
+      ],
+      "latestPass": 6,
+      "latestSha256": "ea143ae3b59da8560012937801eddecb387385e0af5ed6ea5f13bf7f1496701c",
+      "currentSha256": "ea143ae3b59da8560012937801eddecb387385e0af5ed6ea5f13bf7f1496701c",
+      "operation": "added"
+    },
+    {
+      "path": "frontend-stripe-test/tests/connector-discovery-source.spec.cjs",
+      "firstPass": 4,
+      "firstBaseSha256": null,
+      "baseProvenance": "absent_in_first_real_snapshot",
+      "history": [
+        {
+          "pass": 4,
+          "beforeSha256": null,
+          "targetSha256": "253b7b148b42f7a09d4ccb85412d8efe630e141661c376be8048eac6b737096e"
+        }
+      ],
+      "latestPass": 4,
+      "latestSha256": "253b7b148b42f7a09d4ccb85412d8efe630e141661c376be8048eac6b737096e",
+      "currentSha256": "253b7b148b42f7a09d4ccb85412d8efe630e141661c376be8048eac6b737096e",
+      "operation": "added"
+    },
+    {
+      "path": "frontend-stripe-test/tests/deleted-account-drafts.spec.cjs",
+      "firstPass": 1,
+      "firstBaseSha256": null,
+      "baseProvenance": "absent_in_first_real_snapshot",
+      "history": [
+        {
+          "pass": 1,
+          "beforeSha256": null,
+          "targetSha256": "103bb0773d73ba4bb406a1ec7509d68e2a1f977ad3f73602670690564a5e2933"
+        }
+      ],
+      "latestPass": 1,
+      "latestSha256": "103bb0773d73ba4bb406a1ec7509d68e2a1f977ad3f73602670690564a5e2933",
+      "currentSha256": "103bb0773d73ba4bb406a1ec7509d68e2a1f977ad3f73602670690564a5e2933",
+      "operation": "added"
+    },
+    {
+      "path": "frontend-stripe-test/tests/discovery-filters.spec.cjs",
+      "firstPass": 3,
+      "firstBaseSha256": null,
+      "baseProvenance": "absent_in_first_real_snapshot",
+      "history": [
+        {
+          "pass": 3,
+          "beforeSha256": null,
+          "targetSha256": "0d468f3429ccf0a7ab43936f7585abd997c5c9feb0f38daeb6edb1fd9977ba89"
+        },
+        {
+          "pass": 6,
+          "beforeSha256": "0d468f3429ccf0a7ab43936f7585abd997c5c9feb0f38daeb6edb1fd9977ba89",
+          "targetSha256": "9df214b4aa28f4e84001bde43b39ee37824b085151d0196d3947ae7ae47cda3e"
+        }
+      ],
+      "latestPass": 6,
+      "latestSha256": "9df214b4aa28f4e84001bde43b39ee37824b085151d0196d3947ae7ae47cda3e",
+      "currentSha256": "9df214b4aa28f4e84001bde43b39ee37824b085151d0196d3947ae7ae47cda3e",
+      "operation": "added"
+    },
+    {
+      "path": "frontend-stripe-test/tests/helpers/analytics-instrumentation-noop.cjs",
+      "firstPass": 6,
+      "firstBaseSha256": null,
+      "baseProvenance": "absent_in_first_real_snapshot",
+      "history": [
+        {
+          "pass": 6,
+          "beforeSha256": null,
+          "targetSha256": "9c4972cb7a5e71e42c7a19a4724940e2ec7723c2c81096f47f0ce5407f320e3f"
+        }
+      ],
+      "latestPass": 6,
+      "latestSha256": "9c4972cb7a5e71e42c7a19a4724940e2ec7723c2c81096f47f0ce5407f320e3f",
+      "currentSha256": "9c4972cb7a5e71e42c7a19a4724940e2ec7723c2c81096f47f0ce5407f320e3f",
+      "operation": "added"
+    },
+    {
+      "path": "frontend-stripe-test/tests/journey-continuity.spec.cjs",
+      "firstPass": 5,
+      "firstBaseSha256": "f95a1ef6eeb32d20424b71ef6c388aed97f4947df73b4bb8783272cfcf33773c",
+      "baseProvenance": "pass1_first_real_snapshot",
+      "history": [
+        {
+          "pass": 5,
+          "beforeSha256": "f95a1ef6eeb32d20424b71ef6c388aed97f4947df73b4bb8783272cfcf33773c",
+          "targetSha256": "c62ea8f004d46a5e19ed1116b8b5f872829d53ee119d6ed6699ad4540fe8a3b5"
+        }
+      ],
+      "latestPass": 5,
+      "latestSha256": "c62ea8f004d46a5e19ed1116b8b5f872829d53ee119d6ed6699ad4540fe8a3b5",
+      "currentSha256": "c62ea8f004d46a5e19ed1116b8b5f872829d53ee119d6ed6699ad4540fe8a3b5",
+      "operation": "modified"
+    },
+    {
+      "path": "frontend-stripe-test/tests/market-list-discovery-source.spec.cjs",
+      "firstPass": 3,
+      "firstBaseSha256": null,
+      "baseProvenance": "absent_in_first_real_snapshot",
+      "history": [
+        {
+          "pass": 3,
+          "beforeSha256": null,
+          "targetSha256": "19d43e7fcd04ba1161be6fd39900e9e495df0ce7e7bfc643a5287381ae5afa18"
+        },
+        {
+          "pass": 4,
+          "beforeSha256": "19d43e7fcd04ba1161be6fd39900e9e495df0ce7e7bfc643a5287381ae5afa18",
+          "targetSha256": "15c3a36e7431c9bc9568ad925373a1ccfa774dd68e6b8a6c98ca51ce6b34908c"
+        },
+        {
+          "pass": 5,
+          "beforeSha256": "15c3a36e7431c9bc9568ad925373a1ccfa774dd68e6b8a6c98ca51ce6b34908c",
+          "targetSha256": "3b2a7c6037568528ca44623b7b9b02d955af1c3aa8aeb4cf7f63d0e5791c88b3"
+        },
+        {
+          "pass": 6,
+          "beforeSha256": "3b2a7c6037568528ca44623b7b9b02d955af1c3aa8aeb4cf7f63d0e5791c88b3",
+          "targetSha256": "218a9252d5f9ee961068068044e62a95bc9c935ed4973cb8dd1bff13dd74c211"
+        }
+      ],
+      "latestPass": 6,
+      "latestSha256": "218a9252d5f9ee961068068044e62a95bc9c935ed4973cb8dd1bff13dd74c211",
+      "currentSha256": "218a9252d5f9ee961068068044e62a95bc9c935ed4973cb8dd1bff13dd74c211",
+      "operation": "added"
+    },
+    {
+      "path": "frontend-stripe-test/tests/offer-management-source.spec.cjs",
+      "firstPass": 2,
+      "firstBaseSha256": null,
+      "baseProvenance": "absent_in_first_real_snapshot",
+      "history": [
+        {
+          "pass": 2,
+          "beforeSha256": null,
+          "targetSha256": "df93f7fb514fd13a1c3bc67ffaa558f2b377e14f9d373de9030eaffb10a83865"
+        },
+        {
+          "pass": 3,
+          "beforeSha256": "df93f7fb514fd13a1c3bc67ffaa558f2b377e14f9d373de9030eaffb10a83865",
+          "targetSha256": "a2dd89b50a3f98232c16caa69cf6c57d083a6320c4f16ee2fdd48e90c2771071"
+        },
+        {
+          "pass": 4,
+          "beforeSha256": "a2dd89b50a3f98232c16caa69cf6c57d083a6320c4f16ee2fdd48e90c2771071",
+          "targetSha256": "3e9d58db2c9ee3d6b434d0bc538c8995795d6681fb42aa54de75778de670d17c"
+        },
+        {
+          "pass": 5,
+          "beforeSha256": "3e9d58db2c9ee3d6b434d0bc538c8995795d6681fb42aa54de75778de670d17c",
+          "targetSha256": "b23029b53a3c45b89ae26c3303fc20e0f3cd2875d949e68b14b2e769ec68a822"
+        },
+        {
+          "pass": 6,
+          "beforeSha256": "b23029b53a3c45b89ae26c3303fc20e0f3cd2875d949e68b14b2e769ec68a822",
+          "targetSha256": "fd101c046fefff510b9528e6bf2b5e77a91650edb2472ea8af3ef66fe736b730"
+        }
+      ],
+      "latestPass": 6,
+      "latestSha256": "fd101c046fefff510b9528e6bf2b5e77a91650edb2472ea8af3ef66fe736b730",
+      "currentSha256": "fd101c046fefff510b9528e6bf2b5e77a91650edb2472ea8af3ef66fe736b730",
+      "operation": "added"
+    },
+    {
+      "path": "frontend-stripe-test/tests/offer-management.spec.cjs",
+      "firstPass": 2,
+      "firstBaseSha256": null,
+      "baseProvenance": "absent_in_first_real_snapshot",
+      "history": [
+        {
+          "pass": 2,
+          "beforeSha256": null,
+          "targetSha256": "9710f72ced8ca5f15dd40afe711b7043df5ca7a73b60c063a8c316cc8f66da47"
+        }
+      ],
+      "latestPass": 2,
+      "latestSha256": "9710f72ced8ca5f15dd40afe711b7043df5ca7a73b60c063a8c316cc8f66da47",
+      "currentSha256": "9710f72ced8ca5f15dd40afe711b7043df5ca7a73b60c063a8c316cc8f66da47",
+      "operation": "added"
+    },
+    {
+      "path": "frontend-stripe-test/tests/purchase-draft.spec.cjs",
+      "firstPass": 1,
+      "firstBaseSha256": "076c574c71173149d2de641c27de86719565639d2819320a229082ea39e118c6",
+      "baseProvenance": "pass1_first_real_snapshot",
+      "history": [
+        {
+          "pass": 1,
+          "beforeSha256": "076c574c71173149d2de641c27de86719565639d2819320a229082ea39e118c6",
+          "targetSha256": "a3e90583e5380e889c8f60960952607628679fe8c2a971a99b43fe0178767bf3"
+        }
+      ],
+      "latestPass": 1,
+      "latestSha256": "a3e90583e5380e889c8f60960952607628679fe8c2a971a99b43fe0178767bf3",
+      "currentSha256": "a3e90583e5380e889c8f60960952607628679fe8c2a971a99b43fe0178767bf3",
+      "operation": "modified"
+    },
+    {
+      "path": "frontend-stripe-test/tests/request-work-source.spec.cjs",
+      "firstPass": 4,
+      "firstBaseSha256": null,
+      "baseProvenance": "absent_in_first_real_snapshot",
+      "history": [
+        {
+          "pass": 4,
+          "beforeSha256": null,
+          "targetSha256": "dbc6f36a33b5387d3abd1d19adb1820eed795d544c6ea4e6860b79fb03c10935"
+        },
+        {
+          "pass": 5,
+          "beforeSha256": "dbc6f36a33b5387d3abd1d19adb1820eed795d544c6ea4e6860b79fb03c10935",
+          "targetSha256": "2e6d474a972985c277fb3ea6b77d45c439c65e363a46445138cabb3556d84ee9"
+        },
+        {
+          "pass": 6,
+          "beforeSha256": "2e6d474a972985c277fb3ea6b77d45c439c65e363a46445138cabb3556d84ee9",
+          "targetSha256": "43a96e6dc6a4bc4c337ca42cf997da33495ea0b4ec794edcff285cd6a4a2fc5e"
+        }
+      ],
+      "latestPass": 6,
+      "latestSha256": "43a96e6dc6a4bc4c337ca42cf997da33495ea0b4ec794edcff285cd6a4a2fc5e",
+      "currentSha256": "43a96e6dc6a4bc4c337ca42cf997da33495ea0b4ec794edcff285cd6a4a2fc5e",
+      "operation": "added"
+    },
+    {
+      "path": "frontend-stripe-test/tests/scroll-window.spec.cjs",
+      "firstPass": 4,
+      "firstBaseSha256": null,
+      "baseProvenance": "absent_in_first_real_snapshot",
+      "history": [
+        {
+          "pass": 4,
+          "beforeSha256": null,
+          "targetSha256": "df028fa4fe5f712b108a95cdc96545225c521493e5393b6b5184c8a64deef627"
+        }
+      ],
+      "latestPass": 4,
+      "latestSha256": "df028fa4fe5f712b108a95cdc96545225c521493e5393b6b5184c8a64deef627",
+      "currentSha256": "df028fa4fe5f712b108a95cdc96545225c521493e5393b6b5184c8a64deef627",
+      "operation": "added"
+    },
+    {
+      "path": "frontend-stripe-test/tests/seller-proposal-draft-source.spec.cjs",
+      "firstPass": 5,
+      "firstBaseSha256": null,
+      "baseProvenance": "absent_in_first_real_snapshot",
+      "history": [
+        {
+          "pass": 5,
+          "beforeSha256": null,
+          "targetSha256": "222e55fdfb2912768711ee4df082801857e278875880aa14c018f2d41ad78354"
+        },
+        {
+          "pass": 6,
+          "beforeSha256": "222e55fdfb2912768711ee4df082801857e278875880aa14c018f2d41ad78354",
+          "targetSha256": "033a4ed4433909350cfdbb860d9a07cb9c88ec9652b4a9874c768ca78f6d7f9f"
+        }
+      ],
+      "latestPass": 6,
+      "latestSha256": "033a4ed4433909350cfdbb860d9a07cb9c88ec9652b4a9874c768ca78f6d7f9f",
+      "currentSha256": "033a4ed4433909350cfdbb860d9a07cb9c88ec9652b4a9874c768ca78f6d7f9f",
+      "operation": "added"
+    },
+    {
+      "path": "frontend-stripe-test/tests/shopping-proposal-lifecycle.spec.cjs",
+      "firstPass": 2,
+      "firstBaseSha256": null,
+      "baseProvenance": "absent_in_first_real_snapshot",
+      "history": [
+        {
+          "pass": 2,
+          "beforeSha256": null,
+          "targetSha256": "dc36736ff9d8f7fb42596be55feda0d28022f9511d466b78b6dfbd2fd40cdbf5"
+        },
+        {
+          "pass": 3,
+          "beforeSha256": "dc36736ff9d8f7fb42596be55feda0d28022f9511d466b78b6dfbd2fd40cdbf5",
+          "targetSha256": "0b94dd4d4788f96b7c6d4368aa79422e6b1198b3e3f5307091977feb7c3bd959"
+        },
+        {
+          "pass": 4,
+          "beforeSha256": "0b94dd4d4788f96b7c6d4368aa79422e6b1198b3e3f5307091977feb7c3bd959",
+          "targetSha256": "d8fa6a1a8bc6517c12095efa7c17a9773840815738aab1fc86f0fbda383fae41"
+        },
+        {
+          "pass": 5,
+          "beforeSha256": "d8fa6a1a8bc6517c12095efa7c17a9773840815738aab1fc86f0fbda383fae41",
+          "targetSha256": "411470cdcb710b35d4089ccc639b3f38d84c60186751b22f18a8e200e9ffd131"
+        },
+        {
+          "pass": 6,
+          "beforeSha256": "411470cdcb710b35d4089ccc639b3f38d84c60186751b22f18a8e200e9ffd131",
+          "targetSha256": "c9180c905e307886ae288f8695634ad93ec3534d50ffaad8a5f507c68a6f72ce"
+        }
+      ],
+      "latestPass": 6,
+      "latestSha256": "c9180c905e307886ae288f8695634ad93ec3534d50ffaad8a5f507c68a6f72ce",
+      "currentSha256": "c9180c905e307886ae288f8695634ad93ec3534d50ffaad8a5f507c68a6f72ce",
+      "operation": "added"
+    },
+    {
+      "path": "frontend-stripe-test/tests/virtualized-results-source.spec.cjs",
+      "firstPass": 4,
+      "firstBaseSha256": null,
+      "baseProvenance": "absent_in_first_real_snapshot",
+      "history": [
+        {
+          "pass": 4,
+          "beforeSha256": null,
+          "targetSha256": "458163839cb4ba39d402d4e3fd83da8d8e6aca82aaff89985ce1ca410a9d5a80"
+        }
+      ],
+      "latestPass": 4,
+      "latestSha256": "458163839cb4ba39d402d4e3fd83da8d8e6aca82aaff89985ce1ca410a9d5a80",
+      "currentSha256": "458163839cb4ba39d402d4e3fd83da8d8e6aca82aaff89985ce1ca410a9d5a80",
+      "operation": "added"
+    }
+  ],
+  "issues": []
+}

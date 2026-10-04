@@ -92,7 +92,15 @@ describe("Multi-user demo journeys", () => {
       requesterHeaders
     );
     assert.equal(earlyContract.status, 409);
-    assert.equal(earlyContract.body.error, "TRADE_NOT_ACCEPTED");
+    // Signing is now rejected by the shared lifecycle guard before contract creation.
+    assert.equal(trade.body.status, "pending");
+    assert.equal(earlyContract.body.error, "INVALID_TRADE_STATUS");
+    const afterForbiddenSigning = await client.get(`/trueqia/trades/${trade.body.id}`, requesterHeaders);
+    assert.equal(afterForbiddenSigning.status, 200);
+    assert.equal(afterForbiddenSigning.body.trade.status, "pending");
+    const forbiddenContracts = await client.get("/trueqia/contracts", requesterHeaders);
+    assert.equal(forbiddenContracts.status, 200);
+    assert.ok(!forbiddenContracts.body.items.some((row: any) => row.tradeId === trade.body.id), "Pending trade cannot create a signable contract");
 
     const forbiddenAcceptance = await client.post(
       `/trueqia/trades/${trade.body.id}/accept`,
@@ -282,7 +290,8 @@ describe("Multi-user demo journeys", () => {
         price: 134,
         productId: "demo-allwain-labels-1",
         meta: {
-          demo: true,
+          // This journey creates a commercial fixture: demo offers are deliberately read-only.
+          demo: false,
           units: 100,
           deliveryDays: 10,
           unit: "caja",

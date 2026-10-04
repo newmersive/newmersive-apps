@@ -39,6 +39,9 @@ import {
   type TranslationKey,
 } from "../../i18n";
 import { useAnalyticsConsent } from "../../analytics/AnalyticsConsentProvider";
+import { purgeJourneyDrafts } from "../../utils/journeyDrafts";
+import { purchaseDraftStore } from "../../utils/purchaseDraft";
+import { AppAlert } from "../../utils/appAlert";
 import {
   isAllwainLivePaymentEnvironment,
   isAllwainStripeTestMarketplace,
@@ -252,6 +255,7 @@ export default function ProfileMainScreen({ navigation, route }: Props) {
 
   async function confirmDeleteAccount() {
     if (deletingAccount) return;
+    const accountId = user?.id;
     setDeletingAccount(true);
     setAccountError(null);
     try {
@@ -259,16 +263,36 @@ export default function ProfileMainScreen({ navigation, route }: Props) {
       if (result.deleted !== true) {
         throw new Error(t("profile.errorDeleteNotConfirmed"));
       }
-      if (user?.id) {
-        await AsyncStorage.multiRemove([
-          `allwain:guide:${user.id}:v1`,
-          `allwain:onboarding:3:${user.id}`,
-          `allwain:onboarding:4:${user.id}`,
-        ]).catch(() => undefined);
+      setDeleteConfirmOpen(false);
+      const cleanLocalData = async () => {
+        if (!accountId) return true;
+        const results = await Promise.allSettled([
+          purgeJourneyDrafts(accountId),
+          purchaseDraftStore.purgeAccount(accountId),
+          AsyncStorage.multiRemove([
+            `allwain:guide:${accountId}:v1`,
+            `allwain:onboarding:3:${accountId}`,
+            `allwain:onboarding:4:${accountId}`,
+          ]),
+        ]);
+        return results.every(entry => entry.status === "fulfilled" && entry.value !== false);
+      };
+      const warnAboutCleanup = () => AppAlert.alert(t("profile.delete"), t("profile.deleteCleanupWarning"), [
+        { text: t("common.close"), style: "cancel" },
+        { text: t("common.retry"), onPress: () => { void cleanLocalData().then(cleared => { if (!cleared) warnAboutCleanup(); }); } },
+      ]);
+      const cleaned = await cleanLocalData();
+      let signedOut = true;
+      // A delayed response for account A must not sign out a newer account B.
+      if (useAuthStore.getState().user?.id === accountId) {
+        try { await clearAuth(); } catch { signedOut = false; }
+        if (!useAuthStore.getState().user) {
+          const rootNavigation = (navigation.getParent() || navigation) as any;
+          try { rootNavigation.reset({ index: 0, routes: [{ name: "Auth", params: { mode: "login" } }] }); }
+          catch { signedOut = false; }
+        }
       }
-      await clearAuth();
-      const rootNavigation = (navigation.getParent() || navigation) as any;
-      rootNavigation.reset({ index: 0, routes: [{ name: "Auth", params: { mode: "login" } }] });
+      if (!cleaned || !signedOut) warnAboutCleanup();
     } catch (error: any) {
       setAccountError(error?.message || t("profile.errorDelete"));
       setDeleteConfirmOpen(false);

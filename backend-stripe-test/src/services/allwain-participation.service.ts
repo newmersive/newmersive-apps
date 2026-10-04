@@ -1,4 +1,6 @@
 import crypto from "crypto";
+import { Prisma } from "@prisma/client";
+import { connectorLogisticsRows, type ConnectorLogisticsPageInput } from "./allwain-connector-discovery";
 import { ENV } from "../config/env";
 import { getPrisma } from "../db/prisma";
 import {
@@ -152,6 +154,7 @@ type ConnectorActivationInput = {
   locationLabel?: string | null;
   latitude?: number | null;
   longitude?: number | null;
+  clearCoordinates?: boolean;
 };
 
 const memorySellerProfiles = new Map<string, any>();
@@ -603,6 +606,7 @@ export async function getAllwainParticipationSnapshot(
       available: Boolean(connector?.available),
       radiusKm: normalizeRadius(connector?.radiusKm),
       locationLabel: connector?.locationLabel || null,
+      locationMode: approximatePoint(connector?.locationLatApprox, connector?.locationLngApprox) ? "coordinates" : connector?.locationLabel ? "label" : "unset",
     },
   };
 }
@@ -743,6 +747,7 @@ export async function activateAllwainConnector(
 
   const radiusKm = normalizeRadius(input.radiusKm);
   const location = normalizedLocation(input);
+  if (input.clearCoordinates && location.locationLatApprox !== null) throw new Error("INVALID_CONNECTOR_LOCATION");
   const data = {
     status: "active",
     available: Boolean(input.available),
@@ -780,8 +785,12 @@ export async function updateAllwainConnector(
   if (input.available !== undefined) data.available = Boolean(input.available);
   if (input.radiusKm !== undefined) data.radiusKm = normalizeRadius(input.radiusKm);
   if (input.locationLabel !== undefined) data.locationLabel = location.locationLabel;
-  if (input.latitude !== undefined) data.locationLatApprox = location.locationLatApprox;
-  if (input.longitude !== undefined) data.locationLngApprox = location.locationLngApprox;
+  const coordinatesSupplied = input.latitude !== undefined || input.longitude !== undefined;
+  if (coordinatesSupplied && (input.latitude === undefined || input.longitude === undefined)) throw new Error("INVALID_CONNECTOR_LOCATION");
+  if (input.clearCoordinates && coordinatesSupplied && location.locationLatApprox !== null) throw new Error("INVALID_CONNECTOR_LOCATION");
+  const labelChanged = input.locationLabel !== undefined && location.locationLabel !== current.connector.locationLabel;
+  if (coordinatesSupplied) { data.locationLatApprox = location.locationLatApprox; data.locationLngApprox = location.locationLngApprox; }
+  else if (input.clearCoordinates || labelChanged) { data.locationLatApprox = null; data.locationLngApprox = null; }
 
   if (usePostgres()) {
     await (getPrisma() as any).allwainConnectorProfile.update({ where: { userId }, data });
@@ -998,7 +1007,7 @@ export function allwainConnectorAssignmentMatch(assignment: any, connector: any)
   };
 }
 
-export async function getAllwainConnectorLogistics(userId: string) {
+export async function getAllwainConnectorLogistics(userId: string, input: ConnectorLogisticsPageInput = {}) {
   const participation = await getAllwainParticipationSnapshot(userId);
   if (!participation.connector.enabled) throw new Error("CONNECTOR_NOT_ACTIVE");
   if (!usePostgres()) {
@@ -1006,57 +1015,40 @@ export async function getAllwainConnectorLogistics(userId: string) {
       items: [],
       demoItems: allwainConnectorDemoLogistics(),
       radiusKm: participation.connector.radiusKm,
+      pageInfo: { hasNextPage: false, nextCursor: null },
     };
   }
 
   await ensureAllwainLogisticsAssignments();
 
   const prisma = getPrisma() as any;
-  const [connector, rows] = await Promise.all([
-    prisma.allwainConnectorProfile.findUnique({ where: { userId } }),
-    prisma.allwainDeliveryAssignment.findMany({
-    where: {
-      OR: [
-        { connectorUserId: userId },
-        ...(participation.connector.available
-          ? [
-              {
-                connectorUserId: null,
-                status: "open",
-              },
-            ]
-          : []),
-      ],
-    },
-    orderBy: { createdAt: "desc" },
-    take: 250,
-  }),
-  ]);
-  const localOrders = await prisma.allwainOrder.findMany({
-    where: {
-      id: { in: rows.map((row: any) => row.orderId) },
-      operationalArchivedAt: null,
-      deliveryChannel: "local_connector",
-    },
-    select: { id: true, buyerUserId: true, sellerUserId: true },
-  });
-  const localOrderIds = new Set(
-    localOrders.map((order: any) => order.id),
-  );
-  const ordersById = new Map<string, any>(
-    localOrders.map((order: any) => [order.id, order]),
-  );
-  const visibleRows = rows.filter((row: any) => {
-    if (!localOrderIds.has(row.orderId)) return false;
-    if (row.connectorUserId === userId) return true;
-    return allwainConnectorAssignmentMatch(row, connector).compatible;
-  });
+  const storedConnector = await prisma.allwainConnectorProfile.findUnique({ where: { userId } });
+  if (storedConnector?.status !== "active") throw new Error("CONNECTOR_NOT_ACTIVE");
+  const connector = { ...storedConnector, radiusKm: normalizeRadius(storedConnector.radiusKm) };
+  const result = await connectorLogisticsRows(prisma, userId, connector, input);
+  return { radiusKm: connector.radiusKm, demoItems: allwainConnectorDemoLogistics(), pageInfo: result.pageInfo, items: await connectorLogisticsDtos(prisma, userId, connector, result.items) };
+}
+
+/** Exact notifications use the same access/radius predicate as the list. */
+export async function getAllwainConnectorLogisticsDelivery(userId: string, assignmentId: string) {
+  const participation = await getAllwainParticipationSnapshot(userId);
+  if (!participation.connector.enabled) throw new Error("CONNECTOR_NOT_ACTIVE");
+  if (!usePostgres()) throw new Error("LOGISTICS_ASSIGNMENT_NOT_FOUND");
+  const prisma = getPrisma() as any;
+  const storedConnector = await prisma.allwainConnectorProfile.findUnique({ where: { userId } });
+  if (storedConnector?.status !== "active") throw new Error("CONNECTOR_NOT_ACTIVE");
+  const connector = { ...storedConnector, radiusKm: normalizeRadius(storedConnector.radiusKm) };
+  const result = await connectorLogisticsRows(prisma, userId, connector, {}, assignmentId);
+  if (!result.items.length) throw new Error("LOGISTICS_ASSIGNMENT_NOT_FOUND");
+  return (await connectorLogisticsDtos(prisma, userId, connector, result.items))[0];
+}
+
+async function connectorLogisticsDtos(prisma: any, userId: string, connector: any, visibleRows: any[]) {
   const acceptedParticipantIds = Array.from(
     new Set<string>(
       visibleRows.flatMap((row: any) => {
         if (row.connectorUserId !== userId) return [];
-        const order = ordersById.get(row.orderId);
-        return order ? [order.buyerUserId, order.sellerUserId] : [];
+        return [row.buyerUserId, row.sellerUserId];
       }),
     ),
   );
@@ -1069,13 +1061,10 @@ export async function getAllwainConnectorLogistics(userId: string) {
   const participantUsersById = new Map<string, any>(
     participantUsers.map((account: any) => [account.id, account]),
   );
-  return {
-    radiusKm: participation.connector.radiusKm,
-    demoItems: allwainConnectorDemoLogistics(),
-    items: visibleRows.map((row: any) => {
+  return visibleRows.map((row: any) => {
       const mine = row.connectorUserId === userId;
       const match = allwainConnectorAssignmentMatch(row, connector);
-      const order = mine ? ordersById.get(row.orderId) : null;
+      const order = mine ? row : null;
       return {
         id: row.id,
         orderId: row.orderId,
@@ -1084,7 +1073,7 @@ export async function getAllwainConnectorLogistics(userId: string) {
         networkBonusAmount: row.networkBonusAmount || 0,
         currency: row.currency,
         pickupZone: row.pickupZone || "Zona de recogida protegida",
-        deliveryZone: row.deliveryZone || "Zona de entrega protegida",
+        deliveryZone: mine ? row.deliveryZone || "Zona de entrega protegida" : protectedDeliveryZone(row.deliveryAddress),
         distanceKm: row.routeDistanceKm ?? row.maxDistanceKm,
         distanceToPickupKm: match.pickupDistanceKm,
         pickupAddress: mine ? row.pickupAddress?.formatted || null : null,
@@ -1108,33 +1097,26 @@ export async function getAllwainConnectorLogistics(userId: string) {
         mine,
         createdAt: row.createdAt,
       };
-    }),
-  };
+    });
 }
 
 function protectedDeliveryZone(address: any) {
-  const formatted = String(address?.formatted || "").trim();
-  if (!formatted) return "Zona de entrega protegida";
-  const parts = formatted.split(",").map((part) => part.trim()).filter(Boolean);
-  return (parts.slice(-2).join(", ") || "Zona de entrega protegida").slice(0, 120);
+  const named = String(address?.city || address?.municipality || address?.locality || "").trim();
+  if (named && named.length <= 120 && !/\d/.test(named)) return named;
+  // A free-form formatted address is private; punctuation is not proof of municipality.
+  return "Zona de entrega protegida";
 }
 
 export async function ensureAllwainLogisticsAssignments() {
   if (!usePostgres()) return 0;
   const prisma = getPrisma() as any;
-  const orders = await prisma.allwainOrder.findMany({
-    where: {
-      operationalArchivedAt: null,
-      deliveryMethod: "shipping",
-      deliveryChannel: "local_connector",
-      paymentStatus: { in: ["paid", "partially_refunded", "refund_pending"] },
-      fulfillmentStatus: { in: ["pending", "preparing", "ready"] },
-      connectorUserId: null,
-    },
-    orderBy: { createdAt: "asc" },
-    take: 200,
-  });
-  if (!orders.length) return 0;
+  let total = 0;
+  // Assigned rows never enter this batch. Repeated reads progress even with >200 old orders.
+  while (true) {
+  const missing: { id: string }[] = await prisma.$queryRaw(Prisma.sql`SELECT o.id FROM "AllwainOrder" o LEFT JOIN "AllwainDeliveryAssignment" a ON a."orderId" = o.id WHERE a.id IS NULL AND o."operationalArchivedAt" IS NULL AND o."deliveryMethod" = 'shipping' AND o."deliveryChannel" = 'local_connector' AND o."paymentStatus" IN ('paid','partially_refunded','refund_pending') AND o."fulfillmentStatus" IN ('pending','preparing','ready') AND o."connectorUserId" IS NULL ORDER BY o."createdAt" ASC, o.id ASC LIMIT 200`);
+  if (!missing.length) break;
+  const orders = await prisma.allwainOrder.findMany({ where: { id: { in: missing.map(row => row.id) }, operationalArchivedAt: null, deliveryMethod: "shipping", deliveryChannel: "local_connector", connectorUserId: null, paymentStatus: { in: ["paid", "partially_refunded", "refund_pending"] }, fulfillmentStatus: { in: ["pending", "preparing", "ready"] } } });
+  if (!orders.length) break;
   const sellerIds = Array.from(new Set(orders.map((order: any) => order.sellerUserId)));
   const sellers = await prisma.allwainSellerProfile.findMany({
       where: { userId: { in: sellerIds } },
@@ -1175,25 +1157,20 @@ export async function ensureAllwainLogisticsAssignments() {
         routeDistanceKm,
         maxDistanceKm: routeDistanceKm,
       };
-      return prisma.allwainDeliveryAssignment.upsert({
-        where: { orderId: order.id },
-        create: {
+      return {
         orderId: order.id,
         status: "open",
         feeAmount: order.connectorDeliveryAmount || 0,
         networkBonusAmount: order.connectorPlatformShareAmount || 0,
         currency: order.currency,
           ...locationData,
-        },
-        update: {
-          ...locationData,
-          feeAmount: order.connectorDeliveryAmount || 0,
-          networkBonusAmount: order.connectorPlatformShareAmount || 0,
-        },
-      });
+      };
   });
-  await prisma.$transaction(operations);
-  return operations.length;
+  const created = await prisma.allwainDeliveryAssignment.createMany({ data: operations, skipDuplicates: true });
+  total += created.count;
+  // A concurrent creator may win every row; the next anti-join still advances safely.
+  }
+  return total;
 }
 
 export async function acceptAllwainConnectorLogistics(userId: string, assignmentId: string) {
@@ -1231,6 +1208,9 @@ export async function acceptAllwainConnectorLogistics(userId: string, assignment
     if (!order) throw new Error("ORDER_NOT_FOUND");
     if (order.deliveryChannel !== "local_connector") {
       throw new Error("LOGISTICS_NOT_LOCAL_CONNECTOR");
+    }
+    if (order.operationalArchivedAt || order.connectorUserId || !["paid", "partially_refunded", "refund_pending"].includes(order.paymentStatus) || !["pending", "preparing", "ready"].includes(order.fulfillmentStatus)) {
+      throw new Error("LOGISTICS_ASSIGNMENT_UNAVAILABLE");
     }
     const connectorDeliveryAmount = Number(
       order.connectorDeliveryAmount || assignment.feeAmount || 0,

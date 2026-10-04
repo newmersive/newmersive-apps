@@ -7,6 +7,7 @@ import {
   activateAllwainSeller,
   getAllwainConnectorNetwork,
   getAllwainConnectorLogistics,
+  getAllwainConnectorLogisticsDelivery,
   getAllwainParticipationSnapshot,
   acceptAllwainConnectorLogistics,
   updateAllwainConnector,
@@ -54,7 +55,7 @@ function sendParticipationError(error: unknown, res: Response) {
     res.status(404).json({ error: code });
     return;
   }
-  if (code === "INVALID_NETWORK_CURSOR") {
+  if (code === "INVALID_NETWORK_CURSOR" || code === "INVALID_DISCOVERY_CURSOR" || code === "INVALID_LOGISTICS_SCOPE") {
     res.status(400).json({ error: code });
     return;
   }
@@ -205,6 +206,7 @@ router.post("/connector/activate", authRequired, async (req, res) => {
       locationLabel: req.body?.locationLabel,
       latitude: req.body?.latitude,
       longitude: req.body?.longitude,
+      clearCoordinates: req.body?.clearCoordinates === true,
     });
     await auditParticipation(req, "connector.activated", {
       available: result.connector.available,
@@ -227,6 +229,7 @@ router.patch("/connector", authRequired, async (req, res) => {
       locationLabel: req.body?.locationLabel,
       latitude: req.body?.latitude,
       longitude: req.body?.longitude,
+      clearCoordinates: req.body?.clearCoordinates === true,
     });
     await auditParticipation(req, "connector.settings_updated", {
       available: result.connector.available,
@@ -256,10 +259,20 @@ router.get("/connector/logistics", authRequired, async (req, res) => {
   try {
     const user = currentUser(req);
     if (!user) return void res.status(401).json({ error: "UNAUTHORIZED" });
-    res.json(await getAllwainConnectorLogistics(user.id));
+    res.setHeader("Cache-Control", "private, no-store");
+    res.json(await getAllwainConnectorLogistics(user.id, { limit: Number(req.query.limit), cursor: typeof req.query.cursor === "string" ? req.query.cursor : null, scope: typeof req.query.scope === "string" ? req.query.scope as "all" | "mine" | "available" : "all" }));
   } catch (error) {
     sendParticipationError(error, res);
   }
+});
+
+router.get("/connector/logistics/:id", authRequired, async (req, res) => {
+  try {
+    const user = currentUser(req);
+    if (!user) return void res.status(401).json({ error: "UNAUTHORIZED" });
+    res.setHeader("Cache-Control", "private, no-store");
+    res.json(await getAllwainConnectorLogisticsDelivery(user.id, req.params.id));
+  } catch (error) { sendParticipationError(error, res); }
 });
 
 router.get("/logistics/orders/:orderId/checkpoint", authRequired, async (req, res) => {

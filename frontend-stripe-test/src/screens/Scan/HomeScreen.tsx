@@ -1,6 +1,9 @@
 import { readJourneyDraft } from "../../utils/journeyDrafts";
 import { buyerPaymentLabel } from "../../utils/buyerJourney";
-import { checkoutPaymentActionable } from "../../utils/buyerCheckout";
+import { pendingBuyerOrder, validatePendingSummary, type RequestPendingSummary } from "../../utils/requestWork";
+import { requestWorkCopy } from "../../i18n/requestWorkCopy";
+import { readManualRequestDraft } from "../../utils/manualRequestContinuity";
+import { buyerDraftReadError, buyerContinuityCopy } from "../../i18n/buyerContinuityCopy";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
@@ -40,6 +43,7 @@ import {
   type AllwainScanRequest,
 } from "../../config/api";
 import { useAuthStore } from "../../store/auth.store";
+import { captureAuthSession } from "../../store/authSessionBridge";
 import { colors } from "../../theme/colors";
 import { formatCurrency } from "../../utils/format";
 import { resolveSellerIncome } from "../../utils/sellerIncome";
@@ -79,7 +83,7 @@ function firstName(name?: string, email?: string) {
   return (name?.trim().split(/\s+/)[0] || email?.split("@")[0] || "").trim();
 }
 
-function requestStatus(request: AllwainScanRequest, t: Translate) {
+function requestStatus(request: Pick<AllwainScanRequest, "status">, t: Translate) {
   if (request.status === "submitted") return { label: t("home.request.searching"), action: t("home.request.view"), tone: "success" as const };
   if (request.status === "awarded") return { label: t("home.request.chosen"), action: t("home.request.viewOrder"), tone: "success" as const };
   if (request.status === "ready") return { label: t("home.request.ready"), action: t("home.request.publish"), tone: "brand" as const };
@@ -141,16 +145,20 @@ function HomeHero({ eyebrow, title }: { eyebrow: string; title: string }) {
 }
 
 export default function HomeScreen() {
-  const { t } = useAppTranslation();
+  const { t, locale } = useAppTranslation();
+  const workCopy = requestWorkCopy[locale];
   const navigation = useNavigation<any>();
   const user = useAuthStore((state) => state.user);
-  const [drafts, setDrafts] = useState({manual:false,list:false,catalog:false});
+  const [drafts, setDrafts] = useState<{manual:boolean;manualRequestId?:string;owner?:string;list:boolean;catalog:boolean}>({manual:false,list:false,catalog:false});
+  const [manualRecoveryFailed, setManualRecoveryFailed] = useState(false);
   useFocusEffect(useCallback(() => {
     let active = true;
+    const session = captureAuthSession(), actor = user?.id;
     setDrafts({manual:false,list:false,catalog:false});
+    setManualRecoveryFailed(false);
     if (user?.id) void Promise.all([
-      readJourneyDraft<{requestText?:string}>(user.id,"manual-request"),readJourneyDraft<{rawText?:string;draftItems?:unknown[];title?:string}>(user.id,"shopping-list"),readJourneyDraft<{title?:string}>(user.id,"catalog-offer"),
-    ]).then(([manual,list,catalog]) => {if(active) setDrafts({manual:Boolean(manual?.requestText?.trim()),list:Boolean(list?.rawText?.trim() || list?.draftItems?.length || list?.title?.trim()),catalog:Boolean(catalog?.title?.trim())});});
+      readManualRequestDraft(user.id).catch(() => {if(active && session.isCurrent() && useAuthStore.getState().user?.id === actor) setManualRecoveryFailed(true);return null;}),readJourneyDraft<{rawText?:string;draftItems?:unknown[];title?:string}>(user.id,"shopping-list"),readJourneyDraft<{title?:string}>(user.id,"catalog-offer"),
+    ]).then(([manual,list,catalog]) => {if(active && session.isCurrent() && useAuthStore.getState().user?.id === actor) setDrafts({owner:actor,manual:Boolean(manual?.requestId || manual?.requestText?.trim()),manualRequestId:manual?.requestId,list:Boolean(list?.rawText?.trim() || list?.draftItems?.length || list?.title?.trim()),catalog:Boolean(catalog?.title?.trim())});}).catch(() => undefined);
     return () => {active=false;};
   },[user?.id]));
   const appMode = useAuthStore((state) => state.appMode);
@@ -160,6 +168,8 @@ export default function HomeScreen() {
   const [opportunities, setOpportunities] = useState<AllwainMarketRequest[]>([]);
   const [orders, setOrders] = useState<AllwainOrder[]>([]);
   const [orderSummary, setOrderSummary] = useState<AllwainOrderSummary | null>(null);
+  const [requestSummary, setRequestSummary] = useState<RequestPendingSummary | null>(null);
+  const [summaryOwner, setSummaryOwner] = useState<string | undefined>(undefined);
   const [logistics, setLogistics] = useState<AllwainConnectorLogistics | null>(null);
   const [network, setNetwork] = useState<AllwainConnectorNetwork | null>(null);
   const [paymentConfig, setPaymentConfig] =
@@ -200,14 +210,17 @@ export default function HomeScreen() {
     setLoading(true);
     setError(null);
     setOrderSummary(null);
+    setRequestSummary(null);
+    setSummaryOwner(undefined);
     setVerifiedSections({});
     try {
       if (appMode === "buy") {
-        const [requestResult, offerResult, orderResult, summaryResult] = await Promise.allSettled([
+        const [requestResult, offerResult, orderResult, summaryResult, pendingResult] = await Promise.allSettled([
           apiAuthGet<{ items?: AllwainScanRequest[] }>("/allwain/scan-requests"),
           apiAuthGet<{ items?: AllwainOffer[] }>("/allwain/offers"),
           apiAuthGet<{ items?: AllwainOrder[] }>("/allwain/payments/orders?scope=buyer"),
           apiAuthGet<AllwainOrderSummary>("/allwain/payments/orders/summary?scope=buyer"),
+          apiAuthGet<RequestPendingSummary>("/allwain/scan-requests/summary?limit=3").then(validatePendingSummary),
         ]);
         if (!isCurrent()) return;
         setVerifiedSections({
@@ -237,7 +250,9 @@ export default function HomeScreen() {
           );
         }
         if (summaryResult.status === "fulfilled") setOrderSummary(summaryResult.value);
-        if ([requestResult, offerResult, orderResult, summaryResult].some((result) => result.status === "rejected")) {
+        setSummaryOwner(user?.id);
+        if (pendingResult.status === "fulfilled") setRequestSummary(pendingResult.value);
+        if ([requestResult, offerResult, orderResult, summaryResult, pendingResult].some((result) => result.status === "rejected")) {
           setError(t("home.partialLoadError"));
         }
       } else if (appMode === "sell" && participation.seller?.enabled) {
@@ -290,13 +305,14 @@ export default function HomeScreen() {
     } finally {
       if (isCurrent()) setLoading(false);
     }
-  }, [appMode, participation, t]);
+  }, [appMode, participation, t, user?.id]);
 
   useFocusEffect(useCallback(() => {
     let current = true;
-    void load(() => current);
+    const session = captureAuthSession(), accountId = user?.id;
+    void load(() => current && session.isCurrent() && useAuthStore.getState().user?.id === accountId);
     return () => { current = false; };
-  }, [load, refreshKey]));
+  }, [load, refreshKey, user?.id]));
 
   const loadFeedback = error ? (
     <View style={styles.loadNotice} accessibilityLiveRegion="polite">
@@ -574,19 +590,16 @@ export default function HomeScreen() {
   }
 
   const buyerOrders = orders.filter((order) => order.buyerUserId === user?.id);
-  const pendingOrders = buyerOrders.filter((order) =>
-    !["canceled", "cancelled", "expired", "completed"].includes(order.status) &&
-    (checkoutPaymentActionable(order.paymentStatus) || order.fulfillmentStatus === "delivered"),
-  );
-  const pendingRequests = requests.filter((request) =>
-    request.status === "draft" || request.status === "ready" ||
-    (request.status === "submitted" && request.offers.length > 0),
-  );
-  const pendingCount = pendingOrders.length + pendingRequests.length;
+  const pendingOrders = buyerOrders.filter(pendingBuyerOrder);
+  const currentRequestSummary = summaryOwner === user?.id ? requestSummary : null;
+  const pendingRequests = currentRequestSummary?.items || [];
+  const pendingCount = currentRequestSummary && typeof orderSummary?.pendingActionCount === "number"
+    ? currentRequestSummary.total + orderSummary.pendingActionCount : null;
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
       <HomeHero eyebrow={`${greeting(t)}${name ? `, ${name}` : ""}`} title={t("home.buyer.question")} />
-      {drafts.manual ? <OrderCard title="Tu petición está a medias" meta="Recupera el texto que estabas preparando." actionLabel="Continuar petición" onPress={() => navigation.navigate("ManualRequest")} /> : null}
+      {manualRecoveryFailed ? <OrderCard title={buyerDraftReadError[locale]} actionLabel={buyerContinuityCopy[locale].retry} onPress={() => navigation.navigate("ManualRequest")} /> : null}
+      {drafts.manual && drafts.owner === user?.id ? <OrderCard title={drafts.manualRequestId ? "Retoma tu petición" : "Tu petición está a medias"} meta={drafts.manualRequestId ? "Continúa en la ficha guardada." : "Recupera el texto que estabas preparando."} actionLabel="Continuar petición" onPress={() => { if (useAuthStore.getState().user?.id !== drafts.owner) return; drafts.manualRequestId ? navigation.navigate("ScanResult", {requestId:drafts.manualRequestId}) : navigation.navigate("ManualRequest"); }} /> : null}
       {drafts.list ? <OrderCard title="Tienes una lista en preparación" meta="Revisa los productos y continúa donde lo dejaste." actionLabel="Continuar lista" onPress={() => navigation.navigate("ShoppingLists",{create:true})} /> : null}
       <View style={styles.actionGrid}>
         <ActionCard title={t("home.buyer.search")} icon={<Search size={23} color={colors.primary} />} onPress={() => navigation.navigate("Search")} />
@@ -610,14 +623,14 @@ export default function HomeScreen() {
       {loadFeedback}
       {loading ? <ActivityIndicator color={colors.primary} /> : null}
 
-      {pendingCount > 0 ? (
+      {pendingCount === null || pendingCount > 0 ? (
         <View style={styles.pendingBlock}>
           <View style={[styles.sectionHeader, styles.pendingHeading]}>
-            <Text accessibilityRole="header" style={styles.sectionTitle}>Pendiente de ti</Text>
-            <Text style={styles.sectionCount}>{pendingCount}</Text>
+            <Text accessibilityRole="header" style={styles.sectionTitle}>{workCopy.pending}</Text>
+            <Text style={styles.sectionCount}>{pendingCount ?? "—"}</Text>
           </View>
-          <Text style={styles.pendingHelp}>Retoma lo que necesita tu atención. Cada ficha conserva su estado y el siguiente paso.</Text>
-          {pendingOrders.slice(0, 2).map((order) => (
+          <Text style={styles.pendingHelp}>{workCopy.help}</Text>
+          {orderSummary?.pendingActionCount ? pendingOrders.slice(0, 2).map((order) => (
             <OrderCard
               key={order.id}
               title={order.offerTitle || `${order.quantity} ${order.unit}`}
@@ -626,8 +639,8 @@ export default function HomeScreen() {
               onPress={() => navigation.navigate("Ofertas", { section: "orders", orderId: order.id, offerId: undefined, contractId: undefined, focusKey: String(Date.now()) })}
               leading={<ShoppingBag size={20} color={colors.brandDark} />}
             />
-          ))}
-          {pendingRequests.slice(0, Math.max(0, 3 - pendingOrders.slice(0, 2).length)).map((request) => (
+          )) : null}
+          {pendingRequests.map((request) => (
             <ProductCard
               key={request.id}
               title={request.extracted.productName || request.title || t("home.request.productReview")}
@@ -637,6 +650,10 @@ export default function HomeScreen() {
               leading={<ClipboardList size={20} color={colors.brandDark} />}
             />
           ))}
+          <View style={styles.secondaryActions}>
+            <ActionCard variant="compact" title={workCopy.requests} icon={<ClipboardList size={20} color={colors.brandDark} />} onPress={() => navigation.navigate("MyRequests")} />
+            <ActionCard variant="compact" title={workCopy.orders} icon={<ShoppingBag size={20} color={colors.brandDark} />} onPress={() => navigation.navigate("Ofertas", { section: "orders", focusKey: String(Date.now()) })} />
+          </View>
         </View>
       ) : null}
 
