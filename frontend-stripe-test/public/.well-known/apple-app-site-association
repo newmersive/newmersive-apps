@@ -1,0 +1,26 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": [
+          "35T42B9ZZA.es.allwain.app"
+        ],
+        "components": [
+          { "/": "/ofertas*" },
+          { "/": "/perfil*" },
+          { "/": "/mi-red*" },
+          { "/": "/mensajes*" },
+          { "/": "/conversacion*" },
+          { "/": "/avisos*" },
+          { "/": "/peticion*" },
+          { "/": "/buscar*" }
+        ]
+      }
+    ]
+  },
+  "webcredentials": {
+    "apps": [
+      "35T42B9ZZA.es.allwain.app"
+    ]
+  }
+}

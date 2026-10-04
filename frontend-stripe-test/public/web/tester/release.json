@@ -1,0 +1,12 @@
+{
+  "release": "20260920-allwain-journeys-102-13",
+  "android": {
+    "applicationId": "es.allwain.app",
+    "versionName": "1.0.2",
+    "versionCode": 13,
+    "downloadPath": "/downloads/allwain-1.0.2-13.apk",
+    "bytes": 165658288,
+    "sha256": "cd535aa9e20aa3816b1b1358020426bd4a47b25397684c5d2c27ff23c4fa3116",
+    "signerSha256": "f160a9d0c3a665622afc38a173230ad523f3a6480283f826d18c396ac8810cef"
+  }
+}

@@ -1,0 +1,20 @@
+.web-google-auth { display: grid; gap: 12px; min-width: 0; color: #3f3f40; }
+.web-google-auth .web-google-consent { display: flex; align-items: flex-start; gap: 12px; min-height: 48px; margin: 0; cursor: pointer; }
+.web-google-auth .web-google-consent input { flex: 0 0 22px; width: 22px; height: 22px; min-height: 22px; margin: 3px 0 0; padding: 0; accent-color: #3f3f40; }
+.web-google-auth .web-google-consent-copy { font-size: 15px; line-height: 1.5; font-weight: 400; }
+.web-google-auth .web-google-consent a { color: #3f3f40; font-size: inherit; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
+.web-google-auth .web-google-button { display: flex; align-items: center; justify-content: center; gap: 12px; min-width: 0; min-height: 54px; width: 100%; padding: 10px 18px; border: 1px solid #8b8783; border-radius: 12px; color: #29292a; background: #fff; font: inherit; font-size: 17px; font-weight: 500; cursor: pointer; }
+.web-google-auth .web-google-button:hover:not(:disabled) { border-color: #3f3f40; color: #29292a; background: #f6f3ef; }
+.web-google-auth .web-google-button:disabled { cursor: wait; opacity: .7; }
+.web-google-auth .web-google-mark { display: block; flex: 0 0 22px; width: 22px; height: 22px; object-fit: contain; }
+.web-google-auth .web-google-explanation, .web-google-auth .web-google-status { margin: 0; color: #575451; font-size: 15px; line-height: 1.5; font-weight: 400; }
+.web-google-auth .web-google-status { padding-inline-start: 12px; border-inline-start: 3px solid #ff795a; color: #3f3f40; }
+.web-google-auth .web-google-status[data-state="success"] { font-weight: 600; }
+.web-google-auth .web-google-cancel { justify-self: start; min-height: 44px; padding: 8px 0; border: 0; color: #3f3f40; background: transparent; font: inherit; font-size: 16px; text-decoration: underline; text-underline-offset: 4px; cursor: pointer; }
+.web-google-auth .web-google-separator { display: flex; align-items: center; gap: 12px; color: #6c6762; font-size: 15px; line-height: 1.4; text-align: center; }
+.web-google-auth .web-google-separator::before, .web-google-auth .web-google-separator::after { content: ""; flex: 1; height: 1px; background: #ded6cc; }
+.web-google-auth :focus-visible { outline: 3px solid #3f3f40; outline-offset: 3px; box-shadow: 0 0 0 6px #fff; }
+.web-google-auth [hidden] { display: none !important; }
+@media (max-width: 620px) {
+  .web-google-auth .web-google-consent-copy, .web-google-auth .web-google-explanation, .web-google-auth .web-google-status { font-size: 16px; }
+}

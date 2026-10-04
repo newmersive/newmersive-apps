@@ -1,0 +1,52 @@
+/* The Foios pilot opens the page; the three roles explain the wider model after it. */
+@media (min-width: 601px) and (max-width: 1279px) {
+  .site-header .screen-dots { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+.pilot-to-model { padding-block: clamp(36px, 4vw, 56px); border-top: 1px solid var(--line); }
+.pilot-to-model .purchase-story__inner { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 36px; }
+.pilot-to-model #purchase-story-title { margin-bottom: 20px; font-size: clamp(30px, 3.4vw, 46px); line-height: 1.15; letter-spacing: -.035em; }
+.pilot-to-model #purchase-story-title em { text-decoration: none; }
+.pilot-to-model .purchase-story__summary { max-width: 68ch; margin: 0; font-size: 17px; }
+.pilot-to-model .purchase-story__eyebrow { margin-bottom: 16px; }
+.pilot-to-model .purchase-story__roles { display: flex; flex-direction: column; align-items: stretch; gap: 10px; margin: 0; padding: 0; min-width: 210px; }
+.pilot-to-model .purchase-story__roles a { justify-content: space-between; border-radius: 12px; }
+main > .screen.pilot-delivery-section { display: block; min-height: 0; padding: 0 var(--pad) 36px; background: var(--paper); }
+.pilot-delivery { max-width: 1260px; margin-inline: auto; border-block: 1px solid var(--line); }
+.pilot-delivery > summary { display: flex; justify-content: space-between; align-items: center; gap: 24px; min-height: 88px; padding: 18px 0; cursor: pointer; list-style: none; }
+.pilot-delivery > summary::-webkit-details-marker { display: none; }
+.pilot-delivery > summary > span { display: grid; gap: 6px; }
+.pilot-delivery > summary strong { font-size: 19px; line-height: 1.4; }
+.pilot-delivery > summary small { font-size: 15px; line-height: 1.5; color: var(--soft-carbon); }
+.pilot-delivery > summary > b { flex-shrink: 0; font-size: 25px; font-weight: 500; line-height: 1; }
+.pilot-delivery[open] > summary > b { transform: rotate(45deg); }
+.pilot-delivery__content { background: var(--white); border-radius: 18px; margin-bottom: 24px; overflow: clip; }
+.pilot-delivery__content .story-chapter { padding: 32px; gap: 32px; }
+.pilot-delivery__content .story-chapter :is(h2, h3) { font-size: clamp(30px, 3vw, 42px); }
+.pilot-delivery__content .story-chapter p { font-size: 16px; }
+.pilot-delivery__content .story-continue { width: calc(100% - 64px); }
+.participation .participation__invitation { margin: 0 0 20px; font-size: clamp(20px, 2vw, 25px); line-height: 1.4; }
+.participation > .participation__inner > .purchase-story__time { grid-column: 1 / -1; padding-block: 22px; border-block: 1px solid var(--line); }
+.participation__demo > .purchase-story__steps { margin-top: 0; padding-top: 16px; }
+.pilot-delivery :focus-visible { outline: 3px solid var(--deep-carbon); outline-offset: 5px; }
+@media (max-width: 800px) {
+  /* The orange photograph is visible on the first mobile viewport too. */
+  main > .screen.impact-launch { display: flex; flex-direction: column; align-items: stretch; gap: 28px; padding-top: 24px; }
+  #inicio .impact-hero-photo { order: -1; width: 100% !important; max-width: 100% !important; margin: 0; }
+  #inicio .impact-hero-photo picture { height: auto; min-height: 0; aspect-ratio: 16 / 10; }
+  #inicio .impact-hero-photo img { width: 100%; height: 100%; object-fit: cover; }
+  #inicio .impact-price { top: 12px; inset-inline-start: 12px; width: 112px; height: 112px; }
+  #inicio .impact-price strong { font-size: 29px; }
+  #inicio .impact-price span { font-size: 11px; }
+  #inicio .impact-price small { font-size: 10px !important; line-height: 1.3; }
+  .pilot-to-model .purchase-story__inner { grid-template-columns: minmax(0, 1fr); gap: 24px; }
+  .pilot-to-model .purchase-story__roles { flex-direction: row; flex-wrap: wrap; min-width: 0; }
+  .pilot-to-model .purchase-story__roles a { flex: 1 1 170px; }
+  .pilot-delivery__content .story-chapter { grid-template-columns: minmax(0, 1fr); padding: 24px 18px; }
+  .pilot-delivery__content .story-continue { width: calc(100% - 36px); }
+}
+@media (max-width: 480px) {
+  .pilot-to-model .purchase-story__roles { display: grid; grid-template-columns: minmax(0, 1fr); }
+  .pilot-delivery > summary strong { font-size: 17px; }
+  .pilot-delivery > summary small { font-size: 14px; }
+  .participation > .participation__inner > .purchase-story__time { gap: 12px; }
+}

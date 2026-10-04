@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="es" dir="ltr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#fffdf9" />
+    <meta name="robots" content="noindex,nofollow" />
+    <meta name="allwain-release" content="20260907-allwain-clean-mobile-panels-r8-091244" />
+    <meta name="description" content="Sala privada de testers de allwain para probar la app y reportar incidencias." />
+    <title>Sala tester | allwain</title>
+    <link rel="icon" href="../assets/brand/allwain-mark-orange.png?v=20260907-allwain-clean-mobile-panels-r8-091244" />
+    <link rel="stylesheet" href="../styles.css?v=20260907-allwain-clean-mobile-panels-r8-091244" />
+    <link rel="stylesheet" href="./tester.css?v=20260907-allwain-clean-mobile-panels-r8-091244" />
+    <link rel="stylesheet" href="../integration.css?v=20260912-location-responsive" />
+    <link rel="stylesheet" href="../web-google-auth.css?v=20260907-allwain-clean-mobile-panels-r8-091244" />
+    <script src="../i18n-data.js?v=20260907-allwain-clean-mobile-panels-r8-091244" defer></script>
+    <script src="../journey-i18n.js?v=20260910-integrated-ui" defer></script>
+    <script src="../i18n.js?v=20260907-allwain-clean-mobile-panels-r8-091244" defer></script>
+    <script src="/analytics-static.js?v=20260907-allwain-clean-mobile-panels-r8-091244" defer></script>
+    <script src="./academy-data.js?v=20260910-integrated-ui" defer></script>
+    <script src="../web-google-auth.js?v=20260907-allwain-clean-mobile-panels-r8-091244" defer></script>
+    <script src="./tester.js?v=20260910-integrated-ui" defer></script>
+  </head>
+  <body class="tester-page">
+    <a class="skip-link" href="#tester-main">Saltar al contenido</a>
+
+    <header class="tester-header">
+      <div class="tester-header-inner">
+        <a class="tester-brand" href="/" aria-label="Volver a la web de allwain">
+          <img src="../assets/brand/allwain-wordmark.png?v=20260907-allwain-clean-mobile-panels-r8-091244" width="1507" height="264" alt="allwain" />
+        </a>
+        <div class="tester-header-label"><span>SALA PRIVADA</span><strong>Prueba de la app</strong></div>
+        <div class="tester-header-actions">
+          <label class="tester-language" for="site-language"><span>Idioma</span><select id="site-language" aria-label="Idioma"><option value="es">Español</option><option value="en">English</option><option value="fr">Français</option><option value="it">Italiano</option><option value="zh">中文</option><option value="ar">العربية</option></select></label>
+          <button id="tester-account" type="button">Identificarme</button>
+        </div>
+      </div>
+    </header>
+
+    <main id="tester-main">
+      <section class="tester-hero" aria-labelledby="tester-title">
+        <div>
+          <p class="tester-kicker">PROGRAMA · APP PILOTO 01</p>
+          <h1 id="tester-title">Prueba la app.<br /><em>Vuelve con evidencias.</em></h1>
+          <p class="tester-lead">Este espacio no evalúa las maquetas de la web. Te acompaña en acciones concretas dentro de la app y reúne tu progreso e incidencias en una sola cuenta.</p>
+        </div>
+        <aside class="tester-privacy-card">
+          <span>PRIVACIDAD POR DISEÑO</span>
+          <strong>Tu actividad de prueba no es pública.</strong>
+          <p>No mostramos email, domicilio ni documentos. Evita incluir datos personales en las incidencias.</p>
+        </aside>
+      </section>
+
+      <section class="tester-gate" id="tester-gate" aria-labelledby="tester-gate-title">
+        <div class="tester-gate-number" aria-hidden="true">01</div>
+        <div>
+          <span id="tester-gate-status" role="status" aria-live="polite">COMPROBANDO ACCESO</span>
+          <h2 id="tester-gate-title">La encuesta y tu identidad abren esta sala.</h2>
+          <p id="tester-gate-copy">Estamos comprobando de forma segura si ya completaste la antesala.</p>
+        </div>
+        <div class="tester-gate-actions">
+          <button class="button button-primary" id="tester-login" type="button">Identificarme</button>
+          <a class="button button-secondary" href="/#pioneros">Ir a la encuesta</a>
+        </div>
+      </section>
+
+      <div class="tester-room" id="tester-room" hidden>
+        <section class="tester-session" aria-label="Estado de la sesión y configuración de la prueba">
+          <div class="tester-session-user"><span>SESIÓN COMPARTIDA</span><strong id="tester-session-name">Sesión activa</strong><p>La misma identidad enlaza la encuesta, este recorrido y tus incidencias.</p></div>
+          <label><span>Estoy probando en</span><select id="tester-platform"><option value="web">App web</option><option value="android">Android</option><option value="ios">iPhone o iPad</option><option value="unknown">Otro dispositivo</option></select></label>
+          <label><span>Versión visible · opcional</span><input id="tester-app-version" type="text" maxlength="80" placeholder="Ej.: 1.0.4 o build 27" /></label>
+          <button id="tester-logout" type="button">Cerrar sesión</button>
+        </section>
+
+        <section class="tester-safe-mode" aria-labelledby="tester-safe-title">
+          <div><span>MODO TEST · SIN CARGOS REALES</span><h2 id="tester-safe-title">Prueba el proceso completo. Después cuéntanos el resultado.</h2><p>Puedes publicar ofertas, comprar, vender y probar pagos con tarjetas demo. Stripe permanece exclusivamente en TEST: no se realizan cargos reales ni transferencias a vendedores.</p></div>
+          <div class="tester-app-entry"><a class="button button-primary" href="/app/" target="_blank" rel="noopener">Abrir app web <b aria-hidden="true">↗</b></a><a class="button button-secondary" id="tester-android-download" download="allwain-1.0.2-13.apk" title="Android 1.0.2 · versión 13" href="/downloads/allwain-1.0.2-13.apk">Descargar app Android <b aria-hidden="true">↓</b></a><a href="allwain://inicio">Abrir app instalada <b aria-hidden="true">↗</b></a></div>
+        </section>
+
+        <section class="tester-progress" aria-labelledby="tester-progress-title">
+          <header>
+            <div><span>GUÍA DE RUTAS EN LA APP</span><h2 id="tester-progress-title">Tu recorrido de prueba</h2></div>
+            <div class="tester-progress-totals" aria-label="Progreso de la prueba">
+              <div><span>Rutas</span><output id="tester-progress-output" aria-live="polite">0 / 12</output></div>
+              <div><span>Acciones</span><output id="tester-action-progress-output" aria-live="polite">0 / 24</output></div>
+            </div>
+          </header>
+          <p class="tester-route-personalization" id="tester-route-personalization">Ruta base: primero acceso y después los principales espacios de la app.</p>
+          <div class="tester-progress-track" role="progressbar" aria-label="Progreso de rutas" aria-valuemin="0" aria-valuemax="12" aria-valuenow="0"><i id="tester-progress-bar" style="width:0%"></i></div>
+          <div class="tester-progress-track tester-progress-track-actions" role="progressbar" aria-label="Progreso de acciones" aria-valuemin="0" aria-valuemax="24" aria-valuenow="0"><i id="tester-action-progress-bar" style="width:0%"></i></div>
+          <ol class="tester-step-list" data-i18n-dynamic aria-label="Rutas de prueba en la app"></ol>
+          <p class="tester-mission-storage-note" id="tester-mission-storage-note" data-i18n-dynamic></p>
+          <p id="tester-progress-status" role="status">Solo se marca un paso cuando tú lo confirmas.</p>
+        </section>
+
+        <section class="tester-report" aria-labelledby="tester-report-title">
+          <div class="tester-report-heading">
+            <span>BUZÓN DE INCIDENCIAS DE LA APP</span>
+            <h2 id="tester-report-title">Cuéntanos qué ocurrió.</h2>
+            <p>La incidencia llega automáticamente al panel de soporte y queda vinculada a tu cuenta. No se abre el correo.</p>
+          </div>
+
+          <form id="tester-incident-form">
+            <div class="tester-incident-grid">
+              <label><span>Área de la app</span><select id="tester-incident-screen" required><option value="app_access">Acceso e inicio</option><option value="app_profile">Perfil y privacidad</option><option value="app_capture">Captura y borrador</option><option value="app_buy">Comprar o pedir</option><option value="app_compare">Buscar y comparar</option><option value="app_sell">Vender u ofertar</option><option value="app_connector">Conector</option><option value="app_notifications">Avisos y mensajes</option><option value="app_delivery">Reparto Km 0</option><option value="app_assistant">Asistente</option><option value="app_accessibility">Accesibilidad e idioma</option><option value="app_support">Soporte</option><option value="app_other">Otra área</option></select></label>
+              <label><span>Tipo</span><select id="tester-incident-category" required><option value="functionality">Una acción no responde</option><option value="content">Algo no se ve o no se entiende</option><option value="accessibility">Problema de accesibilidad</option><option value="translation">Problema de traducción</option><option value="performance">Va lento o se bloquea</option><option value="account">Problema de acceso o cuenta</option><option value="other">Otra incidencia</option></select></label>
+              <label><span>Impacto</span><select id="tester-incident-severity" required><option value="normal">Molesta, pero puedo seguir</option><option value="low">Detalle menor</option><option value="high">Me impide completar una acción</option><option value="blocking">La app queda bloqueada</option></select></label>
+              <label><span>Ruta relacionada · opcional</span><select id="tester-incident-step" data-i18n-dynamic><option value="">Sin ruta concreta</option></select></label>
+            </div>
+            <label><span>¿Qué esperabas y qué ocurrió?</span><textarea id="tester-incident-description" rows="5" minlength="10" maxlength="1200" required placeholder="Describe el problema sin nombres, direcciones, teléfonos ni documentos…"></textarea></label>
+            <label><span>Pasos para repetirlo · opcional</span><textarea id="tester-incident-steps" rows="3" maxlength="1000" placeholder="1. Abrí… 2. Toqué… 3. Ocurrió…"></textarea></label>
+            <div class="tester-report-submit"><button class="button button-primary" type="submit">Enviar incidencia</button><p id="tester-incident-status" role="status">Lista para enviar de forma automática.</p></div>
+          </form>
+
+          <section class="tester-recent" id="tester-recent" hidden aria-live="polite"><h3>Tus últimas incidencias</h3><ul id="tester-recent-list"></ul></section>
+        </section>
+      </div>
+    </main>
+
+    <footer class="tester-footer">
+      <a href="/">Volver a la web</a>
+      <a href="/privacidad/">Privacidad</a>
+      <a href="/terminos/">Condiciones</a>
+      <a href="/seguridad/">Seguridad</a>
+      <a href="/soporte/">Soporte</a>
+    </footer>
+
+    <dialog class="tester-login-dialog" id="tester-login-dialog" aria-labelledby="tester-login-title">
+      <form method="dialog" class="tester-login-card" id="tester-login-form">
+        <button class="tester-dialog-close" id="tester-login-close" value="cancel" type="button" aria-label="Cerrar identificación">×</button>
+        <p class="tester-kicker">MISMA CUENTA · MISMO RECORRIDO</p>
+        <h2 id="tester-login-title">Identifícate<br />para continuar.</h2>
+        <p>Si ya respondiste la encuesta con esta cuenta, recuperaremos tu sala y tu progreso.</p>
+        <div id="tester-google-auth" data-i18n-dynamic></div>
+        <label><span>Email</span><input id="tester-login-email" type="email" autocomplete="email" maxlength="254" dir="ltr" required /></label>
+        <label><span>Contraseña</span><input id="tester-login-password" type="password" autocomplete="current-password" maxlength="256" required /></label>
+        <button class="button button-primary" type="submit">Entrar</button>
+        <p id="tester-login-status" role="status">La contraseña viaja cifrada y no se guarda en esta página.</p>
+        <a href="../#pioneros">Aún no he respondido la encuesta</a>
+      </form>
+    </dialog>
+  </body>
+</html>
+
+

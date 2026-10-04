@@ -1,0 +1,5 @@
+Contact: mailto:newmersive@gmail.com?subject=Vulnerabilidad%20Allwain
+Expires: 2027-09-05T00:00:00.000Z
+Preferred-Languages: es, en
+Canonical: https://allwain.es/.well-known/security.txt
+Policy: https://allwain.es/seguridad/

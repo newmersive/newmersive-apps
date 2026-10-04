@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Seguridad | allwain</title>
+  <meta name="description" content="Medidas de seguridad verificadas, límites y canal de reporte de allwain.">
+  <link rel="canonical" href="https://allwain.es/seguridad/">
+  <link rel="stylesheet" href="/legal.css">
+  <script src="/legal-i18n-data.js?v=20260906-smart-web-v3" defer></script>
+  <script src="/legal-i18n.js?v=20260906-smart-web-v3" defer></script>
+</head>
+<body>
+  <header class="header">
+    <div class="header-inner">
+      <a class="brand" href="/web/" aria-label="allwain, volver al lanzamiento"><img src="/legal-assets/allwain-wordmark.png?v=20260910" width="1507" height="264" alt="allwain"></a>
+      <nav class="nav" aria-label="Información legal">
+        <a href="/privacidad/">Privacidad</a>
+        <a href="/terminos/">Condiciones</a>
+        <a href="/seguridad/" aria-current="page">Seguridad</a>
+      </nav>
+    </div>
+  </header>
+  <main>
+    <div class="legal-hero">
+      <p class="eyebrow">Seguridad sin promesas imposibles</p>
+      <h1>Qué protegemos. Cómo. Y hasta dónde.</h1>
+      <p class="updated">Última revisión técnica: 5 de septiembre de 2026</p>
+      <span class="status">Protección activa · revisión continua</span>
+      <p>La seguridad no se resuelve con una frase. Aquí explicamos las medidas que hemos comprobado en la versión del piloto y también sus límites.</p>
+    </div>
+
+    <section class="summary" aria-labelledby="seguridad-resumen">
+      <h2 id="seguridad-resumen">Cuatro ideas claras</h2>
+      <ul>
+        <li>La web y la API públicas se sirven mediante HTTPS.</li>
+        <li>Las sesiones se pueden revisar, renovar y revocar.</li>
+        <li>Los pagos reales siguen cerrados; los datos financieros completos se introducirán en Stripe cuando se activen.</li>
+        <li>No afirmamos que allwain sea invulnerable ni que cuente con una certificación externa.</li>
+      </ul>
+    </section>
+
+    <div class="fact-grid" aria-label="Capas de protección">
+      <article class="fact"><strong>Conexión</strong><p>HTTPS/TLS y políticas del navegador contra cargas, marcos y permisos inesperados.</p></article>
+      <article class="fact"><strong>Cuenta</strong><p>Contraseñas protegidas, bloqueo progresivo, sesiones cortas, rotación y revocación.</p></article>
+      <article class="fact"><strong>Permisos</strong><p>Cada función y rol accede solo a las operaciones que le corresponden.</p></article>
+      <article class="fact"><strong>Rastro</strong><p>Las acciones importantes generan una cronología técnica encadenada para detectar alteraciones.</p></article>
+    </div>
+
+    <h2>1. Navegación y servidores</h2>
+    <p>Las conexiones públicas utilizan HTTPS/TLS. El sitio aplica HSTS, una política de seguridad de contenido, protección frente a carga en marcos, control del referente y restricciones de permisos del navegador. El acceso entre la web y la API se limita a orígenes autorizados.</p>
+    <p>Estas medidas protegen el tránsito público y reducen ataques habituales; no significan cifrado de extremo a extremo entre todos los participantes.</p>
+
+    <h2>2. Inicio de sesión y dispositivos</h2>
+    <p>Las contraseñas se almacenan mediante hash, existen límites ante intentos repetidos y las respuestas de acceso evitan revelar si una cuenta concreta existe. Los tokens de acceso son de corta duración; los de renovación se rotan y una reutilización sospechosa puede revocar la familia de sesiones.</p>
+    <p>En la web, la renovación puede apoyarse en una cookie <em>HttpOnly</em>, <em>Secure</em> y <em>SameSite=Strict</em>; el token de acceso permanece en memoria. En la app móvil, la credencial de renovación se guarda mediante el almacén seguro del sistema. Parte del perfil y del historial de la Guía autenticada puede quedar en el almacenamiento local del dispositivo.</p>
+    <p>Puedes consultar y cerrar sesiones desde la cuenta. allwain todavía no ofrece autenticación multifactor o passkeys; se incorporarán cuando superen sus pruebas.</p>
+
+    <h2>3. Pagos y datos financieros</h2>
+    <p>Los pagos reales no están activos. El diseño previsto utiliza Stripe Checkout y Stripe Connect, verifica la autenticidad de sus avisos y separa importes de vendedor, plataforma, entrega, reembolso y disputa. El número completo de la tarjeta o del IBAN no se guarda en allwain; sí pueden conservarse identificadores del proveedor, marca, últimos cuatro dígitos, caducidad, importes y estados necesarios.</p>
+
+    <h2>4. Archivos, IA y Guía pública</h2>
+    <p>Las imágenes admitidas se someten a límites y a validación de tamaño, formato y estructura. Esto reduce errores, pero no equivale a un análisis antimalware universal. La Guía pública limita longitud y frecuencia, intenta detectar identificadores personales y construye la respuesta desde un corpus público versionado. No abre la cuenta ni ejecuta compras, peticiones u ofertas.</p>
+    <p>Ese filtro es preventivo, no infalible. Si se usa IA, el texto de la pregunta puede enviarse a OpenAI. No incluyas datos personales, secretos ni información de una operación.</p>
+
+    <h2>5. Trazabilidad y copias</h2>
+    <p>Pedidos, pagos, documentos y entregas pueden generar eventos encadenados con HMAC-SHA256, secuencia y referencia al evento anterior. Esto permite detectar cambios en la cadena, pero no garantiza que la información introducida sea verdadera ni equivale a una notarización, blockchain o sello cualificado.</p>
+    <p>Las copias operativas verificadas usan acceso restringido, comprobación de integridad, rotación y pruebas de restauración. Siguen formando parte del riesgo que revisamos y no las presentamos como una garantía absoluta de recuperación.</p>
+
+    <h2>6. Si ocurre un incidente</h2>
+    <p>Registraremos, contendraremos y evaluaremos cualquier incidente relevante. Cuando una brecha de datos pueda implicar riesgo para las personas, se notificará a la autoridad competente dentro del plazo legal; si el riesgo es alto, también se informará a las personas afectadas sin demora indebida.</p>
+    <div class="secure-note note"><p>Si ves una sesión desconocida, cierra las demás sesiones, cambia la contraseña y escribe a <a href="mailto:newmersive@gmail.com?subject=Incidente%20de%20seguridad%20allwain">newmersive@gmail.com</a>.</p></div>
+
+    <h2>7. Comunicar una vulnerabilidad</h2>
+    <p>Escribe a <a href="mailto:newmersive@gmail.com?subject=Vulnerabilidad%20allwain">newmersive@gmail.com</a> con la ruta afectada, pasos para reproducir el problema y su impacto posible. No accedas, descargues, modifiques ni publiques datos de otras personas; detén la prueba en cuanto puedas demostrar el riesgo. Confirmaremos la recepción y coordinaremos una comunicación responsable.</p>
+
+    <h2>8. Cómo puedes protegerte</h2>
+    <ul>
+      <li>Comprueba que estás en <strong>allwain.es</strong> o <strong>api.allwain.es</strong>.</li>
+      <li>No compartas contraseñas, códigos, documentos ni el número completo de una tarjeta por correo o chat.</li>
+      <li>Desconfía de quien prometa una oferta, venta o ingreso garantizado en nombre de allwain.</li>
+      <li>Actualiza el dispositivo y cierra las sesiones que ya no utilices.</li>
+    </ul>
+
+    <div class="link-list" aria-label="Más información">
+      <a href="/.well-known/security.txt">security.txt</a>
+      <a href="/privacidad/">Privacidad</a>
+      <a href="/cookies/">Cookies y almacenamiento</a>
+      <a href="/soporte/">Soporte</a>
+    </div>
+  </main>
+  <footer>
+    <span>allwain · proyecto NEWMERSIVE</span>
+    <span class="footer-links"><a href="/aviso-legal/">Aviso legal</a><a href="/terminos/">Condiciones</a><a href="/eliminar-cuenta/">Eliminar cuenta</a></span>
+  </footer>
+</body>
+</html>
