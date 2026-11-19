@@ -151,6 +151,7 @@ model BrainChallenge {
   summary       String
   status        String   @default("DRAFT")
   visibility    String   @default("PRIVATE")
+  informationLevel BrainInformationLevel @default(CONFIDENTIAL)
   createdById   String
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
@@ -166,6 +167,7 @@ model BrainContribution {
   title        String
   description  String
   status       String   @default("SUBMITTED")
+  informationLevel BrainInformationLevel @default(CONFIDENTIAL)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
   profile      BrainProfile @relation(fields: [profileId], references: [id], onDelete: Restrict)
@@ -186,4 +188,59 @@ model BrainReview {
   contribution   BrainContribution @relation(fields: [contributionId], references: [id], onDelete: Restrict)
 
   @@index([contributionId, createdAt])
+}
+
+// B01.2 classification metadata does NOT grant model access to protected content.
+// SECRET_ABSOLUTE assets must remain outside Brain's retrieval/storage perimeter.
+enum BrainInformationLevel {
+  PUBLIC
+  RESTRICTED
+  CONFIDENTIAL
+  SECRET_ABSOLUTE
+}
+
+// An approved, sanitized derivative; never publish a raw confidential source.
+model BrainPublication {
+  id               String @id @default(uuid())
+  projectKey       String
+  title            String
+  storageKey       String @unique
+  sha256           String
+  level            BrainInformationLevel @default(RESTRICTED)
+  approvalStatus   String @default("PENDING")
+  approvedByUserId String?
+  approvedAt       DateTime?
+  expiresAt        DateTime?
+  createdAt        DateTime @default(now())
+  grants           BrainAccessGrant[]
+
+  @@index([projectKey, level, approvalStatus])
+}
+
+model BrainAccessGrant {
+  id            String @id @default(uuid())
+  publicationId String
+  profileId     String
+  grantedById   String
+  grantedAt     DateTime @default(now())
+  expiresAt     DateTime?
+  revokedAt     DateTime?
+  publication   BrainPublication @relation(fields: [publicationId], references: [id], onDelete: Restrict)
+
+  @@index([profileId, revokedAt, expiresAt])
+  @@unique([publicationId, profileId])
+}
+
+// Append-only behavior must be enforced by the application and DB permissions.
+model BrainSecurityAuditEvent {
+  id          String @id @default(uuid())
+  actorId     String?
+  action      String
+  resourceType String
+  resourceId  String
+  outcome     String
+  metadata    Json?
+  createdAt   DateTime @default(now())
+
+  @@index([resourceType, resourceId, createdAt])
 }
