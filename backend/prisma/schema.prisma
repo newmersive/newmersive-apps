@@ -124,3 +124,66 @@ model PasswordResetToken {
   userId    String
   expiresAt BigInt
 }
+
+
+// NEWMERSIVE Brain B01: additive foundations. No existing model is modified.
+// Status and visibility values are constrained by the application layer in B01.2.
+// Never expose private submissions through public challenge endpoints.
+model BrainProfile {
+  id             String   @id @default(uuid())
+  userId         String?  @unique
+  displayName    String
+  contactEmail   String
+  participantType String
+  capabilities   Json?
+  organization   String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  contributions  BrainContribution[]
+
+  @@index([contactEmail])
+}
+
+model BrainChallenge {
+  id            String   @id @default(uuid())
+  projectKey    String
+  title         String
+  summary       String
+  status        String   @default("DRAFT")
+  visibility    String   @default("PRIVATE")
+  createdById   String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  contributions BrainContribution[]
+
+  @@index([projectKey, status, visibility])
+}
+
+model BrainContribution {
+  id           String   @id @default(uuid())
+  profileId    String
+  challengeId  String?
+  title        String
+  description  String
+  status       String   @default("SUBMITTED")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  profile      BrainProfile @relation(fields: [profileId], references: [id], onDelete: Restrict)
+  challenge    BrainChallenge? @relation(fields: [challengeId], references: [id], onDelete: SetNull)
+  reviews      BrainReview[]
+
+  @@index([profileId, createdAt])
+  @@index([challengeId, status])
+}
+
+model BrainReview {
+  id             String   @id @default(uuid())
+  contributionId String
+  reviewerUserId String
+  decision       String
+  rationale      String
+  createdAt      DateTime @default(now())
+  contribution   BrainContribution @relation(fields: [contributionId], references: [id], onDelete: Restrict)
+
+  @@index([contributionId, createdAt])
+}
