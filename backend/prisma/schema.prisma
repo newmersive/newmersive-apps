@@ -140,6 +140,7 @@ model BrainProfile {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
   contributions  BrainContribution[]
+  teamMemberships BrainTeamMember[]
 
   @@index([contactEmail])
 }
@@ -243,4 +244,49 @@ model BrainSecurityAuditEvent {
   createdAt   DateTime @default(now())
 
   @@index([resourceType, resourceId, createdAt])
+}
+
+ 
+// B01.3 collaboration. Membership does not itself authorize file access.
+model BrainResearchTeam {
+  id String @id @default(uuid())
+  challengeId String?
+  name String
+  status String @default("DRAFT")
+  createdById String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  members BrainTeamMember[]
+  tasks BrainResearchTask[]
+  @@index([challengeId, status])
+}
+
+model BrainTeamMember {
+  id String @id @default(uuid())
+  teamId String
+  profileId String
+  role String @default("CONTRIBUTOR")
+  status String @default("INVITED")
+  invitedAt DateTime @default(now())
+  joinedAt DateTime?
+  revokedAt DateTime?
+  team BrainResearchTeam @relation(fields: [teamId], references: [id], onDelete: Restrict)
+  profile BrainProfile @relation(fields: [profileId], references: [id], onDelete: Restrict)
+  @@unique([teamId, profileId])
+  @@index([profileId, status])
+}
+
+model BrainResearchTask {
+  id String @id @default(uuid())
+  teamId String
+  assigneeId String?
+  title String
+  objective String
+  status String @default("PROPOSED")
+  informationLevel BrainInformationLevel @default(CONFIDENTIAL)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  team BrainResearchTeam @relation(fields: [teamId], references: [id], onDelete: Restrict)
+  @@index([teamId, status])
+  @@index([assigneeId, status])
 }
